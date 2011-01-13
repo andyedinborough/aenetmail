@@ -32,92 +32,92 @@
 */
 
 using System;
-using System.Text;
 using System.Security.Cryptography;
-using Org.Mentalis.Security.Cryptography;
+using System.Text;
 
 namespace Org.Mentalis.Security.Ssl.Tls1 {
-	/* P_hash(secret, seed) = HMAC_hash(secret, A(1) + seed) +
-								  HMAC_hash(secret, A(2) + seed) +
-								  HMAC_hash(secret, A(3) + seed) + ...
-	   Where + indicates concatenation.
-	   A() is defined as:
-		   A(0) = seed
-		   A(i) = HMAC_hash(secret, A(i-1))
-	 */
-	internal class ExpansionDeriveBytes : DeriveBytes, IDisposable {
-		public ExpansionDeriveBytes(HashAlgorithm hash, byte[] secret, string seed) {
-			if (seed == null)
-				throw new ArgumentNullException();
-			Initialize(hash, secret, Encoding.ASCII.GetBytes(seed));
-		}
-		public ExpansionDeriveBytes(HashAlgorithm hash, byte[] secret, byte[] seed) {
-			Initialize(hash, secret, seed);
-		}
-		protected void Initialize(HashAlgorithm hash, byte[] secret, byte[] seed) {
-			if (seed == null || secret == null || hash == null)
-				throw new ArgumentNullException();
-			m_Disposed = false;
+    /* P_hash(secret, seed) = HMAC_hash(secret, A(1) + seed) +
+                                  HMAC_hash(secret, A(2) + seed) +
+                                  HMAC_hash(secret, A(3) + seed) + ...
+       Where + indicates concatenation.
+       A() is defined as:
+           A(0) = seed
+           A(i) = HMAC_hash(secret, A(i-1))
+     */
+    internal class ExpansionDeriveBytes : DeriveBytes, IDisposable {
+        public ExpansionDeriveBytes(HashAlgorithm hash, byte[] secret, string seed) {
+            if (seed == null)
+                throw new ArgumentNullException();
+            Initialize(hash, secret, Encoding.ASCII.GetBytes(seed));
+        }
+        public ExpansionDeriveBytes(HashAlgorithm hash, byte[] secret, byte[] seed) {
+            Initialize(hash, secret, seed);
+        }
+        protected void Initialize(HashAlgorithm hash, byte[] secret, byte[] seed) {
+            if (seed == null || secret == null || hash == null)
+                throw new ArgumentNullException();
+            m_Disposed = false;
             m_HMAC = new Org.Mentalis.Security.Cryptography.HMAC(hash, secret);
-			m_Seed = seed;
-			m_HashSize = m_HMAC.HashSize / 8;
-			Reset();
-		}
-		protected byte[] GetNextBytes() {
-			m_HMAC.TransformBlock(m_Ai, 0, m_HashSize, m_Ai, 0);
-			m_HMAC.TransformFinalBlock(m_Seed, 0, m_Seed.Length);
-			byte[] ret = m_HMAC.Hash;
-			m_HMAC.Initialize();
-			// calculate next A
-			m_Ai = m_HMAC.ComputeHash(m_Ai);
-			return ret;
-		}
-		public override byte[] GetBytes(int cb) { // get the next bytes
-			if (m_Disposed)
-				throw new ObjectDisposedException(this.GetType().FullName);
-			if (cb < 0)
-				throw new ArgumentException();
-			byte[] ret = new byte[cb];
-			byte[] temp;
-			int filled = 0;
-			while(filled < ret.Length) {
-				if (filled + m_NextBytes.Length >= cb) {
-					Array.Copy(m_NextBytes, 0, ret, filled, cb - filled);
-					temp = new byte[m_NextBytes.Length - (cb - filled)];
-					Array.Copy(m_NextBytes, m_NextBytes.Length - temp.Length, temp, 0, temp.Length);
-					m_NextBytes = temp;
-					filled = ret.Length;
-				} else {
-					Array.Copy(m_NextBytes, 0, ret, filled, m_NextBytes.Length);
-					filled += m_NextBytes.Length;
-					m_NextBytes = GetNextBytes();
-				}
-			}
-			return ret;
-		}
-		public override void Reset() {
-			if (m_Disposed)
-				throw new ObjectDisposedException(this.GetType().FullName);
-			m_Ai = m_HMAC.ComputeHash(m_Seed); // A(1)
-			m_NextBytes = GetNextBytes();
-		}
-		public void Dispose() {
-			if (!m_Disposed) {
-				m_Disposed = true;
-				m_HMAC.Clear();
-				Array.Clear(m_Seed, 0, m_Seed.Length);
-				Array.Clear(m_Ai, 0, m_Ai.Length);
-				Array.Clear(m_NextBytes, 0, m_NextBytes.Length);
-			}
-		}
-		~ExpansionDeriveBytes() {
-			Dispose();
-		}
-		private Org.Mentalis.Security.Cryptography.HMAC m_HMAC;
-		private int m_HashSize; // in bytes
-		private byte[] m_Seed;
-		private byte[] m_NextBytes;
-		private byte[] m_Ai;
-		private bool m_Disposed;
-	}
+            m_Seed = seed;
+            m_HashSize = m_HMAC.HashSize / 8;
+            Reset();
+        }
+        protected byte[] GetNextBytes() {
+            m_HMAC.TransformBlock(m_Ai, 0, m_HashSize, m_Ai, 0);
+            m_HMAC.TransformFinalBlock(m_Seed, 0, m_Seed.Length);
+            byte[] ret = m_HMAC.Hash;
+            m_HMAC.Initialize();
+            // calculate next A
+            m_Ai = m_HMAC.ComputeHash(m_Ai);
+            return ret;
+        }
+        public override byte[] GetBytes(int cb) { // get the next bytes
+            if (m_Disposed)
+                throw new ObjectDisposedException(this.GetType().FullName);
+            if (cb < 0)
+                throw new ArgumentException();
+            byte[] ret = new byte[cb];
+            byte[] temp;
+            int filled = 0;
+            while (filled < ret.Length) {
+                if (filled + m_NextBytes.Length >= cb) {
+                    Array.Copy(m_NextBytes, 0, ret, filled, cb - filled);
+                    temp = new byte[m_NextBytes.Length - (cb - filled)];
+                    Array.Copy(m_NextBytes, m_NextBytes.Length - temp.Length, temp, 0, temp.Length);
+                    m_NextBytes = temp;
+                    filled = ret.Length;
+                } else {
+                    Array.Copy(m_NextBytes, 0, ret, filled, m_NextBytes.Length);
+                    filled += m_NextBytes.Length;
+                    m_NextBytes = GetNextBytes();
+                }
+            }
+            return ret;
+        }
+        public override void Reset() {
+            if (m_Disposed)
+                throw new ObjectDisposedException(this.GetType().FullName);
+            m_Ai = m_HMAC.ComputeHash(m_Seed); // A(1)
+            m_NextBytes = GetNextBytes();
+        }
+        protected override void Dispose(bool disposing) {
+            base.Dispose(disposing);
+            if (disposing && !m_Disposed) {
+                m_Disposed = true;
+                m_HMAC.Clear();
+                Array.Clear(m_Seed, 0, m_Seed.Length);
+                Array.Clear(m_Ai, 0, m_Ai.Length);
+                Array.Clear(m_NextBytes, 0, m_NextBytes.Length);
+            }
+        }
+        ~ExpansionDeriveBytes() {
+            Dispose();
+        }
+        private Org.Mentalis.Security.Cryptography.HMAC m_HMAC;
+        private int m_HashSize; // in bytes
+        private byte[] m_Seed;
+        private byte[] m_NextBytes;
+        private byte[] m_Ai;
+        private bool m_Disposed;
+    }
 }

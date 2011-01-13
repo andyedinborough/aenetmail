@@ -119,7 +119,18 @@
     <Compile Include="Pop3Client.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="AE.Net.Mail.nuspec" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <PropertyGroup>
+    <PostBuildEvent>md "$(SolutionDir)\bin\Package\"
+md "$(SolutionDir)\bin\Package\Assemblies\"
+del "$(SolutionDir)\bin\Package\*.*" /q
+copy "$(SolutionDir)bin\Release\*.*" "$(SolutionDir)bin\Package\Assemblies\"
+copy "$(SolutionDir)AE.Net.Mail.nuspec" "$(SolutionDir)bin\Package\AE.Net.Mail.nuspec"
+"$(SolutionDir)NuGet.exe" pack "$(SolutionDir)bin\Package\AE.Net.Mail.nuspec" /o "$(SolutionDir)\bin\Package"</PostBuildEvent>
+  </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">
