@@ -120,14 +120,17 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="AE.Net.Mail.nuspec" />
+    <None Include="AE.Net.Mail.nuspec">
+      <SubType>Designer</SubType>
+    </None>
+    <None Include="Build.proj" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>md "$(SolutionDir)\bin\Package\"
-md "$(SolutionDir)\bin\Package\Assemblies\"
+md "$(SolutionDir)\bin\Package\lib\"
 del "$(SolutionDir)\bin\Package\*.*" /q
-copy "$(SolutionDir)bin\Release\*.*" "$(SolutionDir)bin\Package\Assemblies\"
+copy "$(SolutionDir)bin\Release\*.*" "$(SolutionDir)bin\Package\lib\"
 copy "$(SolutionDir)AE.Net.Mail.nuspec" "$(SolutionDir)bin\Package\AE.Net.Mail.nuspec"
 "$(SolutionDir)NuGet.exe" pack "$(SolutionDir)bin\Package\AE.Net.Mail.nuspec" /o "$(SolutionDir)\bin\Package"</PostBuildEvent>
   </PropertyGroup>

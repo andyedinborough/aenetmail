@@ -1,6 +1,5 @@
 ﻿using System;
 using System.IO;
-using System.Net.Sockets;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using Org.Mentalis.Security.Ssl;
@@ -28,7 +27,7 @@ namespace AE.Net.Mail {
 
         public void Login(string username, string password) {
             if (!IsConnected) {
-                throw new Exception("You must connect first !");
+                throw new Exception("You must connect first!");
             }
             IsAuthenticated = false;
             OnLogin(username, password);
