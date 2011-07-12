@@ -135,16 +135,8 @@ namespace AE.Net.Mail {
                 SelectMailbox("INBOX");
         }
 
-        public MailMessage[] GetMessages(string startUID, string endUID, bool headersonly = true, bool setseen = false) {
-            return GetMessages(startUID, endUID, true, headersonly, setseen);
-        }
-
-        public MailMessage[] GetMessages(int startIndex, int endIndex, bool headersonly = true, bool setseen = false) {
-            return GetMessages((startIndex + 1).ToString(), (endIndex + 1).ToString(), false, headersonly, setseen);
-        }
-
-        public MailMessage GetMessage(string uid, bool headersonly = false, bool setseen = true) {
-            return GetMessages(uid, uid, headersonly, setseen).FirstOrDefault();
+        public MailMessage GetMessage(string uid, bool headersonly = false) {
+            return GetMessage(uid, headersonly, true);
         }
 
         public MailMessage GetMessage(int index, bool headersonly = false) {
@@ -153,6 +145,18 @@ namespace AE.Net.Mail {
 
         public MailMessage GetMessage(int index, bool headersonly, bool setseen) {
             return GetMessages(index, index, headersonly, setseen).FirstOrDefault();
+        }
+
+        public MailMessage GetMessage(string uid, bool headersonly, bool setseen) {
+            return GetMessages(uid, uid, headersonly, setseen).FirstOrDefault();
+        }
+
+        public MailMessage[] GetMessages(string startUID, string endUID, bool headersonly = true, bool setseen = false) {
+            return GetMessages(startUID, endUID, true, headersonly, setseen);
+        }
+
+        public MailMessage[] GetMessages(int startIndex, int endIndex, bool headersonly = true, bool setseen = false) {
+            return GetMessages((startIndex + 1).ToString(), (endIndex + 1).ToString(), false, headersonly, setseen);
         }
 
         public MailMessage[] GetMessages(string start, string end, bool uid, bool headersonly, bool setseen) {

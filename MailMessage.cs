@@ -160,7 +160,7 @@ namespace AE.Net.Mail {
 
             _Headers = ParseHeaders(RawHeaders);
 
-            Date = DateTime.Parse(GetHeader("Date"));
+            Date =  GetHeaderDate("Date");
             To = GetAddresses("To");
             Cc = GetAddresses("Cc");
             Bcc = GetAddresses("Bcc");
@@ -171,6 +171,14 @@ namespace AE.Net.Mail {
 
             Importance = GetEnum<MailPriority>(GetHeader("Importance"));
             Subject = GetHeader("Subject");
+        }
+
+        private Regex rxTimeZoneName = new Regex(@"\s+\([a-z]+\)$", RegexOptions.Compiled | RegexOptions.IgnoreCase); //Mon, 28 Feb 2005 19:26:34 -0500 (EST)
+        private   DateTime GetHeaderDate(string name) {
+            var value = GetHeader(name);
+            if (string.IsNullOrEmpty(value)) return DateTime.MinValue;
+            value = rxTimeZoneName.Replace(value, string.Empty);
+            return DateTime.Parse(value);
         }
 
         private static T GetEnum<T>(string name) where T : struct, IConvertible {

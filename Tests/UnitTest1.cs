@@ -52,8 +52,6 @@ namespace Tests {
 
                     var msg = mail.GetMessage(0, true);
                     msg.Subject.Should().Not.Be.NullOrEmpty();
-
-                    mail.DeleteMessage(msg.Uid);
                 }
         }
 
