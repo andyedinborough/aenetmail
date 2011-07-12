@@ -174,16 +174,19 @@ namespace AE.Net.Mail {
         }
 
         private Regex rxTimeZoneName = new Regex(@"\s+\([a-z]+\)$", RegexOptions.Compiled | RegexOptions.IgnoreCase); //Mon, 28 Feb 2005 19:26:34 -0500 (EST)
+        private Regex rxTimeZoneColon = new Regex(@"\s+(\+|\-)([0-9]{2})\:([0-9]{2})$", RegexOptions.Compiled | RegexOptions.IgnoreCase); //Mon, 28 Feb 2005 19:26:34 -0500 (EST)
         private   DateTime GetHeaderDate(string name) {
             var value = GetHeader(name);
             if (string.IsNullOrEmpty(value)) return DateTime.MinValue;
             value = rxTimeZoneName.Replace(value, string.Empty);
+            value = rxTimeZoneColon.Replace(value, " $1$2$3");
             return DateTime.Parse(value);
         }
 
         private static T GetEnum<T>(string name) where T : struct, IConvertible {
+            if (string.IsNullOrEmpty(name)) return default(T);
             var values = System.Enum.GetValues(typeof(T)).Cast<T>().ToArray();
-            return values.FirstOrDefault(x => string.Compare(name, x.ToString(), true) == 0);
+            return values.FirstOrDefault(x =>  x.ToString().Equals(name,  StringComparison.OrdinalIgnoreCase));
         }
 
         private void ParseMime(StringReader reader, string boundary) {
