@@ -52,6 +52,8 @@ namespace Tests {
 
                     var msg = mail.GetMessage(0, true);
                     msg.Subject.Should().Not.Be.NullOrEmpty();
+                    msg = mail.GetMessage(0, false);
+                    (msg.Body + msg.BodyHtml).Should().Not.Be.NullOrEmpty();
                 }
         }
 
