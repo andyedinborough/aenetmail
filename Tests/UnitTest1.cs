@@ -49,6 +49,11 @@ namespace Tests {
             foreach(var line in lines)
                 using (var mail = GetClient(line[0], line[1], int.Parse(line[2]), bool.Parse(line[3]), line[4], line[5])) {
                     mail.GetMessageCount().Should().Be.InRange(1, int.MaxValue);
+
+                    var msg = mail.GetMessage(0, true);
+                    msg.Subject.Should().Not.Be.NullOrEmpty();
+
+                    mail.DeleteMessage(msg.Uid);
                 }
         }
 

@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Linq;
+
 namespace AE.Net.Mail {
     public class Pop3Client : TextClient, IMailClient {
         public Pop3Client() { }
@@ -54,6 +56,16 @@ namespace AE.Net.Mail {
             MailMessage msg = new MailMessage();
             msg.Load(result.ToString(), headersOnly);
             return msg;
+        }
+
+        public void DeleteMessage(string uid) {
+            var ids = GetMessageIDs();
+            for (int i = 0; i < ids.Length; i++) {
+                if (ids[i] == uid) {
+                    DeleteMessage(i);
+                    return;
+                }
+            }
         }
 
         public void DeleteMessage(int index) {

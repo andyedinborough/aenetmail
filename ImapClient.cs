@@ -7,8 +7,7 @@ using AE.Net.Mail.Imap;
 
 namespace AE.Net.Mail {
     public class ImapClient : TextClient, IMailClient {
-        private bool _selected = false;
-        private string _selectedmailbox = "INBOX";
+        private string _selectedmailbox;
         private int _tag = 0;
         private string _capability;
 
@@ -103,7 +102,6 @@ namespace AE.Net.Mail {
                 if (response.StartsWith(tag + "OK")) {
                     if (response.ToUpper().IndexOf("READ/WRITE") > -1) x.Rw = true;
                 }
-                _selected = true;
                 _selectedmailbox = mailbox;
             }
             return x;
@@ -118,20 +116,23 @@ namespace AE.Net.Mail {
             while (response.StartsWith("*")) {
                 response = _Reader.ReadLine();
             }
-
         }
 
-        public void DeleteMessage(string uid, bool moveToTrash = true) {
+        public void DeleteMessage(string uid) {
             CheckMailboxSelected();
-            if (moveToTrash) {
-                Copy("UID " + uid, "trash");
-            }
             Store("UID " + uid, true, "\\Seen \\Deleted");
+        }
+
+        public void MoveMessage(string uid, string folderName) {
+            CheckMailboxSelected();
+            Copy("UID " + uid, folderName);
+            DeleteMessage(uid);
         }
 
         private void CheckMailboxSelected() {
             CheckConnectionStatus();
-            if (!_selected) throw new Exception("You must select first !");
+            if (string.IsNullOrEmpty(_selectedmailbox))
+                SelectMailbox("INBOX");
         }
 
         public MailMessage[] GetMessages(string startUID, string endUID, bool headersonly = true, bool setseen = false) {
@@ -139,7 +140,7 @@ namespace AE.Net.Mail {
         }
 
         public MailMessage[] GetMessages(int startIndex, int endIndex, bool headersonly = true, bool setseen = false) {
-            return GetMessages((startIndex + 1).ToString(), (endIndex + 1).ToString(), true, headersonly, setseen);
+            return GetMessages((startIndex + 1).ToString(), (endIndex + 1).ToString(), false, headersonly, setseen);
         }
 
         public MailMessage GetMessage(string uid, bool headersonly = false, bool setseen = true) {
@@ -338,6 +339,7 @@ namespace AE.Net.Mail {
         }
 
         public int GetMessageCount() {
+            CheckMailboxSelected();
             return GetMessageCount(null);
         }
         public int GetMessageCount(string mailbox) {
@@ -409,7 +411,6 @@ namespace AE.Net.Mail {
                 if (response.StartsWith(tag + "OK")) {
                     if (response.ToUpper().IndexOf("READ/WRITE") > -1) x.Rw = true;
                 }
-                _selected = true;
                 _selectedmailbox = mailbox;
             }
             return x;
@@ -428,6 +429,7 @@ namespace AE.Net.Mail {
             while (response.StartsWith("*")) {
                 response = _Reader.ReadLine();
             }
+            CheckResultOK(response);
         }
 
         public void SuscribeMailbox(string mailbox) {
