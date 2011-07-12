@@ -89,21 +89,6 @@ namespace AE.Net.Mail {
             CheckResultOK(SendCommandGetResponse(command));
         }
 
-        internal X509Certificate DefaultCertificateSelectionCallback(X509CertificateCollection clientCertificates,
-                                                                    X509Certificate serverCertificate,
-                                                                    string targetHost,
-                                                                    X509CertificateCollection serverRequestedCertificates) {
-            return null;
-        }
-
-        internal bool DefaultCertificateValidationCallback(X509Certificate certificate, int[] certificateErrors) {
-            return true;
-        }
-
-        internal AsymmetricAlgorithm DefaultPrivateKeySelectionCallback(X509Certificate certificate, string targetHost) {
-            return null;
-        }
-
         public void Disconnect() {
             Logout();
             if (_Reader != null) {

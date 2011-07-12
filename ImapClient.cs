@@ -8,7 +8,7 @@ using AE.Net.Mail.Imap;
 namespace AE.Net.Mail {
     public class ImapClient : TextClient, IMailClient {
         private bool _selected = false;
-        private string _selectedmailbox = String.Empty;
+        private string _selectedmailbox = "INBOX";
         private int _tag = 0;
         private string _capability;
 
@@ -284,6 +284,11 @@ namespace AE.Net.Mail {
                     throw new NotSupportedException();
             }
 
+            if (result.StartsWith("* CAPABILITY ")) {
+                _capability = result.Substring(13);
+                result = _Reader.ReadLine();
+            }
+
             if (!result.StartsWith(tag + "OK")) {
                 throw new Exception(result);
             }
@@ -417,8 +422,12 @@ namespace AE.Net.Mail {
                 messageset = messageset.Substring(4);
                 prefix = "UID ";
             }
+
             string command = string.Concat(GetTag(), prefix, "STORE ", messageset, " ", replace ? "+" : "", "FLAGS.SILENT (" + flags + ")");
-            SendCommandCheckOK(command);
+            string response = SendCommandGetResponse(command);
+            while (response.StartsWith("*")) {
+                response = _Reader.ReadLine();
+            }
         }
 
         public void SuscribeMailbox(string mailbox) {

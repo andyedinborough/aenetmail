@@ -135,7 +135,7 @@ md "$(SolutionDir)\bin\Package\lib\"
 del "$(SolutionDir)\bin\Package\*.*" /q
 copy "$(SolutionDir)bin\Release\*.*" "$(SolutionDir)bin\Package\lib\"
 copy "$(SolutionDir)AE.Net.Mail.nuspec" "$(SolutionDir)bin\Package\AE.Net.Mail.nuspec"
-"$(SolutionDir)NuGet.exe" pack "$(SolutionDir)bin\Package\AE.Net.Mail.nuspec" /o "$(SolutionDir)\bin\Package"</PostBuildEvent>
+"$(SolutionDir)..\Packages\NuGet.exe" pack "$(SolutionDir)bin\Package\AE.Net.Mail.nuspec" /o "$(SolutionDir)\bin\Package"</PostBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
