@@ -34,6 +34,7 @@
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Web" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="System.Data" />
@@ -41,6 +42,9 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Attachment.cs" />
+    <Compile Include="HeaderCollection.cs" />
+    <Compile Include="HeaderObject.cs" />
+    <Compile Include="Utilities.cs" />
     <Compile Include="IMailClient.cs" />
     <Compile Include="MailMessage.cs" />
     <Compile Include="Security\Certificates\Certificate.cs" />
@@ -123,7 +127,6 @@
     <None Include="AE.Net.Mail.nuspec">
       <SubType>Designer</SubType>
     </None>
-    <None Include="Build.proj" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Logo.png" />

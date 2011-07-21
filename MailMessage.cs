@@ -5,69 +5,32 @@ using System.IO;
 using System.Linq;
 using System.Net.Mail;
 using System.Text;
-using System.Text.RegularExpressions;
 
 namespace AE.Net.Mail {
-    internal static class Extensions {
-        public static MailAddress ToEmailAddress(this string input) {
-            try {
-                return new MailAddress(input);
-            } catch (Exception) {
-                return null;
-            }
-        }
-    }
-
-    public class MailMessage {
-        private Collection<Attachment> _Attachments = new Collection<Attachment>();
-        private string _Body = String.Empty;
-
-        private Dictionary<string, string> _Headers;
+    public class MailMessage : ObjectWHeaders {
+        private string _Body = null;
         private bool _HeadersOnly; // set to true if only headers have been fetched.
 
         public MailMessage() {
             Flags = new string[0];
-        }
-
-        private MailAddress[] GetAddresses(string header) {
-            string values = GetHeader(header).Trim();
-            List<MailAddress> addrs = new List<MailAddress>();
-            while (true) {
-                int semicolon = values.IndexOf(';');
-                int comma = values.IndexOf(',');
-                if (comma < semicolon || semicolon == -1) semicolon = comma;
-
-                int bracket = values.IndexOf('>');
-                string temp = null;
-                if (semicolon == -1 && bracket == -1) {
-                    if (values.Length > 0) addrs.Add(values.ToEmailAddress());
-                    return addrs.Where(x => x != null).ToArray();
-                } else {
-                    if (bracket > -1 && (semicolon == -1 || bracket < semicolon)) {
-                        temp = values.Substring(0, bracket + 1);
-                        values = values.Substring(temp.Length);
-                    } else if (semicolon > -1 && (bracket == -1 || semicolon < bracket)) {
-                        temp = values.Substring(0, semicolon);
-                        values = values.Substring(semicolon + 1);
-                    }
-                    if (temp.Length > 0)
-                        addrs.Add(temp.Trim().ToEmailAddress());
-                    values = values.Trim();
-                }
-            }
+            Attachments = new Collection<Attachment>();
         }
 
         public string Body {
             get {
-                if (string.IsNullOrEmpty(_Body) && Attachments != null && Attachments.Count > 0) {
+                if (_Body == null && Attachments != null && Attachments.Count > 0) {
                     var att = Attachments.FirstOrDefault(x => !x.IsAttachment && x.ContentType == "text/plain");
                     if (att != null) {
                         _Body = att.Content;
+                        if (_Body.LooksLikeHtml()) {
+                            _BodyHtml = _Body;
+                            _Body = _Body.StripHtml();
+                        }
                     }
                 }
                 return _Body;
             }
-            set { _Body = value; }
+            set { _Body = value ?? string.Empty; }
         }
 
         private string _BodyHtml;
@@ -88,7 +51,6 @@ namespace AE.Net.Mail {
         public DateTime Date { get; private set; }
         public string[] Flags { get; private set; }
 
-        public string RawHeaders { get; private set; }
         public int Size { get; internal set; }
         public string Subject { get; private set; }
         public MailAddress[] To { get; private set; }
@@ -102,36 +64,7 @@ namespace AE.Net.Mail {
         public string Raw { get; private set; }
         public MailPriority Importance { get; private set; }
 
-        public Collection<Attachment> Attachments {
-            get { return _Attachments; }
-        }
-
-        private static Regex rxBoundary = new Regex("boundary=[\"](.*?)[\"]\\r\\n", RegexOptions.Multiline | RegexOptions.Compiled | RegexOptions.IgnoreCase);
-        private static string GetBoundary(string messagepart) {
-            return rxBoundary.Match(messagepart).Groups[1].Value;
-        }
-
-        public static Dictionary<string, string> ParseHeaders(string headers) {
-            var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-            string[] lines = headers.Split(new char[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
-            foreach (var line in lines) {
-                int i = line.IndexOf(':');
-                if (i > -1) {
-                    string key = line.Substring(0, i).Trim();
-                    string value = line.Substring(i + 1).Trim();
-                    if (result.ContainsKey(key))
-                        result[key] = value;
-                    else result.Add(key, value);
-                }
-            }
-            return result;
-        }
-
-        public string GetHeader(string Name) {
-            string value;
-            if (_Headers.TryGetValue(Name, out value)) return value;
-            else return string.Empty;
-        }
+        public ICollection<Attachment> Attachments { get; private set; }
 
         public void Load(string message, bool headersonly) {
             Raw = message;
@@ -139,8 +72,8 @@ namespace AE.Net.Mail {
             if (headersonly) {
                 RawHeaders = message;
             } else {
-                StringBuilder headers = new StringBuilder();
-                using (StringReader reader = new System.IO.StringReader(message)) {
+                var headers = new StringBuilder();
+                using (var reader = new System.IO.StringReader(message)) {
                     string line;
                     do {
                         line = reader.ReadLine();
@@ -148,83 +81,65 @@ namespace AE.Net.Mail {
                     } while (line != string.Empty);
                     RawHeaders = headers.ToString();
 
-                    string boundary = GetBoundary(RawHeaders);
-                    if (boundary == String.Empty) {
-                        _Body = reader.ReadToEnd();
-
-                    } else { //else this is a multipart Mime Message
+                    string boundary = Headers.GetBoundary();
+                    if (!string.IsNullOrEmpty(boundary)) {
+                        //else this is a multipart Mime Message
                         ParseMime(reader, boundary);
+                    } else {
+                        _Body = reader.ReadToEnd();
                     }
                 }
             }
 
-            _Headers = ParseHeaders(RawHeaders);
+            Date = Headers.GetDate("Date");
+            To = Headers.GetAddresses("To");
+            Cc = Headers.GetAddresses("Cc");
+            Bcc = Headers.GetAddresses("Bcc");
+            Sender = Headers.GetAddresses("Sender").FirstOrDefault();
+            ReplyTo = Headers.GetAddresses("Reply-To").FirstOrDefault();
+            From = Headers.GetAddresses("From").FirstOrDefault();
+            MessageID = Headers["Message-ID"].RawValue;
 
-            Date = GetHeaderDate("Date");
-            To = GetAddresses("To");
-            Cc = GetAddresses("Cc");
-            Bcc = GetAddresses("Bcc");
-            Sender = GetAddresses("Sender").FirstOrDefault();
-            ReplyTo = GetAddresses("Reply-To").FirstOrDefault();
-            From = GetAddresses("From").FirstOrDefault();
-            MessageID = GetHeader("Message-ID");
-
-            Importance = GetEnum<MailPriority>(GetHeader("Importance"));
-            Subject = GetHeader("Subject");
-        }
-
-        private Regex rxTimeZoneName = new Regex(@"\s+\([a-z]+\)$", RegexOptions.Compiled | RegexOptions.IgnoreCase); //Mon, 28 Feb 2005 19:26:34 -0500 (EST)
-        private Regex rxTimeZoneColon = new Regex(@"\s+(\+|\-)([0-9]{2})\:([0-9]{2})$", RegexOptions.Compiled | RegexOptions.IgnoreCase); //Mon, 28 Feb 2005 19:26:34 -0500 (EST)
-        private DateTime GetHeaderDate(string name) {
-            var value = GetHeader(name);
-            if (string.IsNullOrEmpty(value)) return DateTime.MinValue;
-            value = rxTimeZoneName.Replace(value, string.Empty);
-            value = rxTimeZoneColon.Replace(value, " $1$2$3");
-            return DateTime.Parse(value);
-        }
-
-        private static T GetEnum<T>(string name) where T : struct, IConvertible {
-            if (string.IsNullOrEmpty(name)) return default(T);
-            var values = System.Enum.GetValues(typeof(T)).Cast<T>().ToArray();
-            return values.FirstOrDefault(x => x.ToString().Equals(name, StringComparison.OrdinalIgnoreCase));
+            Importance = Headers.GetEnum<MailPriority>("Importance");
+            Subject = Headers["Subject"].RawValue;
         }
 
         private void ParseMime(StringReader reader, string boundary) {
-            string data = reader.ReadLine();
-            string bounderInner = string.Concat("--", boundary);
-            string bounderOuter = string.Concat(bounderInner, "--");
+            string data = reader.ReadLine(),
+                bounderInner = "--" + boundary,
+                bounderOuter = bounderInner + "--";
 
             do {
                 data = reader.ReadLine();
             } while (!data.StartsWith("--" + boundary));
 
-            while (!data.StartsWith(bounderOuter)) {
+            while (data != null && !data.StartsWith(bounderOuter)) {
                 data = reader.ReadLine();
-                Attachment a = new Attachment();
+                var a = new Attachment();
 
-                StringBuilder part = new StringBuilder();
+                var part = new StringBuilder();
                 // read part header
                 while (!data.StartsWith(bounderInner) && data != string.Empty) {
                     part.AppendLine(data);
                     data = reader.ReadLine();
                 }
-                a.Header = part.ToString();
+                a.RawHeaders = part.ToString();
                 // header body
 
                 data = reader.ReadLine();
                 var body = new StringBuilder();
-                while (!data.StartsWith(bounderInner)) {
+                while (data != null && !data.StartsWith(bounderInner)) {
                     body.AppendLine(data);
                     data = reader.ReadLine();
                 }
                 // check for nested part
-                string nestedboundary = GetBoundary(a.Header);
-                if (nestedboundary == String.Empty) {
-                    a.Content = body.ToString();
-                    this._Attachments.Add(a);
+                string nestedboundary = a.Headers.GetBoundary();
+                if (!string.IsNullOrEmpty(nestedboundary)) {
+                    ParseMime(new System.IO.StringReader(body.ToString()), nestedboundary);
 
                 } else { // nested
-                    ParseMime(new System.IO.StringReader(body.ToString()), nestedboundary);
+                    a.Content = body.ToString();
+                    Attachments.Add(a);
                 }
             }
         }

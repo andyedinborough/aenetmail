@@ -8,34 +8,35 @@ using System;
 using System.Text.RegularExpressions;
 
 namespace AE.Net.Mail {
-    public class Attachment {
-        private string _header = string.Empty;
+    public class Attachment : ObjectWHeaders {
         private string _content = string.Empty;
-        private bool _onserver;
 
         public string Filename {
-            get { return GetHeader("name="); }
+            get { return Headers["Content-Disposition"]["filename"]; }
         }
 
         private string Charset {
-            get { return GetHeader("charset="); }
+            get { return Headers["Content-Transfer-Encoding"]["charset"]; }
         }
 
+        private string _ContentDisposition;
         private string ContentDisposition {
-            get { return GetHeader("Content-Disposition: "); }
+            get { return _ContentDisposition ?? (_ContentDisposition = Headers["Content-Disposition"].Value.ToLower()); }
         }
 
         public string ContentEncoding {
-            get { return GetHeader("Content-Transfer-Encoding: "); }
+            get { return Headers["Content-Transfer-Encoding"].Value; }
         }
 
         public string ContentType {
-            get { return GetHeader("Content-Type: "); }
+            get { return Headers["Content-Type"].Value; }
         }
+
+        public bool OnServer { get; internal set; }
 
         public bool IsAttachment {
             get {
-                return (ContentDisposition.ToLower() == "attachment" || ContentDisposition.ToLower() == "inline") ? true : false;
+                return ContentDisposition == "attachment" || ContentDisposition == "inline";
             }
         }
 
@@ -60,7 +61,7 @@ namespace AE.Net.Mail {
         }
 
         public string Content {
-            get { return this._content; }
+            get { return _content; }
             internal set {
                 if (ContentEncoding == "quoted-printable") {
                     value = Regex.Replace(value, @"\=[\r\n]+", string.Empty, RegexOptions.Singleline);
@@ -71,27 +72,7 @@ namespace AE.Net.Mail {
                         value = value.Replace(match.Value, c.ToString());
                     }
                 }
-                this._content = value;
-            }
-        }
-
-        public string Header {
-            get { return this._header; }
-            internal set { this._header = value; }
-        }
-
-        public bool OnServer {
-            get { return this._onserver; }
-            internal set { this._onserver = value; }
-        }
-
-        private string GetHeader(string header) {
-            Match m;
-            m = Regex.Match(this._header, header + "[\"]?(.*?)[\"]?(\\r\\n|;)", RegexOptions.Multiline);
-            if (m.Groups.Count > 1) {
-                return m.Groups[1].ToString();
-            } else {
-                return String.Empty;
+                _content = value;
             }
         }
     }
