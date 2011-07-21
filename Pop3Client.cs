@@ -1,7 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Text;
-using System.Linq;
 
 namespace AE.Net.Mail {
     public class Pop3Client : TextClient, IMailClient {
@@ -12,8 +10,8 @@ namespace AE.Net.Mail {
         }
 
         internal override void OnLogin(string username, string password) {
-            SendCommandCheckOK(string.Format("USER {0}", username));
-            SendCommandCheckOK(string.Format("PASS {0}", password));
+            SendCommandCheckOK("USER " + username);
+            SendCommandCheckOK("PASS " + password);
         }
 
         internal override void OnLogout() {
@@ -47,7 +45,7 @@ namespace AE.Net.Mail {
         //    return ids.ToArray();
         //}
 
-        public MailMessage GetMessage(int index, bool headersOnly) {
+        public MailMessage GetMessage(int index, bool headersOnly = false) {
             return GetMessage((index + 1).ToString(), headersOnly);
         }
 
@@ -67,12 +65,16 @@ namespace AE.Net.Mail {
         }
 
         public void DeleteMessage(string uid) {
-            SendCommandCheckOK("DELE {0}" + uid);
-          
+            SendCommandCheckOK("DELE " + uid);
+
         }
 
         public void DeleteMessage(int index) {
             DeleteMessage((index + 1).ToString());
+        }
+
+        public void DeleteMessage(AE.Net.Mail.MailMessage msg) {
+            DeleteMessage(msg.Uid);
         }
     }
 }

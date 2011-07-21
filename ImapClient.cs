@@ -118,6 +118,10 @@ namespace AE.Net.Mail {
             }
         }
 
+        public void DeleteMessage(AE.Net.Mail.MailMessage msg) {
+            DeleteMessage(msg.Uid);
+        }
+
         public void DeleteMessage(string uid) {
             CheckMailboxSelected();
             Store("UID " + uid, true, "\\Seen \\Deleted");

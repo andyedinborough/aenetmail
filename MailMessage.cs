@@ -160,7 +160,7 @@ namespace AE.Net.Mail {
 
             _Headers = ParseHeaders(RawHeaders);
 
-            Date =  GetHeaderDate("Date");
+            Date = GetHeaderDate("Date");
             To = GetAddresses("To");
             Cc = GetAddresses("Cc");
             Bcc = GetAddresses("Bcc");
@@ -175,7 +175,7 @@ namespace AE.Net.Mail {
 
         private Regex rxTimeZoneName = new Regex(@"\s+\([a-z]+\)$", RegexOptions.Compiled | RegexOptions.IgnoreCase); //Mon, 28 Feb 2005 19:26:34 -0500 (EST)
         private Regex rxTimeZoneColon = new Regex(@"\s+(\+|\-)([0-9]{2})\:([0-9]{2})$", RegexOptions.Compiled | RegexOptions.IgnoreCase); //Mon, 28 Feb 2005 19:26:34 -0500 (EST)
-        private   DateTime GetHeaderDate(string name) {
+        private DateTime GetHeaderDate(string name) {
             var value = GetHeader(name);
             if (string.IsNullOrEmpty(value)) return DateTime.MinValue;
             value = rxTimeZoneName.Replace(value, string.Empty);
@@ -186,7 +186,7 @@ namespace AE.Net.Mail {
         private static T GetEnum<T>(string name) where T : struct, IConvertible {
             if (string.IsNullOrEmpty(name)) return default(T);
             var values = System.Enum.GetValues(typeof(T)).Cast<T>().ToArray();
-            return values.FirstOrDefault(x =>  x.ToString().Equals(name,  StringComparison.OrdinalIgnoreCase));
+            return values.FirstOrDefault(x => x.ToString().Equals(name, StringComparison.OrdinalIgnoreCase));
         }
 
         private void ParseMime(StringReader reader, string boundary) {
