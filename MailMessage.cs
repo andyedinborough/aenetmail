@@ -19,7 +19,7 @@ namespace AE.Net.Mail {
         public string Body {
             get {
                 if (_Body == null && Attachments != null && Attachments.Count > 0) {
-                    var att = Attachments.FirstOrDefault(x => !x.IsAttachment && x.ContentType == "text/plain");
+                    var att = Attachments.FirstOrDefault(x => !x.IsAttachment && x.ContentType.Is("text/plain"));
                     if (att != null) {
                         _Body = att.Content;
                         if (_Body.LooksLikeHtml()) {

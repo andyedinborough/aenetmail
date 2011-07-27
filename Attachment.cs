@@ -25,11 +25,11 @@ namespace AE.Net.Mail {
         }
 
         public string ContentEncoding {
-            get { return Headers["Content-Transfer-Encoding"].Value; }
+            get { return Headers["Content-Transfer-Encoding"].Value ?? string.Empty; }
         }
 
         public string ContentType {
-            get { return Headers["Content-Type"].Value; }
+            get { return Headers["Content-Type"].Value ?? string.Empty; }
         }
 
         public bool OnServer { get; internal set; }
@@ -53,17 +53,17 @@ namespace AE.Net.Mail {
         public byte[] GetContent() {
             byte[] data;
             if (ContentEncoding == "base64") {
-                data = Convert.FromBase64String(Content);
+                data = Convert.FromBase64String(_content);
             } else {
-                data = System.Text.Encoding.Default.GetBytes(Content);
+                data = System.Text.Encoding.UTF8.GetBytes(_content);
             }
             return data;
         }
-
+         
         public string Content {
             get { return _content; }
             internal set {
-                if (ContentEncoding == "quoted-printable") {
+                if (ContentEncoding.Is("quoted-printable")) {
                     value = Regex.Replace(value, @"\=[\r\n]+", string.Empty, RegexOptions.Singleline);
                     var matches = Regex.Matches(value, @"\=[0-9A-F]{2}");
                     foreach (Match match in matches) {
@@ -71,6 +71,8 @@ namespace AE.Net.Mail {
                         char c = Convert.ToChar(ascii);
                         value = value.Replace(match.Value, c.ToString());
                     }
+                } else if (ContentEncoding.Is("base64") && ContentType.StartsWith("text/", StringComparison.OrdinalIgnoreCase)) {
+                    value = System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(value));
                 }
                 _content = value;
             }

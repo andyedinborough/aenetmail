@@ -58,6 +58,10 @@ namespace AE.Net.Mail {
             }
         }
 
+        public static bool Is(this string input, string other) {
+            return string.Equals(input, other, StringComparison.OrdinalIgnoreCase);
+        }
+
         private static Regex rxHtml = new Regex(@"\<(b|i|p|em|a|span|table|div|html|body)[^>]*\>", RegexOptions.IgnoreCase | RegexOptions.Compiled);
         public static bool LooksLikeHtml(this string html) {
             return rxHtml.IsMatch(html);
