@@ -12,23 +12,23 @@ namespace AE.Net.Mail {
         private static Regex rxStripHtml = new Regex("\\<[^>]+\\>", RegexOptions.Singleline | RegexOptions.Compiled);
         private static Regex rxStripHtmlSpacing = new Regex("\\s+", RegexOptions.Singleline | RegexOptions.Compiled);
 
-        public static string StripHtml(this string HTML, params string[] tagsToStripEntirely) {
-            if (HTML == null) return string.Empty;
+        public static string StripHtml(this string html, params string[] tagsToStripEntirely) {
+            if (html == null) return string.Empty;
             if (tagsToStripEntirely != null) {
                 foreach (var tag in tagsToStripEntirely) {
-                    HTML = Regex.Replace(HTML, "\\<" + tag + "[^>]*\\>(.*?)\\</" + tag + "\\>", " ", RegexOptions.Singleline | RegexOptions.IgnoreCase);
+                    html = Regex.Replace(html, "\\<" + tag + "[^>]*\\>(.*?)\\</" + tag + "\\>", " ", RegexOptions.Singleline | RegexOptions.IgnoreCase);
                 }
             }
 
-            HTML = rxStripHtmlComment.Replace(HTML, " ");
-            HTML = rxStripHtmlHEAD.Replace(HTML, " ");
-            HTML = rxStripHtmlSCRIPT.Replace(HTML, " ");
-            HTML = rxStripHtmlSTYLE.Replace(HTML, " ");
-            HTML = rxStripHtml.Replace(HTML, " ");
-            HTML = System.Web.HttpUtility.HtmlDecode(HTML);
-            HTML = rxStripHtmlSpacing.Replace(HTML, " ");
-            HTML = HTML.Trim();
-            return HTML;
+            html = rxStripHtmlComment.Replace(html, " ");
+            html = rxStripHtmlHEAD.Replace(html, " ");
+            html = rxStripHtmlSCRIPT.Replace(html, " ");
+            html = rxStripHtmlSTYLE.Replace(html, " ");
+            html = rxStripHtml.Replace(html, " ");
+            html = rxStripHtmlSpacing.Replace(html, " ");
+            html = html.Trim();
+            html = System.Net.WebUtility.HtmlDecode(html);
+            return html;
         }
 
         public static VT Get<KT, VT>(this IDictionary<KT, VT> dictionary, KT key, VT defaultValue = default(VT)) {
