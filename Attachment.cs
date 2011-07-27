@@ -1,9 +1,3 @@
-/*
- * Attachment.cs
- * Copyright (C) 2006 COLIN Cyrille.
- *
- */
-
 using System;
 using System.Text.RegularExpressions;
 

@@ -8,7 +8,6 @@ using System.Text;
 
 namespace AE.Net.Mail {
     public class MailMessage : ObjectWHeaders {
-        private string _Body = null;
         private bool _HeadersOnly; // set to true if only headers have been fetched.
 
         public MailMessage() {
@@ -16,16 +15,15 @@ namespace AE.Net.Mail {
             Attachments = new Collection<Attachment>();
         }
 
+        private string _Body = null;
         public string Body {
             get {
                 if (_Body == null && Attachments != null && Attachments.Count > 0) {
                     var att = Attachments.FirstOrDefault(x => !x.IsAttachment && x.ContentType.Is("text/plain"));
                     if (att != null) {
                         _Body = att.Content;
-                        if (_Body.LooksLikeHtml()) {
-                            _BodyHtml = _Body;
-                            _Body = _Body.StripHtml();
-                        }
+                    } else {
+                        _Body = string.Empty;
                     }
                 }
                 return _Body;
@@ -38,10 +36,10 @@ namespace AE.Net.Mail {
             get {
                 if (_BodyHtml == null) {
                     var att = Attachments.FirstOrDefault(x => !x.IsAttachment && x.ContentType.Contains("html"));
-                    if (att == null)
-                        _BodyHtml = string.Empty;
-                    else {
+                    if (att != null)
                         _BodyHtml = att.Content;
+                    else {
+                        _BodyHtml = string.Empty;
                     }
                 }
                 return _BodyHtml;
