@@ -93,13 +93,8 @@ i3A4XONx55x7CuaaXU0jg77l8+VJbNAdgCjPXkDP/wCuqc1z5CFw0cjRdgpbjsMe";
                 imap.SelectMailbox("inbox");
                 imap.NewMessage += imap_NewMessage;
 
-                //imap.NewMessage -= imap_NewMessage;
-                //Console.WriteLine(imap.GetMessageCount());
-                //imap.NewMessage += imap_NewMessage;
-
-                while (!mre.WaitOne(20000))
-                    imap.Equals(null);
-
+                while (!mre.WaitOne(5000)) //low for the sake of testing; typical timeout is 30 minutes
+                    imap.Noop();
             }
         }
 

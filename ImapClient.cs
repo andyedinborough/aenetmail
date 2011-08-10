@@ -76,11 +76,9 @@ namespace AE.Net.Mail {
         private void IdlePause() {
             CheckConnectionStatus();
             if (_Idle == null || !_Idling) return;
-            SendCommandGetResponse("DONE");
             _Idle.Abort();
             _Idle = null;
-            _Idling = false;
-            _Idling = true;
+            SendCommandGetResponse("DONE");
         }
 
         private void IdleResume() {
@@ -186,7 +184,13 @@ namespace AE.Net.Mail {
 
         public void Noop() {
             IdlePause();
-            SendCommandGetResponse(GetTag() + "NOOP");
+            var tag = GetTag();
+            var response = SendCommandGetResponse(tag + "NOOP");
+            while (!response.StartsWith(tag)) {
+                if (_IdleEvents != null && _IdleQueue != null)
+                    _IdleQueue.Enqueue(response);
+                response = _Reader.ReadLine();
+            }
             IdleResume();
         }
 
