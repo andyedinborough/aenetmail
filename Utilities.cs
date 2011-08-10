@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Net.Mail;
-using System.Text.RegularExpressions;
 
 namespace AE.Net.Mail {
     internal static class Utilities {
@@ -22,6 +21,12 @@ namespace AE.Net.Mail {
                     }
 
             dictionary[key] = value;
+        }
+
+
+        public static void Fire<T>(this EventHandler<T> events, object sender, T args) where T : EventArgs {
+            if (events == null) return;
+            events(sender, args);
         }
 
         public static MailAddress ToEmailAddress(this string input) {

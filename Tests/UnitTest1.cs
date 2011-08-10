@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Linq;
+using AE.Net.Mail;
+using AE.Net.Mail.Imap;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Should.Fluent;
 
@@ -83,6 +85,29 @@ NVrlZWmk8pwGXLbmXlwD39OPTmrTx7oXVixLkrlsjeBz6euKy598aIfMUGXChiwBz34Pt/OvPnTi
 bRwkdyS1mliZkl2oi5L/ACkbQenWr7y70KlIDEehKY5H09vrWYnlTXCvGLh5GPIyfmPcfhQJFAc5
 i3A4XONx55x7CuaaXU0jg77l8+VJbNAdgCjPXkDP/wCuqc1z5CFw0cjRdgpbjsMe";
         #endregion
+
+        [TestMethod]
+        public void TestIDLE() {
+            var mre = new System.Threading.ManualResetEvent(false);
+            using (var imap = GetGmailImap()) {
+                imap.SelectMailbox("inbox");
+                imap.NewMessage += imap_NewMessage;
+
+                //imap.NewMessage -= imap_NewMessage;
+                //Console.WriteLine(imap.GetMessageCount());
+                //imap.NewMessage += imap_NewMessage;
+
+                while (!mre.WaitOne(20000))
+                    imap.Equals(null);
+
+            }
+        }
+
+        void imap_NewMessage(object sender, MessageEventArgs e) {
+            var imap = (sender as ImapClient);
+            var msg = imap.GetMessage(e.MessageCount - 1);
+            Console.WriteLine(msg.Subject);
+        }
 
         [TestMethod]
         public void TestParseMessageFromIPhone() {
@@ -171,6 +196,17 @@ this is the attachment text
                     msg = mail.GetMessage(0, false);
                     (msg.Body + msg.BodyHtml).Should().Not.Be.NullOrEmpty();
                 }
+        }
+
+        private ImapClient GetGmailImap() {
+            var accountsToTest = System.IO.Path.Combine(Environment.CurrentDirectory.Split(new[] { "\\AE.Net.Mail\\" }, StringSplitOptions.RemoveEmptyEntries).First(), "ae.net.mail.usernames.txt");
+            var lines = System.IO.File.ReadAllLines(accountsToTest)
+                .Select(x => x.Split(','))
+                .Where(x => x.Length == 6)
+                .ToArray();
+
+            var line = lines.Where(x => x.ElementAtOrDefault(1) == "imap.gmail.com").FirstOrDefault();
+            return GetClient(line[0], line[1], int.Parse(line[2]), bool.Parse(line[3]), line[4], line[5]) as ImapClient;
         }
 
         private AE.Net.Mail.IMailClient GetClient(string type, string host, int port, bool ssl, string username, string password) {

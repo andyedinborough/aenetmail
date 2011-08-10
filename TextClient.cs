@@ -1,13 +1,11 @@
 ﻿using System;
 using System.IO;
-using System.Security.Cryptography;
-using System.Security.Cryptography.X509Certificates;
 using Org.Mentalis.Security.Ssl;
 
 namespace AE.Net.Mail {
     public abstract class TextClient : IDisposable {
-        private SecureTcpClient _Connection;
-        private SecureNetworkStream _Stream;
+        protected SecureTcpClient _Connection;
+        protected SecureNetworkStream _Stream;
         protected StreamReader _Reader;
 
         public string Host { get; private set; }
@@ -16,6 +14,7 @@ namespace AE.Net.Mail {
         public bool Ssl { get; set; }
         public bool IsConnected { get; private set; }
         public bool IsAuthenticated { get; private set; }
+        public bool IsDisposed { get; private set; }
 
         internal abstract void OnLogin(string username, string password);
         internal abstract void OnLogout();
@@ -24,6 +23,8 @@ namespace AE.Net.Mail {
         protected virtual void OnConnected(string result) {
             CheckResultOK(result);
         }
+
+        protected virtual void OnDispose() { }
 
         public void Login(string username, string password) {
             if (!IsConnected) {
@@ -75,13 +76,17 @@ namespace AE.Net.Mail {
             if (!IsAuthenticated) throw new Exception("You must authenticate first !");
         }
 
-        protected void SendCommand(string command) {
+        protected virtual void SendCommand(string command) {
             byte[] data = System.Text.Encoding.Default.GetBytes(command + "\r\n");
             _Stream.Write(data, 0, data.Length);
         }
 
         protected string SendCommandGetResponse(string command) {
             SendCommand(command);
+            return GetResponse();
+        }
+
+        protected virtual string GetResponse() {
             return _Reader.ReadLine();
         }
 
@@ -100,8 +105,13 @@ namespace AE.Net.Mail {
         }
 
         public void Dispose() {
+            try {
+                OnDispose();
+            } catch (Exception) { }
+
             Disconnect();
 
+            IsDisposed = true;
             _Stream = null;
             _Reader = null;
             _Connection = null;
