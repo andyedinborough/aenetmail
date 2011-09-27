@@ -47,13 +47,17 @@ namespace AE.Net.Mail {
         public byte[] GetContent() {
             byte[] data;
             if (ContentEncoding == "base64") {
-                data = Convert.FromBase64String(_content);
+                try {
+                    data = Convert.FromBase64String(_content);
+                } catch (Exception) {
+                    data = System.Text.Encoding.UTF8.GetBytes(_content);
+                }
             } else {
                 data = System.Text.Encoding.UTF8.GetBytes(_content);
             }
             return data;
         }
-         
+
         public string Content {
             get { return _content; }
             internal set {
