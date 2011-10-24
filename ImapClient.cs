@@ -543,16 +543,19 @@ namespace AE.Net.Mail {
             string response = SendCommandGetResponse(command);
             _Reader.DiscardBufferedData();
 
-            string reg = @"^\* SEARCH (.*)";
+            if (!response.StartsWith("* SEARCH", StringComparison.InvariantCultureIgnoreCase)) {
+                throw new Exception(response);
+            }
 
             var ms = new List<string>();
-            Match m = Regex.Match(response, reg);
+            Match m = Regex.Match(response, @"^\* SEARCH (.*)");
             if (m.Groups.Count > 1) {
                 string[] uids = m.Groups[1].ToString().Trim().Split(' ');
                 foreach (string s in uids) {
                     ms.Add(s);
                 }
             }
+
             return ms.ToArray();
         }
 
@@ -581,6 +584,8 @@ namespace AE.Net.Mail {
                     x.IsWritable = Regex.IsMatch(response, "READ.WRITE", RegexOptions.IgnoreCase);
                 }
                 _selectedmailbox = mailbox;
+            } else {
+                throw new Exception(response);
             }
             IdleResume();
             return x;
