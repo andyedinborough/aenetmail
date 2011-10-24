@@ -1,5 +1,4 @@
 using System;
-using System.Text.RegularExpressions;
 
 namespace AE.Net.Mail {
     public class Attachment : ObjectWHeaders {
@@ -20,6 +19,9 @@ namespace AE.Net.Mail {
 
         public string ContentEncoding {
             get { return Headers["Content-Transfer-Encoding"].Value ?? string.Empty; }
+            internal set {
+                Headers["Content-Transfer-Encoding"] = new HeaderValue(value);
+            }
         }
 
         public string ContentType {
@@ -46,7 +48,7 @@ namespace AE.Net.Mail {
 
         public byte[] GetContent() {
             byte[] data;
-            if (ContentEncoding == "base64") {
+            if (ContentEncoding.Is("base64") && Utilities.IsValidBase64String(_content)) {
                 try {
                     data = Convert.FromBase64String(_content);
                 } catch (Exception) {
@@ -62,16 +64,16 @@ namespace AE.Net.Mail {
             get { return _content; }
             internal set {
                 if (ContentEncoding.Is("quoted-printable")) {
-                    value = Regex.Replace(value, @"\=[\r\n]+", string.Empty, RegexOptions.Singleline);
-                    var matches = Regex.Matches(value, @"\=[0-9A-F]{2}");
-                    foreach (Match match in matches) {
-                        int ascii = int.Parse(match.Value.Substring(1), System.Globalization.NumberStyles.HexNumber);
-                        char c = Convert.ToChar(ascii);
-                        value = value.Replace(match.Value, c.ToString());
-                    }
-                } else if (ContentEncoding.Is("base64") && ContentType.StartsWith("text/", StringComparison.OrdinalIgnoreCase)) {
+                    value = Utilities.DecodeQuotedPrintable(value, Utilities.ParseCharsetToEncoding(Charset));
+
+                } else if (ContentEncoding.Is("base64")
+                    //only decode the content if it is a text document
+                        && ContentType.StartsWith("text/", StringComparison.OrdinalIgnoreCase)
+                        && Utilities.IsValidBase64String(_content)) {
                     value = System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(value));
+                    ContentEncoding = string.Empty;
                 }
+
                 _content = value;
             }
         }

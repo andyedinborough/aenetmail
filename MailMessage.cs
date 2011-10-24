@@ -7,6 +7,10 @@ using System.Net.Mail;
 using System.Text;
 
 namespace AE.Net.Mail {
+    public enum MailPriority {
+        Normal = 3, High = 5, Low = 1
+    }
+
     public class MailMessage : ObjectWHeaders {
         private bool _HeadersOnly; // set to true if only headers have been fetched.
 
@@ -99,7 +103,7 @@ namespace AE.Net.Mail {
             MessageID = Headers["Message-ID"].RawValue;
 
             Importance = Headers.GetEnum<MailPriority>("Importance");
-            Subject = Headers["Subject"].RawValue;
+            Subject = Utilities.DecodeWords(Headers["Subject"].RawValue);
         }
 
         private void ParseMime(StringReader reader, string boundary) {

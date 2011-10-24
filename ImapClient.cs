@@ -547,17 +547,16 @@ namespace AE.Net.Mail {
             _Reader.DiscardBufferedData();
 
             string reg = @"^\* SEARCH (.*)";
-            List<string> ms = new List<string>();
+
+            var ms = new List<string>();
             Match m = Regex.Match(response, reg);
             if (m.Groups.Count > 1) {
                 string[] uids = m.Groups[1].ToString().Trim().Split(' ');
                 foreach (string s in uids) {
                     ms.Add(s);
                 }
-                return ms.ToArray();
-            } else {
-                throw new Exception(response);
             }
+            return ms.ToArray();
         }
 
         public Mailbox SelectMailbox(string mailbox) {
