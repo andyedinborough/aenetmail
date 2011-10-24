@@ -253,9 +253,6 @@ namespace AE.Net.Mail {
                     if (m.Groups.Count > 1) x.SetFlags(m.Groups[1].ToString());
                     response = _Reader.ReadLine();
                 }
-                if (response.StartsWith(tag + "OK")) {
-                    if (response.ToUpper().IndexOf("READ/WRITE") > -1) x.Rw = true;
-                }
                 _selectedmailbox = mailbox;
             }
             IdleResume();
@@ -581,7 +578,7 @@ namespace AE.Net.Mail {
                     response = _Reader.ReadLine();
                 }
                 if (response.StartsWith(tag + "OK")) {
-                    if (response.ToUpper().IndexOf("READ/WRITE") > -1) x.Rw = true;
+                    x.IsWritable = Regex.IsMatch(response, "READ.WRITE", RegexOptions.IgnoreCase);
                 }
                 _selectedmailbox = mailbox;
             }

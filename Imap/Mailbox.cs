@@ -11,7 +11,7 @@ namespace AE.Net.Mail.Imap {
         public int NumMsg { get; internal set; }
         public int NumUnSeen { get; internal set; }
         public string[] Flags { get; internal set; }
-        public bool Rw { get; internal set; }
+        public bool IsWritable { get; internal set; }
 
         internal void SetFlags(string flags) {
             Flags = flags.Split(' ');
