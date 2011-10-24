@@ -535,28 +535,29 @@ namespace AE.Net.Mail {
             IdleResume();
         }
 
-        public string[] Search(string criteria, bool uid) {
+        public string[] Search(SearchCondition criteria, bool uid = true) {
+            return Search(criteria.ToString(), uid);
+        }
+
+        public string[] Search(string criteria, bool uid = true) {
             CheckMailboxSelected();
 
             string isuid = uid ? "UID " : "";
-            string command = GetTag() + isuid + "SEARCH " + criteria;
+            string tag = GetTag();
+            string command = tag + isuid + "SEARCH " + criteria;
             string response = SendCommandGetResponse(command);
-            _Reader.DiscardBufferedData();
 
-            if (!response.StartsWith("* SEARCH", StringComparison.InvariantCultureIgnoreCase)) {
+            if (!response.StartsWith("* SEARCH", StringComparison.InvariantCultureIgnoreCase) && !IsResultOK(response)) {
                 throw new Exception(response);
             }
 
-            var ms = new List<string>();
-            Match m = Regex.Match(response, @"^\* SEARCH (.*)");
-            if (m.Groups.Count > 1) {
-                string[] uids = m.Groups[1].ToString().Trim().Split(' ');
-                foreach (string s in uids) {
-                    ms.Add(s);
-                }
+            string temp;
+            while (!(temp = GetResponse()).StartsWith(tag)) {
+                response += Environment.NewLine + temp;
             }
 
-            return ms.ToArray();
+            var m = Regex.Match(response, @"^\* SEARCH (.*)");
+            return m.Groups[1].Value.Trim().Split(' ').Where(x => !string.IsNullOrEmpty(x)).ToArray();
         }
 
         public Mailbox SelectMailbox(string mailbox) {
@@ -580,7 +581,7 @@ namespace AE.Net.Mail {
                     if (m.Groups.Count > 1) x.SetFlags(m.Groups[1].ToString());
                     response = _Reader.ReadLine();
                 }
-                if (response.StartsWith(tag + "OK")) {
+                if (IsResultOK(response)) {
                     x.IsWritable = Regex.IsMatch(response, "READ.WRITE", RegexOptions.IgnoreCase);
                 }
                 _selectedmailbox = mailbox;
@@ -626,11 +627,15 @@ namespace AE.Net.Mail {
         }
 
         internal override void CheckResultOK(string response) {
-            response = response.Substring(response.IndexOf(" ")).Trim();
-            if (!response.ToUpper().StartsWith("OK")) {
+            if (!IsResultOK(response)) {
+                response = response.Substring(response.IndexOf(" ")).Trim();
                 throw new Exception(response);
             }
         }
 
+        internal bool IsResultOK(string response) {
+            response = response.Substring(response.IndexOf(" ")).Trim();
+            return response.ToUpper().StartsWith("OK");
+        }
     }
 }

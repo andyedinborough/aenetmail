@@ -20,7 +20,7 @@ Received: from main.edinborough.org ([99.34.8.150]) by mail.vortaloptics.com wit
 Received: from [192.168.1.140] ([192.168.1.140])
 	by main.edinborough.org
 	; Wed, 13 Jul 2011 11:29:40 -0500
-Subject: Schedule Andrew for hearing test
+Subject: =?utf-8?B?RnLDpW52YXJvOiDDlnJlYnJvIEdvbGZrbHViYiAtIFNjb3JlY2FyZA==?=
 From: Andy Edinborough <andy@edinborough.org>
 Content-Type: multipart/mixed; boundary=Apple-Mail-1--592579169
 Message-Id: <AE28825C-F702-438E-8132-AD36D89792C8@edinborough.org>
@@ -89,7 +89,7 @@ i3A4XONx55x7CuaaXU0jg77l8+VJbNAdgCjPXkDP/wCuqc1z5CFw0cjRdgpbjsMe";
         [TestMethod]
         public void TestIDLE() {
             var mre = new System.Threading.ManualResetEvent(false);
-            using (var imap = GetGmailImap()) {
+            using (var imap = GetClient<ImapClient>()) {
                 imap.SelectMailbox("inbox");
                 imap.NewMessage += imap_NewMessage;
 
@@ -110,6 +110,7 @@ i3A4XONx55x7CuaaXU0jg77l8+VJbNAdgCjPXkDP/wCuqc1z5CFw0cjRdgpbjsMe";
 
             msg.Attachments.Count.Should().Equal(2);
             msg.Attachments.All(a => a.GetContent().Any().Should().Be.True());
+            msg.Subject.Should().Equal("Frånvaro: Örebro Golfklubb - Scorecard");
         }
 
         [TestMethod]
@@ -193,18 +194,51 @@ this is the attachment text
                 }
         }
 
-        private ImapClient GetGmailImap() {
+        [TestMethod]
+        public void TestSearchConditions() {
+            var deleted = SearchCondition.Deleted();
+            var seen = SearchCondition.Seen();
+            var text = SearchCondition.Text("andy");
+
+            deleted.ToString().Should().Equal("DELETED");
+            deleted.Or(seen).ToString().Should().Equal("OR (DELETED) (SEEN)");
+            seen.And(text).ToString().Should().Equal("(SEEN) (TEXT \"andy\")");
+
+            var since = new DateTime(2000, 1, 1);
+            SearchCondition.Undeleted().And(
+                        SearchCondition.From("david"),
+                        SearchCondition.SentSince(since)
+                    ).Or(SearchCondition.To("andy"))
+                .ToString()
+                .Should().Equal("OR ((UNDELETED) (FROM \"david\") (SENTSINCE \"" + SearchCondition.GetRFC2060Date(since) + "\")) (TO \"andy\")");
+        }
+
+        [TestMethod]
+        public void TestSearch() {
+            using (var imap = GetClient<ImapClient>()) {
+                var result = imap.Search(
+                    //"OR ((UNDELETED) (FROM \"david\") (SENTSINCE \"01-Jan-2000 00:00:00\")) (TO \"andy\")"
+                    SearchCondition.Undeleted().And(SearchCondition.From("david"), SearchCondition.SentSince(new DateTime(2000, 1, 1))).Or(SearchCondition.To("andy"))
+                    );
+                result.Length.Should().Be.InRange(1, int.MaxValue);
+
+                result = imap.Search(new SearchCondition { Location = SearchCondition.Locations.Text, Value = "asdflkjhdlki2uhiluha829hgas" });
+                result.Length.Should().Equal(0);
+            }
+        }
+
+        private T GetClient<T>(string host = "gmail", string type = "imap") where T : class, IMailClient {
             var accountsToTest = System.IO.Path.Combine(Environment.CurrentDirectory.Split(new[] { "\\AE.Net.Mail\\" }, StringSplitOptions.RemoveEmptyEntries).First(), "ae.net.mail.usernames.txt");
             var lines = System.IO.File.ReadAllLines(accountsToTest)
                 .Select(x => x.Split(','))
                 .Where(x => x.Length == 6)
                 .ToArray();
 
-            var line = lines.Where(x => x.ElementAtOrDefault(1) == "imap.gmail.com").FirstOrDefault();
-            return GetClient(line[0], line[1], int.Parse(line[2]), bool.Parse(line[3]), line[4], line[5]) as ImapClient;
+            var line = lines.Where(x => x[0].Equals(type) && (x.ElementAtOrDefault(1) ?? string.Empty).Contains(host)).FirstOrDefault();
+            return GetClient(line[0], line[1], int.Parse(line[2]), bool.Parse(line[3]), line[4], line[5]) as T;
         }
 
-        private AE.Net.Mail.IMailClient GetClient(string type, string host, int port, bool ssl, string username, string password) {
+        private IMailClient GetClient(string type, string host, int port, bool ssl, string username, string password) {
             if ("imap".Equals(type, StringComparison.OrdinalIgnoreCase)) {
                 return new AE.Net.Mail.ImapClient(host, username, password, AE.Net.Mail.ImapClient.AuthMethods.Login, port, ssl);
             }
