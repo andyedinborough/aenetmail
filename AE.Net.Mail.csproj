@@ -143,6 +143,7 @@
     <None Include="AE.Net.Mail.nuspec">
       <SubType>Designer</SubType>
     </None>
+    <None Include="README.md" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Logo.png" />
