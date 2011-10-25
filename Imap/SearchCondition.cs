@@ -4,41 +4,41 @@ using System.Collections.Generic;
 namespace AE.Net.Mail {
 
     public class SearchCondition {
-        public static SearchCondition Text(string text) { return new SearchCondition { Location = Locations.Text, Value = text }; }
-        public static SearchCondition BCC(string text) { return new SearchCondition { Location = Locations.BCC, Value = text }; }
-        public static SearchCondition Before(DateTime date) { return new SearchCondition { Location = Locations.Before, Value = date }; }
-        public static SearchCondition Body(string text) { return new SearchCondition { Location = Locations.Body, Value = text }; }
-        public static SearchCondition Cc(string text) { return new SearchCondition { Location = Locations.Cc, Value = text }; }
-        public static SearchCondition From(string text) { return new SearchCondition { Location = Locations.From, Value = text }; }
-        //public static SearchCondition Header(string name, string text) { return new SearchCondition { Location = Locations.From, Value = text }; }
-        public static SearchCondition Keyword(string name, string text) { return new SearchCondition { Location = Locations.Keyword, Value = text }; }
-        public static SearchCondition Larger(long size) { return new SearchCondition { Location = Locations.Larger, Value = size }; }
-        public static SearchCondition Smaller(long size) { return new SearchCondition { Location = Locations.Smaller, Value = size }; }
-        public static SearchCondition SentBefore(DateTime date) { return new SearchCondition { Location = Locations.SentBefore, Value = date }; }
-        public static SearchCondition SentOn(DateTime date) { return new SearchCondition { Location = Locations.SentOn, Value = date }; }
-        public static SearchCondition SentSince(DateTime date) { return new SearchCondition { Location = Locations.SentSince, Value = date }; }
-        public static SearchCondition Subject(string text) { return new SearchCondition { Location = Locations.Subject, Value = text }; }
-        public static SearchCondition To(string text) { return new SearchCondition { Location = Locations.To, Value = text }; }
-        public static SearchCondition UID(string ids) { return new SearchCondition { Location = Locations.UID, Value = ids }; }
-        public static SearchCondition Unkeyword(string text) { return new SearchCondition { Location = Locations.Unkeyword, Value = text }; }
-        public static SearchCondition Answered() { return new SearchCondition { Location = Locations.Answered }; }
-        public static SearchCondition Deleted() { return new SearchCondition { Location = Locations.Deleted }; }
-        public static SearchCondition Draft() { return new SearchCondition { Location = Locations.Draft }; }
-        public static SearchCondition Flagged() { return new SearchCondition { Location = Locations.Flagged }; }
-        public static SearchCondition New() { return new SearchCondition { Location = Locations.New }; }
-        public static SearchCondition Old() { return new SearchCondition { Location = Locations.Old }; }
-        public static SearchCondition Recent() { return new SearchCondition { Location = Locations.Recent }; }
-        public static SearchCondition Seen() { return new SearchCondition { Location = Locations.Seen }; }
-        public static SearchCondition Unanswered() { return new SearchCondition { Location = Locations.Unanswered }; }
-        public static SearchCondition Undeleted() { return new SearchCondition { Location = Locations.Undeleted }; }
-        public static SearchCondition Undraft() { return new SearchCondition { Location = Locations.Undraft }; }
-        public static SearchCondition Unflagged() { return new SearchCondition { Location = Locations.Unflagged }; }
-        public static SearchCondition Unseen() { return new SearchCondition { Location = Locations.Unseen }; }
+        public static SearchCondition Text(string text) { return new SearchCondition { Field = Fields.Text, Value = text }; }
+        public static SearchCondition BCC(string text) { return new SearchCondition { Field = Fields.BCC, Value = text }; }
+        public static SearchCondition Before(DateTime date) { return new SearchCondition { Field = Fields.Before, Value = date }; }
+        public static SearchCondition Body(string text) { return new SearchCondition { Field = Fields.Body, Value = text }; }
+        public static SearchCondition Cc(string text) { return new SearchCondition { Field = Fields.Cc, Value = text }; }
+        public static SearchCondition From(string text) { return new SearchCondition { Field = Fields.From, Value = text }; }
+        public static SearchCondition Header(string name, string text) { return new SearchCondition { Field = Fields.From, Value = name + " " + QuoteString(text) }; }
+        public static SearchCondition Keyword(string name, string text) { return new SearchCondition { Field = Fields.Keyword, Value = text }; }
+        public static SearchCondition Larger(long size) { return new SearchCondition { Field = Fields.Larger, Value = size }; }
+        public static SearchCondition Smaller(long size) { return new SearchCondition { Field = Fields.Smaller, Value = size }; }
+        public static SearchCondition SentBefore(DateTime date) { return new SearchCondition { Field = Fields.SentBefore, Value = date }; }
+        public static SearchCondition SentOn(DateTime date) { return new SearchCondition { Field = Fields.SentOn, Value = date }; }
+        public static SearchCondition SentSince(DateTime date) { return new SearchCondition { Field = Fields.SentSince, Value = date }; }
+        public static SearchCondition Subject(string text) { return new SearchCondition { Field = Fields.Subject, Value = text }; }
+        public static SearchCondition To(string text) { return new SearchCondition { Field = Fields.To, Value = text }; }
+        public static SearchCondition UID(string ids) { return new SearchCondition { Field = Fields.UID, Value = ids }; }
+        public static SearchCondition Unkeyword(string text) { return new SearchCondition { Field = Fields.Unkeyword, Value = text }; }
+        public static SearchCondition Answered() { return new SearchCondition { Field = Fields.Answered }; }
+        public static SearchCondition Deleted() { return new SearchCondition { Field = Fields.Deleted }; }
+        public static SearchCondition Draft() { return new SearchCondition { Field = Fields.Draft }; }
+        public static SearchCondition Flagged() { return new SearchCondition { Field = Fields.Flagged }; }
+        public static SearchCondition New() { return new SearchCondition { Field = Fields.New }; }
+        public static SearchCondition Old() { return new SearchCondition { Field = Fields.Old }; }
+        public static SearchCondition Recent() { return new SearchCondition { Field = Fields.Recent }; }
+        public static SearchCondition Seen() { return new SearchCondition { Field = Fields.Seen }; }
+        public static SearchCondition Unanswered() { return new SearchCondition { Field = Fields.Unanswered }; }
+        public static SearchCondition Undeleted() { return new SearchCondition { Field = Fields.Undeleted }; }
+        public static SearchCondition Undraft() { return new SearchCondition { Field = Fields.Undraft }; }
+        public static SearchCondition Unflagged() { return new SearchCondition { Field = Fields.Unflagged }; }
+        public static SearchCondition Unseen() { return new SearchCondition { Field = Fields.Unseen }; }
 
         public object Value { get; set; }
-        public Locations? Location { get; set; }
+        public Fields? Field { get; set; }
 
-        public enum Locations {
+        public enum Fields {
             BCC, Before, Body, Cc, From, Header, Keyword,
             Larger, On, SentBefore, SentOn, SentSince, Since, Smaller, Subject,
             Text, To, UID, Unkeyword, All, Answered, Deleted, Draft, Flagged,
@@ -76,22 +76,18 @@ namespace AE.Net.Mail {
             }
 
             var builder = new System.Text.StringBuilder();
-            if (Location != null) builder.Append(Location.ToString().ToUpper());
+            if (Field != null) builder.Append(Field.ToString().ToUpper());
 
             if (Value != null) {
                 var value = Value;
-                switch (Location) {
-                    case Locations.BCC:
-                    case Locations.Body:
-                    case Locations.From:
-                    case Locations.Subject:
-                    case Locations.Text:
-                    case Locations.To:
-                        value = "\"" + Convert.ToString(Value)
-                            .Replace("\\", "\\\\")
-                            .Replace("\r", "\\r")
-                            .Replace("\n", "\\n")
-                            .Replace("\"", "\\\"") + "\"";
+                switch (Field) {
+                    case Fields.BCC:
+                    case Fields.Body:
+                    case Fields.From:
+                    case Fields.Subject:
+                    case Fields.Text:
+                    case Fields.To:
+                        value = QuoteString(Convert.ToString(value));
                         break;
                 }
 
@@ -99,7 +95,7 @@ namespace AE.Net.Mail {
                     value = "\"" + GetRFC2060Date((DateTime)value) + "\"";
                 }
 
-                if (Location != null) builder.Append(" ");
+                if (Field != null) builder.Append(" ");
                 builder.Append(value);
             }
 
@@ -108,6 +104,14 @@ namespace AE.Net.Mail {
 
         public static string GetRFC2060Date(DateTime date) {
             return date.ToString("dd-MMM-yyyy hh:mm:ss zz");
+        }
+
+        private static string QuoteString(string value) {
+            return "\"" + value
+                            .Replace("\\", "\\\\")
+                            .Replace("\r", "\\r")
+                            .Replace("\n", "\\n")
+                            .Replace("\"", "\\\"") + "\"";
         }
     }
 }

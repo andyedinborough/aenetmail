@@ -222,7 +222,7 @@ this is the attachment text
                     );
                 result.Length.Should().Be.InRange(1, int.MaxValue);
 
-                result = imap.Search(new SearchCondition { Location = SearchCondition.Locations.Text, Value = "asdflkjhdlki2uhiluha829hgas" });
+                result = imap.Search(new SearchCondition { Field = SearchCondition.Fields.Text, Value = "asdflkjhdlki2uhiluha829hgas" });
                 result.Length.Should().Equal(0);
             }
         }
