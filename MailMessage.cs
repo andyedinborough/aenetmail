@@ -19,36 +19,7 @@ namespace AE.Net.Mail {
             Attachments = new Collection<Attachment>();
         }
 
-        private string _Body = null;
-        public string Body {
-            get {
-                if (_Body == null && Attachments != null && Attachments.Count > 0) {
-                    var att = Attachments.FirstOrDefault(x => !x.IsAttachment && x.ContentType.Is("text/plain"));
-                    if (att != null) {
-                        _Body = att.Content;
-                    } else {
-                        _Body = string.Empty;
-                    }
-                }
-                return _Body;
-            }
-            set { _Body = value ?? string.Empty; }
-        }
-
-        private string _BodyHtml;
-        public string BodyHtml {
-            get {
-                if (_BodyHtml == null) {
-                    var att = Attachments.FirstOrDefault(x => !x.IsAttachment && x.ContentType.Contains("html"));
-                    if (att != null)
-                        _BodyHtml = att.Content;
-                    else {
-                        _BodyHtml = string.Empty;
-                    }
-                }
-                return _BodyHtml;
-            }
-        }
+        public string BodyHtml { get; set; }
 
         public DateTime Date { get; private set; }
         public string[] Flags { get; private set; }
@@ -88,7 +59,26 @@ namespace AE.Net.Mail {
                         //else this is a multipart Mime Message
                         ParseMime(reader, boundary);
                     } else {
-                        _Body = reader.ReadToEnd();
+                        SetBody(reader.ReadToEnd().Trim());
+                    }
+
+                    if (Attachments != null && Attachments.Count > 0) {
+                        Attachment att;
+                        if (string.IsNullOrEmpty(Body)) {
+                            att = Attachments.FirstOrDefault(x => !x.IsAttachment && x.ContentType.Is("text/plain"));
+                            if (att != null) {
+                                Body = att.Body;
+                            } else {
+                                Body = string.Empty;
+                            }
+                        }
+
+                        att = Attachments.FirstOrDefault(x => !x.IsAttachment && x.ContentType.Contains("html"));
+                        if (att != null) {
+                            BodyHtml = att.Body;
+                        } else {
+                            BodyHtml = string.Empty;
+                        }
                     }
                 }
             }
@@ -140,7 +130,7 @@ namespace AE.Net.Mail {
                     ParseMime(new System.IO.StringReader(body.ToString()), nestedboundary);
 
                 } else { // nested
-                    a.Content = body.ToString();
+                    a.SetBody(body.ToString());
                     Attachments.Add(a);
                 }
             }

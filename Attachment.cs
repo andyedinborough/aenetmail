@@ -1,31 +1,24 @@
 using System;
+using System.ComponentModel;
 
 namespace AE.Net.Mail {
     public class Attachment : ObjectWHeaders {
-        private string _content = string.Empty;
-
         public string Filename {
             get { return Headers["Content-Disposition"]["filename"]; }
         }
 
-        private string Charset {
-            get { return Headers["Content-Transfer-Encoding"]["charset"]; }
-        }
+        [Obsolete("Use ContentTransferEncoding instead"), EditorBrowsable(EditorBrowsableState.Never)]
+        public string ContentEncoding { get { return ContentTransferEncoding; } set { ContentTransferEncoding = value; } }
+
+        [Obsolete("Use Body instead"), EditorBrowsable(EditorBrowsableState.Never)]
+        public string Content { get { return Body; } set { SetBody(value); } }
+
+        [Obsolete("Use GetData instead"), EditorBrowsable(EditorBrowsableState.Never)]
+        public byte[] GetContent() { return GetData(); }
 
         private string _ContentDisposition;
         private string ContentDisposition {
             get { return _ContentDisposition ?? (_ContentDisposition = Headers["Content-Disposition"].Value.ToLower()); }
-        }
-
-        public string ContentEncoding {
-            get { return Headers["Content-Transfer-Encoding"].Value ?? string.Empty; }
-            internal set {
-                Headers["Content-Transfer-Encoding"] = new HeaderValue(value);
-            }
-        }
-
-        public string ContentType {
-            get { return Headers["Content-Type"].Value ?? string.Empty; }
         }
 
         public bool OnServer { get; internal set; }
@@ -42,40 +35,23 @@ namespace AE.Net.Mail {
         }
 
         public void Save(System.IO.Stream stream) {
-            var data = GetContent();
+            var data = GetData();
             stream.Write(data, 0, data.Length);
         }
 
-        public byte[] GetContent() {
+        public byte[] GetData() {
             byte[] data;
-            if (ContentEncoding.Is("base64") && Utilities.IsValidBase64String(_content)) {
+            if (ContentTransferEncoding.Is("base64") && Utilities.IsValidBase64String(Body)) {
                 try {
-                    data = Convert.FromBase64String(_content);
+                    data = Convert.FromBase64String(Body);
                 } catch (Exception) {
-                    data = System.Text.Encoding.UTF8.GetBytes(_content);
+                    data = System.Text.Encoding.UTF8.GetBytes(Body);
                 }
             } else {
-                data = System.Text.Encoding.UTF8.GetBytes(_content);
+                data = System.Text.Encoding.UTF8.GetBytes(Body);
             }
             return data;
         }
 
-        public string Content {
-            get { return _content; }
-            internal set {
-                if (ContentEncoding.Is("quoted-printable")) {
-                    value = Utilities.DecodeQuotedPrintable(value, Utilities.ParseCharsetToEncoding(Charset));
-
-                } else if (ContentEncoding.Is("base64")
-                    //only decode the content if it is a text document
-                        && ContentType.StartsWith("text/", StringComparison.OrdinalIgnoreCase)
-                        && Utilities.IsValidBase64String(_content)) {
-                    value = System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(value));
-                    ContentEncoding = string.Empty;
-                }
-
-                _content = value;
-            }
-        }
     }
 }

@@ -10,7 +10,7 @@ namespace AE.Net.Mail {
         public static SearchCondition Body(string text) { return new SearchCondition { Field = Fields.Body, Value = text }; }
         public static SearchCondition Cc(string text) { return new SearchCondition { Field = Fields.Cc, Value = text }; }
         public static SearchCondition From(string text) { return new SearchCondition { Field = Fields.From, Value = text }; }
-        public static SearchCondition Header(string name, string text) { return new SearchCondition { Field = Fields.From, Value = name + " " + QuoteString(text) }; }
+        public static SearchCondition Header(string name, string text) { return new SearchCondition { Field = Fields.From, Value = name + " " + Utilities.QuoteString(text) }; }
         public static SearchCondition Keyword(string name, string text) { return new SearchCondition { Field = Fields.Keyword, Value = text }; }
         public static SearchCondition Larger(long size) { return new SearchCondition { Field = Fields.Larger, Value = size }; }
         public static SearchCondition Smaller(long size) { return new SearchCondition { Field = Fields.Smaller, Value = size }; }
@@ -87,12 +87,12 @@ namespace AE.Net.Mail {
                     case Fields.Subject:
                     case Fields.Text:
                     case Fields.To:
-                        value = QuoteString(Convert.ToString(value));
+                        value = Utilities.QuoteString(Convert.ToString(value));
                         break;
                 }
 
                 if (value is DateTime) {
-                    value = "\"" + GetRFC2060Date((DateTime)value) + "\"";
+                    value = Utilities.QuoteString(Utilities.GetRFC2060Date((DateTime)value));
                 }
 
                 if (Field != null) builder.Append(" ");
@@ -100,18 +100,6 @@ namespace AE.Net.Mail {
             }
 
             return builder.ToString();
-        }
-
-        public static string GetRFC2060Date(DateTime date) {
-            return date.ToString("dd-MMM-yyyy hh:mm:ss zz");
-        }
-
-        private static string QuoteString(string value) {
-            return "\"" + value
-                            .Replace("\\", "\\\\")
-                            .Replace("\r", "\\r")
-                            .Replace("\n", "\\n")
-                            .Replace("\"", "\\\"") + "\"";
         }
     }
 }

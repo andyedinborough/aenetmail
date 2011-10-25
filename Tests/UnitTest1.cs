@@ -14,6 +14,56 @@ namespace Tests {
         public TestContext TestContext { get; set; }
 
         #region
+        string anotherMessage = @"+OK 2536 octets
+Received: from ([216.32.180.11]) for <edinboroughs@trac.ky> with MailEnable Catch-All Filter; Tue, 25 Oct 2011 00:19:25 -0700
+Received: from VA3EHSOBE008.bigfish.com ([216.32.180.11]) by mail.vortaloptics.com with MailEnable ESMTP; Tue, 25 Oct 2011 00:19:25 -0700
+Received: from mail181-va3-R.bigfish.com (10.7.14.244) by
+ VA3EHSOBE008.bigfish.com (10.7.40.28) with Microsoft SMTP Server id
+ 14.1.225.22; Tue, 25 Oct 2011 07:19:20 +0000
+Received: from mail181-va3 (localhost.localdomain [127.0.0.1])	by
+ mail181-va3-R.bigfish.com (Postfix) with ESMTP id CFE1B19381C5	for
+ <edinboroughs@trac.ky>; Tue, 25 Oct 2011 07:19:22 +0000 (UTC)
+X-SpamScore: 0
+X-BigFish: VS0(zzzz1202hzzz31h87h2a8h668h839h944h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:65.55.171.153;KIP:(null);UIP:(null);IPVD:NLI;H:VA3DIAHUB054.RED001.local;RD:smtp801.microsoftonline.com;EFVD:NLI
+X-FB-SS: 0,
+Received-SPF: softfail (mail181-va3: transitioning domain of vortaloptics.com does not designate 65.55.171.153 as permitted sender) client-ip=65.55.171.153; envelope-from=aedinborough@vortaloptics.com; helo=VA3DIAHUB054.RED001.local ;RED001.local ;
+X-FB-DOMAIN-IP-MATCH: fail
+Received: from mail181-va3 (localhost.localdomain [127.0.0.1]) by mail181-va3
+ (MessageSwitch) id 1319527162708761_17303; Tue, 25 Oct 2011 07:19:22 +0000
+ (UTC)
+Received: from VA3EHSMHS029.bigfish.com (unknown [10.7.14.242])	by
+ mail181-va3.bigfish.com (Postfix) with ESMTP id 9DEF66B0053	for
+ <edinboroughs@trac.ky>; Tue, 25 Oct 2011 07:19:22 +0000 (UTC)
+Received: from VA3DIAHUB054.RED001.local (65.55.171.153) by
+ VA3EHSMHS029.bigfish.com (10.7.99.39) with Microsoft SMTP Server (TLS) id
+ 14.1.225.22; Tue, 25 Oct 2011 07:19:19 +0000
+Received: from VA3DIAXVS171.RED001.local ([172.18.2.196]) by
+ VA3DIAHUB054.RED001.local ([10.8.230.53]) with mapi; Tue, 25 Oct 2011
+ 00:19:24 -0700
+From: Andy Edinborough <aedinborough@vortaloptics.com>
+To: ""edinboroughs@trac.ky"" <edinboroughs@trac.ky>
+Date: Tue, 25 Oct 2011 00:19:21 -0700
+Subject: Send a card to Lori Bryant
+Thread-Topic: Send a card to Lori Bryant
+Thread-Index: AcyS5mu9bWF9L2CbQ6KDFH0zybjbqw==
+Message-ID: <8F7372BC-5DC9-4939-AFB0-4FD1D041064E@vortaloptics.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach:
+X-MS-TNEF-Correlator:
+acceptlanguage: en-US
+Content-Type: text/plain; charset=""us-ascii""
+Content-Transfer-Encoding: base64
+MIME-Version: 1.0
+Return-Path: <aedinborough@vortaloptics.com>
+
+MTYxOSBOLiBCbGFjayBDYXQgUmQuLCBKb3BsaW4sIE1PIDY0ODAxDQoNCg0K
+
+
+";
+
         string iphoneMessage = @"+OK 159354 octets
 Received: from ([99.34.8.150]) for <edinboroughs@trac.ky> with MailEnable Catch-All Filter; Wed, 13 Jul 2011 09:25:50 -0700
 Received: from main.edinborough.org ([99.34.8.150]) by mail.vortaloptics.com with MailEnable ESMTP; Wed, 13 Jul 2011 09:25:49 -0700
@@ -107,10 +157,12 @@ i3A4XONx55x7CuaaXU0jg77l8+VJbNAdgCjPXkDP/wCuqc1z5CFw0cjRdgpbjsMe";
         [TestMethod]
         public void TestParseMessageFromIPhone() {
             var msg = GetMessage(iphoneMessage);
-
             msg.Attachments.Count.Should().Equal(2);
-            msg.Attachments.All(a => a.GetContent().Any().Should().Be.True());
+            msg.Attachments.All(a => a.GetData().Any().Should().Be.True());
             msg.Subject.Should().Equal("Frånvaro: Örebro Golfklubb - Scorecard");
+
+            msg = GetMessage(anotherMessage);
+            msg.Body.Should().Contain("Joplin");
         }
 
         [TestMethod]
@@ -162,7 +214,7 @@ this is the attachment text
 
             msg.From.Should().Not.Be.Null();
             msg.Attachments.Count.Should().Equal(2);
-            msg.Attachments.All(a => a.GetContent().Any().Should().Be.True());
+            msg.Attachments.All(a => a.GetData().Any().Should().Be.True());
         }
 
         private AE.Net.Mail.MailMessage GetMessage(string raw) {
@@ -210,19 +262,20 @@ this is the attachment text
                         SearchCondition.SentSince(since)
                     ).Or(SearchCondition.To("andy"))
                 .ToString()
-                .Should().Equal("OR ((UNDELETED) (FROM \"david\") (SENTSINCE \"" + SearchCondition.GetRFC2060Date(since) + "\")) (TO \"andy\")");
+                .Should().Equal("OR ((UNDELETED) (FROM \"david\") (SENTSINCE \"" + Utilities.GetRFC2060Date(since) + "\")) (TO \"andy\")");
         }
 
         [TestMethod]
         public void TestSearch() {
             using (var imap = GetClient<ImapClient>()) {
-                var result = imap.Search(
+                var result = imap.SearchMessages(
                     //"OR ((UNDELETED) (FROM \"david\") (SENTSINCE \"01-Jan-2000 00:00:00\")) (TO \"andy\")"
                     SearchCondition.Undeleted().And(SearchCondition.From("david"), SearchCondition.SentSince(new DateTime(2000, 1, 1))).Or(SearchCondition.To("andy"))
                     );
                 result.Length.Should().Be.InRange(1, int.MaxValue);
+                result.First().Value.Subject.Should().Not.Be.NullOrEmpty();
 
-                result = imap.Search(new SearchCondition { Field = SearchCondition.Fields.Text, Value = "asdflkjhdlki2uhiluha829hgas" });
+                result = imap.SearchMessages(new SearchCondition { Field = SearchCondition.Fields.Text, Value = "asdflkjhdlki2uhiluha829hgas" });
                 result.Length.Should().Equal(0);
             }
         }

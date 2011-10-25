@@ -7,6 +7,19 @@ using System.Text.RegularExpressions;
 
 namespace AE.Net.Mail {
     internal static class Utilities {
+
+        internal static string GetRFC2060Date(DateTime date) {
+            return date.ToString("dd-MMM-yyyy hh:mm:ss zz");
+        }
+
+        internal static string QuoteString(string value) {
+            return "\"" + value
+                            .Replace("\\", "\\\\")
+                            .Replace("\r", "\\r")
+                            .Replace("\n", "\\n")
+                            .Replace("\"", "\\\"") + "\"";
+        }
+
         internal static string DecodeQuotedPrintable(string value, Encoding encoding = null) {
             if (encoding == null) {
                 encoding = System.Text.Encoding.UTF8;
@@ -216,5 +229,142 @@ namespace AE.Net.Mail {
         internal static bool Is(this string input, string other) {
             return string.Equals(input, other, StringComparison.OrdinalIgnoreCase);
         }
+
+        /*
+        private static Dictionary<string, string> _TimeZoneAbbreviations = @"
+ACDT +10:30
+ACST +09:30
+ACT +08
+ADT -03
+AEDT +11
+AEST +10
+AFT +04:30
+AKDT -08
+AKST -09
+AMST +05
+AMT +04
+ART -03
+AWDT +09
+AWST +08
+AZOST -01
+AZT +04
+BDT +08
+BIOT +06
+BIT -12
+BOT -04
+BRT -03
+BTT +06
+CAT +02
+CCT +06:30
+CDT -05
+CEDT +02
+CEST +02
+CET +01
+CHADT +13:45
+CHAST +12:45
+CIST -08
+CKT -10
+CLST -03
+CLT -04
+COST -04
+COT -05
+CST -06
+CT +08
+CVT -01
+CXT +07
+CHST +10
+DFT +01
+EAST -06
+EAT +03
+EDT -04
+EEDT +03
+EEST +03
+EET +02
+EST -05
+FJT +12
+FKST -03
+FKT -04
+GALT -06
+GET +04
+GFT -03
+GILT +12
+GIT -09
+GMT 
+GYT -04
+HADT -09
+HAST -10
+HKT +08
+HMT +05
+HST -10
+ICT +07
+IDT +03
+IRKT +08
+IRST +03:30
+JST +09
+KRAT +07
+KST +09
+LHST +10:30
+LINT +14
+MAGT +11
+MDT -06
+MIT -09:30
+MSD +04
+MSK +03
+MST -07
+MUT +04
+MYT +08
+NDT -02:30
+NFT +11:30
+NPT +05:45
+NST -03:30
+NT -03:30
+NZDT +13
+NZST +12
+OMST +06
+PDT -07
+PETT +12
+PHOT +13
+PKT +05
+PST -08
+RET +04
+SAMT +04
+SAST +02
+SBT +11
+SCT +04
+SGT +08
+SLT +05:30
+TAHT -10
+THA +07
+UYST -02
+UYT -03
+VET -04:30
+VLAT +10
+WAT +01
+WEDT +01
+WEST +01
+WET 
+WST +08
+YAKT +09
+YEKT +05"
+            .Trim().Split('\n').Select(line => line.Trim().Split(' ').Select(col => col.Trim()).Take(2).ToArray())
+            .Where(x => x.Length == 2).ToDictionary(x => x[0], x => x[1]);
+
+        internal static System.DateTime? ToNullDate(this string input, string format = null, DateTimeKind kind = DateTimeKind.Unspecified) {
+            if (string.IsNullOrEmpty(input)) return null;
+            if (input.Contains("T")) {
+                foreach (var x in _TimeZoneAbbreviations) {
+                    input = input.Replace(x.Key, x.Value);
+                }
+            }
+
+            System.DateTime num;
+            if ((format != null && DateTime.TryParseExact(input, format, null, System.Globalization.DateTimeStyles.None, out num))
+                || (System.DateTime.TryParse(input, out  num))) {
+                return DateTime.SpecifyKind(num, kind == DateTimeKind.Unspecified && input.Contains('Z') ? DateTimeKind.Utc : kind);
+            } else {
+                return null;
+            }
+        }
+         */
     }
 }

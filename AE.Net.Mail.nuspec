@@ -2,11 +2,12 @@
 <package>
     <metadata>
         <id>AE.Net.Mail</id>
-        <version>1.2.0.0</version>
+        <version>#version#</version>
         <owners>Andy Edinborough</owners>
         <authors>Andy Edinborough, Mentalis.org, Cyrille Colin</authors>
         <description>POP/IMap Client Library</description>
         <language>en-US</language>
         <projectUrl>https://github.com/andyedinborough/aenetmail</projectUrl>
+        <releaseNotes>#message#</releaseNotes>
     </metadata>
 </package>

@@ -72,8 +72,9 @@ namespace AE.Net.Mail {
         }
 
         protected void CheckConnectionStatus() {
-            if (!IsConnected) throw new Exception("You must connect first !");
-            if (!IsAuthenticated) throw new Exception("You must authenticate first !");
+            if (IsDisposed) throw new ObjectDisposedException(this.GetType().Name);
+            if (!IsConnected) throw new Exception("You must connect first!");
+            if (!IsAuthenticated) throw new Exception("You must authenticate first!");
         }
 
         protected virtual void SendCommand(string command) {

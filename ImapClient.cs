@@ -174,7 +174,7 @@ namespace AE.Net.Mail {
             if (email.Flags.Length > 0) {
                 flags = string.Concat("(", string.Join(" ", email.Flags), ")");
             }
-            string command = GetTag() + "APPEND " + mailbox + " " + flags + " {" + size + "}";
+            string command = GetTag() + "APPEND " + Utilities.QuoteString(mailbox) + " " + flags + " {" + size + "}";
             string response = SendCommandGetResponse(command);
             if (response.StartsWith("+")) {
                 response = SendCommandGetResponse(email.Body);
@@ -213,21 +213,21 @@ namespace AE.Net.Mail {
                 messageset = messageset.Substring(4);
                 prefix = "UID ";
             }
-            string command = string.Concat(GetTag(), prefix, "COPY ", messageset, " \"" + destination + "\"");
+            string command = string.Concat(GetTag(), prefix, "COPY ", messageset, " " + Utilities.QuoteString(destination));
             SendCommandCheckOK(command);
             IdleResume();
         }
 
         public void CreateMailbox(string mailbox) {
             IdlePause();
-            string command = GetTag() + "CREATE \"" + mailbox + "\"";
+            string command = GetTag() + "CREATE " + Utilities.QuoteString(mailbox);
             SendCommandCheckOK(command);
             IdleResume();
         }
 
         public void DeleteMailbox(string mailbox) {
             IdlePause();
-            string command = GetTag() + "DELETE \"" + mailbox + "\"";
+            string command = GetTag() + "DELETE " + Utilities.QuoteString(mailbox);
             SendCommandCheckOK(command);
             IdleResume();
         }
@@ -237,7 +237,7 @@ namespace AE.Net.Mail {
 
             Mailbox x = null;
             string tag = GetTag();
-            string command = tag + "EXAMINE \"" + mailbox + "\"";
+            string command = tag + "EXAMINE " + Utilities.QuoteString(mailbox);
             string response = SendCommandGetResponse(command);
             if (response.StartsWith("*")) {
                 x = new Mailbox(mailbox);
@@ -366,7 +366,7 @@ namespace AE.Net.Mail {
             IdlePause();
 
             Quota quota = null;
-            string command = GetTag() + "GETQUOTAROOT " + mailbox;
+            string command = GetTag() + "GETQUOTAROOT " + Utilities.QuoteString(mailbox);
             string response = SendCommandGetResponse(command);
             string reg = "\\* QUOTA (.*?) \\((.*?) (.*?) (.*?)\\)";
             while (response.StartsWith("*")) {
@@ -390,7 +390,7 @@ namespace AE.Net.Mail {
             IdlePause();
 
             var x = new List<Mailbox>();
-            string command = GetTag() + "LIST \"" + reference + "\" \"" + pattern + "\"";
+            string command = GetTag() + "LIST " + Utilities.QuoteString(reference) + " " + Utilities.QuoteString(pattern);
             string reg = "\\* LIST \\(([^\\)]*)\\) \\\"([^\\\"]+)\\\" \\\"([^\\\"]+)\\\"";
             string response = SendCommandGetResponse(command);
             Match m = Regex.Match(response, reg);
@@ -408,7 +408,7 @@ namespace AE.Net.Mail {
             IdlePause();
 
             var x = new List<Mailbox>();
-            string command = GetTag() + "LSUB \"" + reference + "\" \"" + pattern + "\"";
+            string command = GetTag() + "LSUB " + Utilities.QuoteString(reference) + " " + Utilities.QuoteString(pattern);
             string reg = "\\* LSUB \\(([^\\)]*)\\) \\\"([^\\\"]+)\\\" \\\"([^\\\"]+)\\\"";
             string response = SendCommandGetResponse(command);
             Match m = Regex.Match(response, reg);
@@ -513,7 +513,7 @@ namespace AE.Net.Mail {
         public int GetMessageCount(string mailbox) {
             IdlePause();
 
-            string command = GetTag() + "STATUS " + (mailbox ?? _selectedmailbox) + " (MESSAGES)";
+            string command = GetTag() + "STATUS " + Utilities.QuoteString(mailbox ?? _selectedmailbox) + " (MESSAGES)";
             string response = SendCommandGetResponse(command);
             string reg = @"\* STATUS.*MESSAGES (\d+)";
             int result = 0;
@@ -530,7 +530,7 @@ namespace AE.Net.Mail {
         public void RenameMailbox(string frommailbox, string tomailbox) {
             IdlePause();
 
-            string command = GetTag() + "RENAME \"" + frommailbox + "\" \"" + tomailbox + "\"";
+            string command = GetTag() + "RENAME " + Utilities.QuoteString(frommailbox) + " " + Utilities.QuoteString(tomailbox);
             SendCommandCheckOK(command);
             IdleResume();
         }
@@ -560,12 +560,18 @@ namespace AE.Net.Mail {
             return m.Groups[1].Value.Trim().Split(' ').Where(x => !string.IsNullOrEmpty(x)).ToArray();
         }
 
+        public Lazy<MailMessage>[] SearchMessages(SearchCondition criteria, bool headersonly = false) {
+            return Search(criteria, true)
+                .Select(x => new Lazy<MailMessage>(() => GetMessage(x, headersonly)))
+                .ToArray();
+        }
+
         public Mailbox SelectMailbox(string mailbox) {
             IdlePause();
 
             Mailbox x = null;
             string tag = GetTag();
-            string command = tag + "SELECT \"" + mailbox + "\"";
+            string command = tag + "SELECT " + Utilities.QuoteString(mailbox);
             string response = SendCommandGetResponse(command);
             if (response.StartsWith("*")) {
                 x = new Mailbox(mailbox);
@@ -613,7 +619,7 @@ namespace AE.Net.Mail {
         public void SuscribeMailbox(string mailbox) {
             IdlePause();
 
-            string command = GetTag() + "SUBSCRIBE \"" + mailbox + "\"";
+            string command = GetTag() + "SUBSCRIBE " + Utilities.QuoteString(mailbox);
             SendCommandCheckOK(command);
             IdleResume();
         }
@@ -621,7 +627,7 @@ namespace AE.Net.Mail {
         public void UnSuscribeMailbox(string mailbox) {
             IdlePause();
 
-            string command = GetTag() + "UNSUBSCRIBE \"" + mailbox + "\"";
+            string command = GetTag() + "UNSUBSCRIBE " + Utilities.QuoteString(mailbox);
             SendCommandCheckOK(command);
             IdleResume();
         }
