@@ -2,16 +2,36 @@
 A C# POP/IMAP client library
 
 ##Sample Usage
+
+#IMAP
      using(var imap = new AE.Net.Mail.ImapClient(host, username, password, AE.Net.Mail.ImapClient.AuthMethods.Login, port, isSSL)) {
-          var uids = imap.Search(
-              SearchCondition.Undeleted().And(
-                SearchCondition.From("david"), 
-                SearchCondition.SentSince(new DateTime(2000, 1, 1))
-              ).Or(SearchCondition.To("andy"))
-          );
+        var msgs = imap.SearchMessages(
+          SearchCondition.Undeleted().And(
+            SearchCondition.From("david"), 
+            SearchCondition.SentSince(new DateTime(2000, 1, 1))
+          ).Or(SearchCondition.To("andy"))
+        );
           
-          var msg = imap.GetMessage(uids[0]);
-     }
+        Assert.AreEqual(msgs[0].Value.Subject, "This is cool!");
+
+        imap.NewMessage += (sender, e) => {
+          var msg = imap.GetMessage(e.MessageCount - 1);
+          Assert.AreEqual(msg.Subject, "IDLE support?  Yes, please!");
+        };
+
+        while (!mre.WaitOne(TimeSpan.FromMinutes(20)) {
+          imap.Noop();
+        }
+    }
+
+#POP
+     using(var pop = new AE.Net.Mail.Pop3Client(host, username, password, port, isSSL)) {
+       for(var i = pop.GetMessageCount() - 1; i >= 0; i--){
+          var msg = pop.GetMessage(i, false);
+          Assert.AreEqual(msg.Subject, "Standard API between different protocols?  Yes, please!");
+          pop.DeleteMessage(i); //WE DON'T NEED NO STINKIN' EMAIL!
+       }
+    }
 
 ##Background
 These are text-based services... it's not that hard, and yet all the projects I

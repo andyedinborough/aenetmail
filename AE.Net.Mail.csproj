@@ -144,6 +144,7 @@
     <None Include="AE.Net.Mail.nuspec">
       <SubType>Designer</SubType>
     </None>
+    <None Include="Create-Package.ps1" />
     <None Include="README.md" />
   </ItemGroup>
   <ItemGroup>

@@ -43,6 +43,9 @@ namespace AE.Net.Mail {
     private EventHandler<MessageEventArgs> _NewMessage;
     public event EventHandler<MessageEventArgs> NewMessage {
       add {
+        if (string.IsNullOrEmpty(_selectedmailbox)) {
+          SelectMailbox("Inbox");
+        }
         _NewMessage += value;
         IdleStart();
       }
