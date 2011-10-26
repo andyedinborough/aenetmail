@@ -8,6 +8,6 @@
         <description>POP/IMap Client Library</description>
         <language>en-US</language>
         <projectUrl>https://github.com/andyedinborough/aenetmail</projectUrl>
-        <releaseNotes>#message#</releaseNotes>
+        <releaseNotes><![CDATA[#message#]]></releaseNotes>
     </metadata>
 </package>
