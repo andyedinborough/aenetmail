@@ -83,17 +83,29 @@ namespace AE.Net.Mail {
       return this["Content-Type"]["boundary"];
     }
 
-    private Regex rxTimeZoneName = new Regex(@"\s+\([a-z]+\)$", RegexOptions.Compiled | RegexOptions.IgnoreCase); //Mon, 28 Feb 2005 19:26:34 -0500 (EST)
-    private Regex rxTimeZoneColon = new Regex(@"\s+(\+|\-)([0-9]{1,2})\D([0-9]{2})$", RegexOptions.Compiled | RegexOptions.IgnoreCase); //Mon, 28 Feb 2005 19:26:34 -0500 (EST)
-    public DateTime GetDate(string name) {
-      var value = this[name].RawValue;
-      if (string.IsNullOrEmpty(value)) return DateTime.MinValue;
-      value = rxTimeZoneName.Replace(value, string.Empty);
-      value = rxTimeZoneColon.Replace(value, match => " " + match.Groups[1].Value + match.Groups[2].Value.PadLeft(2, '0') + match.Groups[3].Value);
-      DateTime result;
-      if (DateTime.TryParse(value, out result))
-        return result;
-      else return DateTime.MinValue;
+    private static Regex[] rxDates = new[]{
+        @"\d{1,2}\s+[a-z]{3}\s+\d{2,4}\s+\d{1,2}\:\d{2}\:\d{1,2}\s+[\+\-\d\:]*",
+        @"\d{4}\-\d{1,2}-\d{1,2}\s+\d{1,2}\:\d{2}(?:\:\d{2})?(?:\s+[\+\-\d:]+)?",
+      }.Select(x => new Regex(x, RegexOptions.Compiled | RegexOptions.IgnoreCase)).ToArray();
+
+    public DateTime GetDate() {
+      var value = this["Date"].RawValue.ToNullDate();
+      if (value == null) {
+        foreach (var rx in rxDates) {
+          var match = rx.Matches(this["Received"].RawValue ?? string.Empty)
+            .Cast<Match>().LastOrDefault();
+          if (match != null) {
+            value = match.Value.ToNullDate();
+            if (value != null) {
+              break;
+            }
+          }
+        }
+      }
+
+      //written this way so a break can be set on the null condition
+      if (value == null) return DateTime.MinValue;
+      return value.Value;
     }
 
     public T GetEnum<T>(string name) where T : struct, IConvertible {
@@ -133,6 +145,7 @@ namespace AE.Net.Mail {
 
 
     public static HeaderCollection Parse(string headers) {
+      headers = Utilities.DecodeWords(headers);
       var temp = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
       var lines = headers.Split(new char[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
       int i;
