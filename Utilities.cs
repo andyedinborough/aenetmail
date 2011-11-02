@@ -55,6 +55,12 @@ namespace AE.Net.Mail {
                       .Replace("\"", "\\\"") + "\"";
     }
 
+    internal static bool StartsWithWhiteSpace(this string line) {
+      if (string.IsNullOrEmpty(line)) return false;
+      var chr = line[0];
+      return chr == ' ' || chr == '\t' || chr == '\n' || chr == '\r';
+    }
+
     internal static string DecodeQuotedPrintable(string value, Encoding encoding = null) {
       if (encoding == null) {
         encoding = System.Text.Encoding.UTF8;
@@ -70,7 +76,9 @@ namespace AE.Net.Mail {
         if (BitConverter.IsLittleEndian)
           Array.Reverse(result);
 
-        value = value.Substring(0, match.Index) + encoding.GetString(result) + value.Substring(match.Index + match.Length);
+        value = value.Substring(0, match.Index)
+         + encoding.GetString(result).Trim('\0')
+         + value.Substring(match.Index + match.Length);
       }
       return value;
     }

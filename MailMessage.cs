@@ -1,11 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Net.Mail;
 using System.Text;
-using System.Text.RegularExpressions;
 
 namespace AE.Net.Mail {
   public enum MailPriority {
@@ -13,14 +13,12 @@ namespace AE.Net.Mail {
   }
 
   public class MailMessage : ObjectWHeaders {
-    private bool _HeadersOnly; // set to true if only headers have been fetched.
+    private bool _HeadersOnly; // set to true if only headers have been fetched. 
 
     public MailMessage() {
       Flags = new string[0];
       Attachments = new Collection<Attachment>();
     }
-
-    public string BodyHtml { get; set; }
 
     public DateTime Date { get; private set; }
     public string[] Flags { get; private set; }
@@ -40,63 +38,60 @@ namespace AE.Net.Mail {
 
     public ICollection<Attachment> Attachments { get; private set; }
 
-    public void Load(string message, bool headersonly) {
+    public void Load(string message, bool headersOnly = false) {
       Raw = message;
       using (var reader = new StringReader(message)) {
-        Load(reader, headersonly);
+        Load(reader, headersOnly);
       }
     }
 
-    private Regex rxHeader = new Regex(@"^[a-z\-]+\:\s+", RegexOptions.IgnoreCase | RegexOptions.Compiled);
-    public void Load(TextReader reader, bool headersonly) {
-      var peekable = new PeekableTextReader(reader);
-      _HeadersOnly = headersonly;
-      Headers = null;
-      Body = BodyHtml = null;
+    private static bool IsHeader(string line) {
+      if (string.IsNullOrEmpty(line)) return false;
+      for (int i = 0; i < line.Length; i++) {
+        char c = line[i];
+        if (i > 0 && c == ':') return true;
+        if (c != '-' && !char.IsLetterOrDigit(c)) return false;
+      }
+      return false;
+    }
 
-      if (headersonly) {
-        RawHeaders = peekable.ReadToEnd();
+    public void Load(TextReader reader, bool headersOnly = false) {
+      _HeadersOnly = headersOnly;
+      Headers = null;
+      Body = null;
+
+      if (headersOnly) {
+        RawHeaders = reader.ReadToEnd();
       } else {
         var headers = new StringBuilder();
         string line;
-        while (true) {
-          line = peekable.ReadLine();
-          if (string.IsNullOrEmpty(line)) {
-            if (rxHeader.IsMatch(line = (peekable.PeekLine() ?? string.Empty)) && string.IsNullOrEmpty(peekable.PeekLine())) {
-              //this line is a header! keep going!
-            } else {
-              break;
-            }
-          } else {
-            headers.AppendLine(line);
-          }
+        while ((line = reader.ReadLine()) != null) {
+          if (line.Trim().Length == 0) continue;
+          else if (line.StartsWith("+OK", StringComparison.OrdinalIgnoreCase)) continue;
+          else if (line.StartsWithWhiteSpace() || IsHeader(line)) headers.AppendLine(line);
+          else break;
         }
         RawHeaders = headers.ToString();
 
         string boundary = Headers.GetBoundary();
         if (!string.IsNullOrEmpty(boundary)) {
           //else this is a multipart Mime Message
-          ParseMime(peekable, boundary);
+          using (var subreader = new StringReader(line + Environment.NewLine + reader.ReadToEnd()))
+            ParseMime(subreader, boundary);
         } else {
-          SetBody((peekable.ReadToEnd() ?? string.Empty).Trim());
+          SetBody((line + Environment.NewLine + reader.ReadToEnd()).Trim());
         }
 
-        if (Attachments != null && Attachments.Count > 0) {
-          Attachment att;
-          if (string.IsNullOrEmpty(Body)) {
-            att = Attachments.FirstOrDefault(x => !x.IsAttachment && x.ContentType.Is("text/plain"));
-            if (att != null) {
-              Body = att.Body;
-            } else {
-              Body = string.Empty;
-            }
+        if (string.IsNullOrEmpty(Body) && Attachments != null && Attachments.Count > 0) {
+          var att = Attachments.FirstOrDefault(x => !x.IsAttachment && x.ContentType.Is("text/plain"));
+          if (att == null) {
+            att = Attachments.FirstOrDefault(x => !x.IsAttachment && x.ContentType.Contains("html"));
           }
 
-          att = Attachments.FirstOrDefault(x => !x.IsAttachment && x.ContentType.Contains("html"));
           if (att != null) {
-            BodyHtml = att.Body;
-          } else {
-            BodyHtml = string.Empty;
+            Body = att.Body;
+            ContentTransferEncoding = att.Headers["Content-Transfer-Encoding"].RawValue;
+            ContentType = att.Headers["Content-Type"].RawValue;
           }
         }
       }
@@ -114,14 +109,29 @@ namespace AE.Net.Mail {
       Subject = Headers["Subject"].RawValue;
     }
 
+    [Obsolete("Use Body instead--check content-type to determine if it's HTML.  If HTML is needed, find an attachment in GetBodyAttachments() with a text/html content-type."), EditorBrowsable(EditorBrowsableState.Never)]
+    public string BodyHtml {
+      get {
+        if (ContentType.Contains("html")) return Body;
+        return GetBodyAttachments()
+          .Where(x => x.ContentType.Contains("html"))
+          .Select(x => x.Body)
+          .FirstOrDefault();
+      }
+    }
+
+    public IEnumerable<Attachment> GetBodyAttachments() {
+      return Attachments.Where(x => !x.IsAttachment);
+    }
+
     private void ParseMime(TextReader reader, string boundary) {
-      string data = reader.ReadLine(),
-          bounderInner = "--" + boundary,
-          bounderOuter = bounderInner + "--";
+      string data,
+        bounderInner = "--" + boundary,
+        bounderOuter = bounderInner + "--";
 
       do {
         data = reader.ReadLine();
-      } while (data != null && !data.StartsWith("--" + boundary));
+      } while (data != null && !data.StartsWith(bounderInner));
 
       while (data != null && !data.StartsWith(bounderOuter)) {
         data = reader.ReadLine();

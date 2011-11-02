@@ -25,8 +25,11 @@ namespace Tests {
       for (var i = 0; i < files.Length; i++) {
         var file = files[i];
         msg.Load(System.IO.File.ReadAllText(file), false);
+        if (msg.ContentTransferEncoding.IndexOf("quoted", StringComparison.OrdinalIgnoreCase) == -1) {
+          continue;
+        }
 
-        if (string.IsNullOrEmpty(msg.BodyHtml + msg.Body)) {
+        if (string.IsNullOrEmpty(msg.Body)) {
           continue;
         }
 
@@ -40,7 +43,7 @@ namespace Tests {
           if (msg.Cc.Length > 0) msg.Cc[0].Should().Not.Be.Null();
           if (msg.Bcc.Length > 0) msg.Bcc[0].Should().Not.Be.Null();
 
-          (msg.Body + msg.BodyHtml).Trim().Should().Not.Be.NullOrEmpty();
+          (msg.Body ?? string.Empty).Trim().Should().Not.Be.NullOrEmpty();
 
 
         } catch (Exception ex) {

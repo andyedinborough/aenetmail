@@ -16,12 +16,15 @@ namespace AE.Net.Mail {
     public string ContentTransferEncoding {
       get { return Headers["Content-Transfer-Encoding"].Value ?? string.Empty; }
       internal set {
-        Headers["Content-Transfer-Encoding"] = new HeaderValue(value);
+        Headers.Set("Content-Transfer-Encoding", new HeaderValue(value));
       }
     }
 
     public string ContentType {
       get { return Headers["Content-Type"].Value ?? string.Empty; }
+      internal set {
+        Headers.Set("Content-Type", new HeaderValue(value));
+      }
     }
 
     public string Charset {
@@ -44,6 +47,5 @@ namespace AE.Net.Mail {
 
       Body = value;
     }
-
   }
 }

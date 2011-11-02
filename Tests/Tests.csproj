@@ -50,9 +50,10 @@
     </CodeAnalysisDependentAssemblyPaths>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Parsing.cs" />
     <Compile Include="ParseSpam.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="UnitTest1.cs" />
+    <Compile Include="Clients.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\AE.Net.Mail.csproj">
