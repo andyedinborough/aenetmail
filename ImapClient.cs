@@ -174,7 +174,7 @@ namespace AE.Net.Mail {
 
       string flags = String.Empty;
       string size = (email.Body.Length - 1).ToString();
-      if (email.Flags.Length > 0) {
+      if (email.RawFlags.Length > 0) {
         flags = string.Concat("(", string.Join(" ", email.Flags), ")");
       }
       string command = GetTag() + "APPEND " + mailbox.QuoteString() + " " + flags + " {" + size + "}";
@@ -599,6 +599,28 @@ namespace AE.Net.Mail {
       }
       IdleResume();
       return x;
+    }
+
+    public void SetFlags(Flags flags, params MailMessage[] msgs) {
+      SetFlags(string.Join(" ", flags.ToString().Split(',').Select(x => "\\" + x.Trim())), msgs);
+    }
+
+    public void SetFlags(string flags, params MailMessage[] msgs) {
+      Store("UID " + string.Join(" ", msgs.Select(x => x.Uid)), true, flags);
+      foreach (var msg in msgs) {
+        msg.SetFlags(flags);
+      }
+    }
+
+    public void AddFlags(Flags flags, params MailMessage[] msgs) {
+      AddFlags(string.Join(" ", flags.ToString().Split(',').Select(x => "\\" + x.Trim())), msgs);
+    }
+
+    public void AddFlags(string flags, params MailMessage[] msgs) {
+      Store("UID " + string.Join(" ", msgs.Select(x => x.Uid)), false, flags);
+      foreach (var msg in msgs) {
+        msg.SetFlags(string.Join(" ", msg.Flags) + flags);
+      }
     }
 
     public void Store(string messageset, bool replace, string flags) {

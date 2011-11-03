@@ -12,16 +12,27 @@ namespace AE.Net.Mail {
     Normal = 3, High = 5, Low = 1
   }
 
+  [System.Flags]
+  public enum Flags {
+    None = 0,
+    Seen = 1,
+    Answered = 2,
+    Flagged = 4,
+    Deleted = 8,
+    Draft = 16
+  }
+
   public class MailMessage : ObjectWHeaders {
     private bool _HeadersOnly; // set to true if only headers have been fetched. 
 
     public MailMessage() {
-      Flags = new string[0];
+      RawFlags = new string[0];
       Attachments = new Collection<Attachment>();
     }
 
     public DateTime Date { get; private set; }
-    public string[] Flags { get; private set; }
+    public string[] RawFlags { get; private set; }
+    public Flags Flags { get; private set; }
 
     public int Size { get; internal set; }
     public string Subject { get; private set; }
@@ -164,8 +175,15 @@ namespace AE.Net.Mail {
       }
     }
 
+    private static Dictionary<string, int> _FlagCache = System.Enum.GetValues(typeof(Flags)).Cast<Flags>().ToDictionary(x => x.ToString(), x => (int)x, StringComparer.OrdinalIgnoreCase);
     internal void SetFlags(string flags) {
-      Flags = flags.Split(' ');
+      RawFlags = flags.Split(' ').Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
+      Flags = (Flags)RawFlags.Select(x => {
+        int flag = 0;
+        if (_FlagCache.TryGetValue(x.TrimStart('\\'), out flag))
+          return flag;
+        else return 0;
+      }).Sum();
     }
   }
 }

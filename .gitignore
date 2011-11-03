@@ -47,6 +47,7 @@ _ReSharper*\*
 error-*.xml
 TestResults\*
 *.vsp
-Spam\*
-packages\*
-bin\*
+*/Spam/*
+packages/*
+bin.*
+*.lorien
