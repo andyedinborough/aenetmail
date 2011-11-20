@@ -147,9 +147,9 @@ namespace AE.Net.Mail {
       try {
         while (true) {
           _IdleQueue.Enqueue(_Reader.ReadLine());
-          if (!_Stream.DataAvailable) {
-            _IdleEventsMre.Set();
-          }
+          //if (!_Stream.DataAvailable) {
+          _IdleEventsMre.Set();
+          //}
         }
       } catch (ThreadAbortException) {
       } catch (Exception ex) {

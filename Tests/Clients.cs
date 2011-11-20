@@ -32,7 +32,7 @@ namespace Tests {
 
     [TestMethod]
     public void TestConnections() {
-      var accountsToTest = System.IO.Path.Combine(Environment.CurrentDirectory.Split(new[] { "\\AE.Net.Mail\\" }, StringSplitOptions.RemoveEmptyEntries).First(), "ae.net.mail.usernames.txt");
+      var accountsToTest = System.IO.Path.Combine(Environment.CurrentDirectory.Split(new[] { "\\aenetmail\\" }, StringSplitOptions.RemoveEmptyEntries).First(), "ae.net.mail.usernames.txt");
       var lines = System.IO.File.ReadAllLines(accountsToTest)
           .Select(x => x.Split(','))
           .Where(x => x.Length == 6)
