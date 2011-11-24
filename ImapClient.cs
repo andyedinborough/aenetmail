@@ -394,7 +394,7 @@ namespace AE.Net.Mail {
 
       var x = new List<Mailbox>();
       string command = GetTag() + "LIST " + reference.QuoteString() + " " + pattern.QuoteString();
-      string reg = "\\* LIST \\(([^\\)]*)\\) \\\"([^\\\"]+)\\\" \\\"([^\\\"]+)\\\"";
+      string reg = "\\* LIST \\(([^\\)]*)\\) \\\"([^\\\"]+)\\\" \\\"?([^\\\"]+)\\\"?";
       string response = SendCommandGetResponse(command);
       Match m = Regex.Match(response, reg);
       while (m.Groups.Count > 1) {
