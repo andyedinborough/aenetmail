@@ -7,6 +7,15 @@ using System.Text.RegularExpressions;
 
 namespace AE.Net.Mail {
   internal static class Utilities {
+    internal static string NotEmpty(this string input, params string[] others) {
+      if (!string.IsNullOrEmpty(input)) return input;
+      foreach (var item in others) {
+        if (!string.IsNullOrEmpty(item)) {
+          return item;
+        }
+      }
+      return string.Empty;
+    }
 
     internal static int ToInt(this string input) {
       int result;

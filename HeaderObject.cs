@@ -28,7 +28,11 @@ namespace AE.Net.Mail {
     }
 
     public string Charset {
-      get { return Headers["Content-Transfer-Encoding"]["charset"]; }
+      get {
+        return Headers["Content-Transfer-Encoding"]["charset"].NotEmpty(
+        Headers["Content-Type"]["charset"]
+        );
+      }
     }
 
     public string Body { get; set; }
