@@ -1,11 +1,11 @@
 ﻿using System;
 using System.IO;
-using Org.Mentalis.Security.Ssl;
+using System.Net.Sockets;
 
 namespace AE.Net.Mail {
   public abstract class TextClient : IDisposable {
-    protected SecureTcpClient _Connection;
-    protected SecureNetworkStream _Stream;
+    protected TcpClient _Connection;
+    protected Stream _Stream;
     protected StreamReader _Reader;
 
     public string Host { get; private set; }
@@ -40,24 +40,20 @@ namespace AE.Net.Mail {
       OnLogout();
     }
 
+
     public void Connect(string hostname, int port, bool ssl) {
       try {
         Host = hostname;
         Port = port;
         Ssl = ssl;
 
-        var protocol = ssl ? SecureProtocol.Tls1 | SecureProtocol.Ssl3 : SecureProtocol.None;
-        SecurityOptions options = new SecurityOptions(protocol);
-        options.Certificate = null;
-        options.Entity = ConnectionEnd.Client;
-        options.CommonName = hostname;
-        options.VerificationType = CredentialVerification.Auto;
-        options.Flags = SecurityFlags.Default;
-        options.AllowedAlgorithms = SslAlgorithms.SECURE_CIPHERS;
-
-        //_Connection = new TcpClient(hostname, port);
-        _Connection = new SecureTcpClient(hostname, port, options);
+        _Connection = new TcpClient(hostname, port);
         _Stream = _Connection.GetStream();
+        if (ssl) {
+          var sslSream = new System.Net.Security.SslStream(_Stream);
+          _Stream = sslSream;
+          sslSream.AuthenticateAsClient(hostname);
+        }
 
         _Reader = new StreamReader(_Stream, System.Text.Encoding.Default);
         string info = _Reader.ReadLine();
