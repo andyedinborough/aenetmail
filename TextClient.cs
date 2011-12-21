@@ -1,12 +1,15 @@
 ﻿using System;
 using System.IO;
 using System.Net.Sockets;
+using System.Collections.Concurrent;
+using System.Threading;
 
 namespace AE.Net.Mail {
   public abstract class TextClient : IDisposable {
     protected TcpClient _Connection;
     protected Stream _Stream;
-    protected StreamReader _Reader;
+    protected BlockingCollection<String> _Responses = new BlockingCollection<String>();
+    private Thread _ReadThread;
 
     public string Host { get; private set; }
 
@@ -55,14 +58,32 @@ namespace AE.Net.Mail {
           sslSream.AuthenticateAsClient(hostname);
         }
 
-        _Reader = new StreamReader(_Stream, System.Text.Encoding.Default);
-        string info = _Reader.ReadLine();
+        //Create a new thread to retrieve data (needed for Imap Idle).
+        _ReadThread = new Thread(ReceiveData);
+        _ReadThread.Name = "_ReadThread";
+        _ReadThread.Start();
+
+        string info = _Responses.Take();
         OnConnected(info);
 
         IsConnected = true;
         Host = hostname;
       } catch (Exception) {
         IsConnected = false;
+        throw;
+      }
+    }
+
+    private void ReceiveData()
+    {
+      StreamReader _Reader = new StreamReader(_Stream, System.Text.Encoding.Default);
+      try {
+        while (!_Responses.IsAddingCompleted) {     //this is nice, but in reality on shutdown we are still blocking on ReadLine
+          _Responses.Add(_Reader.ReadLine());
+        }
+      }
+      catch (Exception) {
+        _Reader.Dispose();
         throw;
       }
     }
@@ -84,17 +105,24 @@ namespace AE.Net.Mail {
     }
 
     protected virtual string GetResponse() {
-      return _Reader.ReadLine();
+      return _Responses.Take();
     }
 
-    protected void SendCommandCheckOK(string command) {
+    protected virtual bool TryGetResponse(out string result, int milliseconds = 200)
+    {
+        return _Responses.TryTake(out result, milliseconds);
+    }
+
+    protected void SendCommandCheckOK(string command)
+    {
       CheckResultOK(SendCommandGetResponse(command));
     }
 
     public void Disconnect() {
       Logout();
-      if (_Reader != null) {
-        _Reader.Dispose();
+      _Responses.CompleteAdding();
+      if (!_ReadThread.Join(2000)){
+          _ReadThread.Abort();
       }
       if (_Stream != null) {
         _Stream.Dispose();
@@ -110,7 +138,7 @@ namespace AE.Net.Mail {
 
       IsDisposed = true;
       _Stream = null;
-      _Reader = null;
+      _ReadThread = null;
       _Connection = null;
     }
   }

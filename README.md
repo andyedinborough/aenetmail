@@ -20,7 +20,7 @@ A C# POP/IMAP client library
         };
 
         while (!mre.WaitOne(TimeSpan.FromMinutes(20)) {
-          imap.Noop();
+          //imap.Noop(); is called automatically by Idle thread
         }
     }
 
