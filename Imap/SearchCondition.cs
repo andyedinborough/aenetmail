@@ -1,4 +1,3 @@
-
 using System;
 using System.Collections.Generic;
 namespace AE.Net.Mail {
@@ -10,7 +9,7 @@ namespace AE.Net.Mail {
     public static SearchCondition Body(string text) { return new SearchCondition { Field = Fields.Body, Value = text }; }
     public static SearchCondition Cc(string text) { return new SearchCondition { Field = Fields.Cc, Value = text }; }
     public static SearchCondition From(string text) { return new SearchCondition { Field = Fields.From, Value = text }; }
-    public static SearchCondition Header(string name, string text) { return new SearchCondition { Field = Fields.From, Value = name + " " + text.QuoteString() }; }
+    public static SearchCondition Header(string name, string text) { return new SearchCondition { Field = Fields.Header, Value = name + " " + text.QuoteString() }; }
     public static SearchCondition Keyword(string name, string text) { return new SearchCondition { Field = Fields.Keyword, Value = text }; }
     public static SearchCondition Larger(long size) { return new SearchCondition { Field = Fields.Larger, Value = size }; }
     public static SearchCondition Smaller(long size) { return new SearchCondition { Field = Fields.Smaller, Value = size }; }
