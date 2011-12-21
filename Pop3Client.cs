@@ -55,7 +55,7 @@ namespace AE.Net.Mail {
             string line = SendCommandGetResponse(string.Format(headersOnly ? "TOP {0} 0" : "RETR {0}", uid));
             while (line != ".") {
                 result.AppendLine(line);
-                line = _Reader.ReadLine();
+                line = GetResponse();
             }
 
             var msg = new MailMessage();
