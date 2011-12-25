@@ -4,6 +4,7 @@ using System.Linq;
 using System.Net.Mail;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Globalization;
 
 namespace AE.Net.Mail {
   internal static class Utilities {
@@ -53,7 +54,8 @@ namespace AE.Net.Mail {
     }
 
     internal static string GetRFC2060Date(this DateTime date) {
-      return date.ToString("dd-MMM-yyyy hh:mm:ss zz");
+      CultureInfo enUsCulture = CultureInfo.GetCultureInfo("en-US");
+      return date.ToString("dd-MMM-yyyy hh:mm:ss zz", enusCulture);
     }
 
     internal static string QuoteString(this string value) {
