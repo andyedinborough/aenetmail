@@ -55,7 +55,7 @@ namespace AE.Net.Mail {
 
     internal static string GetRFC2060Date(this DateTime date) {
       CultureInfo enUsCulture = CultureInfo.GetCultureInfo("en-US");
-      return date.ToString("dd-MMM-yyyy hh:mm:ss zz", enusCulture);
+      return date.ToString("dd-MMM-yyyy hh:mm:ss zz", enUsCulture);
     }
 
     internal static string QuoteString(this string value) {
