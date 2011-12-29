@@ -56,16 +56,6 @@ namespace AE.Net.Mail {
       }
     }
 
-    private static bool IsHeader(string line) {
-      if (string.IsNullOrEmpty(line)) return false;
-      for (int i = 0; i < line.Length; i++) {
-        char c = line[i];
-        if (i > 0 && c == ':') return true;
-        if (c != '-' && !char.IsLetterOrDigit(c)) return false;
-      }
-      return false;
-    }
-
     public void Load(TextReader reader, bool headersOnly = false) {
       _HeadersOnly = headersOnly;
       Headers = null;
@@ -77,10 +67,11 @@ namespace AE.Net.Mail {
         var headers = new StringBuilder();
         string line;
         while ((line = reader.ReadLine()) != null) {
-          if (line.Trim().Length == 0) continue;
-          else if (line.StartsWith("+OK", StringComparison.OrdinalIgnoreCase)) continue;
-          else if (line.StartsWithWhiteSpace() || IsHeader(line)) headers.AppendLine(line);
-          else break;
+          if (line.Trim().Length == 0)
+            if (headers.Length == 0)
+              continue;
+            else break;
+          headers.AppendLine(line);
         }
         RawHeaders = headers.ToString();
 

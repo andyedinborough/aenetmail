@@ -51,3 +51,8 @@ TestResults\*
 packages/*
 bin.*
 *.lorien
+bin/*
+obj/*
+TestResults/*
+*/bin/*
+*/obj/*
