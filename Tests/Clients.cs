@@ -86,6 +86,21 @@ namespace Tests {
       }
     }
 
+    [TestMethod]
+    public void TestDelete() {
+      using (var client = GetClient<ImapClient>()) {
+        var lazymsg = client.SearchMessages(SearchCondition.From("DRAGONEXT")).FirstOrDefault();
+        var msg = lazymsg == null ? null : lazymsg.Value;
+        msg.Should().Not.Be.Null();
+
+        var uid = msg.Uid;
+        client.DeleteMessage(msg);
+
+        msg = client.GetMessage(uid);
+        Console.WriteLine(msg);
+      }
+    }
+
     private T GetClient<T>(string host = "gmail", string type = "imap") where T : class, IMailClient {
       var accountsToTest = System.IO.Path.Combine(Environment.CurrentDirectory.Split(new[] { "\\AE.Net.Mail\\" }, StringSplitOptions.RemoveEmptyEntries).First(), "ae.net.mail.usernames.txt");
       var lines = System.IO.File.ReadAllLines(accountsToTest)

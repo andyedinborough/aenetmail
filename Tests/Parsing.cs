@@ -14,6 +14,34 @@ namespace Tests {
     public TestContext TestContext { get; set; }
 
     #region messages
+    string bodyNotHeader = @"Delivered-To: yyy@gmail.com
+Received: by 10.142.174.3 with SMTP id w3cs50740wfe;
+        Mon, 14 Nov 2011 18:10:08 -0800 (PST)
+Return-Path: <zzz@gmail.com>
+Received-SPF: pass (google.com: domain of zzz@gmail.com designates 10.227.208.71 as permitted sender) client-ip=10.227.208.71;
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of zzz@gmail.com designates 10.227.208.71 as permitted sender) smtp.mail=zzz@gmail.com; dkim=pass header.i=zzz@gmail.com
+Received: from mr.google.com ([10.227.208.71])
+        by 10.227.208.71 with SMTP id gb7mr16473303wbb.7.1321323006082 (num_hops = 1);
+        Mon, 14 Nov 2011 18:10:06 -0800 (PST)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=gmail.com; s=gamma;
+        h=mime-version:from:date:message-id:subject:to:content-type;
+        bh=3ajdGhBv88zJknw0EVGu6lJhm0zz+4eRVot/EGmYTOs=;
+        b=nxqtHAr0o4/76BCnJVbxXCL0NWiABD9o1ijDXpJaNIJ19+ParWNzEtbTf9xiFMtoDI
+        kufMoypwCxokbNJRXxmiuXnWSBvQ2UhNqwnIYvr2YxXpj+nOIEZOXmoj2S3DF0PM7Qif
+        MuSMSi3f4Jmcscmi6KNeP4wCcmqF564fccGhw=
+Received: by 10.227.208.71 with SMTP id gb7mr16473303wbb.7.1321323006076; Mon, 14 Nov 2011 18:10:06 -0800 (PST)
+MIME-Version: 1.0
+Received: by 10.227.200.65 with HTTP; Mon, 14 Nov 2011 18:09:45 -0800 (PST)
+From: Drew Peterson <zzz@gmail.com>
+Date: Mon, 14 Nov 2011 20:09:45 -0600
+Message-ID: <redacted>
+Subject: test2
+To: yyy@gmail.com
+Content-Type: text/plain; charset=UTF-8
+
+Test message body";
+
     string anotherMessage = @"+OK 2536 octets
 Received: from ([216.32.180.11]) for <edinboroughs@trac.ky> with MailEnable Catch-All Filter; Tue, 25 Oct 2011 00:19:25 -0700
 Received: from VA3EHSOBE008.bigfish.com ([216.32.180.11]) by mail.vortaloptics.com with MailEnable ESMTP; Tue, 25 Oct 2011 00:19:25 -0700
@@ -234,6 +262,10 @@ WE REPOSE IN YOU.");
       msg.From.Should().Not.Be.Null();
       msg.To.Should().Not.Be.Null();
       msg.Subject.Should().Equal("DEAR FRIEND");
+
+
+      msg = GetMessage(bodyNotHeader);
+      msg.Body.Should().Not.Be.NullOrEmpty();
     }
 
     [TestMethod]

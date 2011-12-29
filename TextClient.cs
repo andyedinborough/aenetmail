@@ -1,7 +1,7 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.IO;
 using System.Net.Sockets;
-using System.Collections.Concurrent;
 using System.Threading;
 
 namespace AE.Net.Mail {
@@ -74,18 +74,17 @@ namespace AE.Net.Mail {
       }
     }
 
-    private void ReceiveData()
-    {
-      StreamReader _Reader = new StreamReader(_Stream, System.Text.Encoding.Default);
+    private void ReceiveData() {
       try {
-        while (!_Responses.IsAddingCompleted) {     //this is nice, but in reality on shutdown we are still blocking on ReadLine
-          _Responses.Add(_Reader.ReadLine());
-        }
-      }
-      catch (Exception) {
-        _Reader.Dispose();
-        throw;
-      }
+        string line;
+        using (var reader = new StreamReader(_Stream, System.Text.Encoding.Default))
+          while (true) {
+            line = reader.ReadLine();
+            if (!_Responses.IsAddingCompleted) {
+              _Responses.Add(line);
+            }
+          }
+      } catch (Exception) { } //we don't want thread exceptions killing us
     }
 
     protected void CheckConnectionStatus() {
@@ -108,24 +107,22 @@ namespace AE.Net.Mail {
       return _Responses.Take();
     }
 
-    protected virtual bool TryGetResponse(out string result, int milliseconds = 200)
-    {
-        return _Responses.TryTake(out result, milliseconds);
+    protected virtual bool TryGetResponse(out string result, int milliseconds = 200) {
+      return _Responses.TryTake(out result, milliseconds);
     }
 
-    protected void SendCommandCheckOK(string command)
-    {
+    protected void SendCommandCheckOK(string command) {
       CheckResultOK(SendCommandGetResponse(command));
     }
 
     public void Disconnect() {
       Logout();
       _Responses.CompleteAdding();
-      if (!_ReadThread.Join(2000)){
-          _ReadThread.Abort();
-      }
       if (_Stream != null) {
         _Stream.Dispose();
+      }
+      if (!_ReadThread.Join(2000)) {
+        _ReadThread.Abort();
       }
     }
 
