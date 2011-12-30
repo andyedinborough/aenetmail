@@ -9,14 +9,14 @@ using AE.Net.Mail.Imap;
 namespace AE.Net.Mail {
 
   public class ImapClient : TextClient, IMailClient {
-    private string _selectedmailbox;
+    private string _SelectedMailbox;
     private int _tag = 0;
     private string[] _Capability;
 
     private bool _Idling;
     private Thread _IdleEvents;
-    static readonly object finishedLock = new object();
-    static string IdleThreadAbortString = "!AbortThread";
+    static readonly object _FinishedLock = new object();
+    const string IDLE_THREAD_ABORT = "!AbortThread";
 
     public ImapClient(string host, string username, string password, AuthMethods method = AuthMethods.Login, int port = 143, bool secure = false) {
       Connect(host, port, secure);
@@ -42,7 +42,7 @@ namespace AE.Net.Mail {
     private EventHandler<MessageEventArgs> _NewMessage;
     public event EventHandler<MessageEventArgs> NewMessage {
       add {
-        if (string.IsNullOrEmpty(_selectedmailbox)) {
+        if (string.IsNullOrEmpty(_SelectedMailbox)) {
           SelectMailbox("Inbox");
         }
         _NewMessage += value;
@@ -119,7 +119,7 @@ namespace AE.Net.Mail {
     }
 
     private void StopIdleEventsThread() {
-      _Responses.Add(IdleThreadAbortString);  //this will abort the thread
+      _Responses.Add(IDLE_THREAD_ABORT);  //this will abort the thread
       if (!_IdleEvents.Join(2000))
         _IdleEvents.Abort();
     }
@@ -134,7 +134,7 @@ namespace AE.Net.Mail {
             Noop(false);        //call noop without aborting this Idle thread
             continue;
           }
-          if (resp == IdleThreadAbortString)       //string that tells us to close the thread
+          if (resp == IDLE_THREAD_ABORT)       //string that tells us to close the thread
             return;
 
           var data = resp.Split(' ');
@@ -182,8 +182,8 @@ namespace AE.Net.Mail {
     public void Noop() {
       Noop(true);
     }
-    private void Noop(bool PauseIdle = true) {
-      if (PauseIdle)
+    private void Noop(bool pauseIdle) {
+      if (pauseIdle)
         IdlePause();
       else
         SendCommandGetResponse("DONE");
@@ -196,7 +196,7 @@ namespace AE.Net.Mail {
         response = GetResponse();
       }
 
-      if (PauseIdle)
+      if (pauseIdle)
         IdleResume();
       else
         IdleResumeCommand();
@@ -261,7 +261,7 @@ namespace AE.Net.Mail {
           if (m.Groups.Count > 1) x.SetFlags(m.Groups[1].ToString());
           response = GetResponse();
         }
-        _selectedmailbox = mailbox;
+        _SelectedMailbox = mailbox;
       }
       IdleResume();
       return x;
@@ -296,7 +296,7 @@ namespace AE.Net.Mail {
     }
 
     private void CheckMailboxSelected() {
-      if (string.IsNullOrEmpty(_selectedmailbox))
+      if (string.IsNullOrEmpty(_SelectedMailbox))
         SelectMailbox("INBOX");
     }
 
@@ -528,7 +528,7 @@ namespace AE.Net.Mail {
     public int GetMessageCount(string mailbox) {
       IdlePause();
 
-      string command = GetTag() + "STATUS " + Utilities.QuoteString(mailbox ?? _selectedmailbox) + " (MESSAGES)";
+      string command = GetTag() + "STATUS " + Utilities.QuoteString(mailbox ?? _SelectedMailbox) + " (MESSAGES)";
       string response = SendCommandGetResponse(command);
       string reg = @"\* STATUS.*MESSAGES (\d+)";
       int result = 0;
@@ -605,7 +605,7 @@ namespace AE.Net.Mail {
         if (IsResultOK(response)) {
           x.IsWritable = Regex.IsMatch(response, "READ.WRITE", RegexOptions.IgnoreCase);
         }
-        _selectedmailbox = mailbox;
+        _SelectedMailbox = mailbox;
       } else {
         throw new Exception(response);
       }
