@@ -98,9 +98,9 @@ namespace AE.Net.Mail {
 
     private void IdleResumeCommand() {
       var response = SendCommandGetResponse(GetTag() + "IDLE");
-      response = response.Substring(response.IndexOf(" ")).Trim();
-      if (!response.TrimStart().StartsWith("idling", StringComparison.OrdinalIgnoreCase))
-        throw new Exception(response);
+      //response = response.Substring(response.IndexOf(" ")).Trim();
+      //if (!response.TrimStart().StartsWith("idling", StringComparison.OrdinalIgnoreCase))
+      //    throw new Exception(response);
     }
 
     private bool HasEvents {
