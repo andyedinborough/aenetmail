@@ -42,9 +42,6 @@ namespace AE.Net.Mail {
     private EventHandler<MessageEventArgs> _NewMessage;
     public event EventHandler<MessageEventArgs> NewMessage {
       add {
-        if (string.IsNullOrEmpty(_SelectedMailbox)) {
-          SelectMailbox("Inbox");
-        }
         _NewMessage += value;
         IdleStart();
       }
@@ -67,6 +64,9 @@ namespace AE.Net.Mail {
     }
 
     private void IdleStart() {
+      if (string.IsNullOrEmpty(_SelectedMailbox)) {
+        SelectMailbox("Inbox");
+      }
       _Idling = true;
       if (!Supports("IDLE")) {
         throw new InvalidOperationException("This IMAP server does not support the IDLE command");
