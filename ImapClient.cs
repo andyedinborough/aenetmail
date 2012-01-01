@@ -98,9 +98,9 @@ namespace AE.Net.Mail {
 
     private void IdleResumeCommand() {
       var response = SendCommandGetResponse(GetTag() + "IDLE");
-      response = response.Substring(response.IndexOf(" ")).Trim();
-      if (!response.TrimStart().StartsWith("idling", StringComparison.OrdinalIgnoreCase))
-        throw new Exception(response);
+      //response = response.Substring(response.IndexOf(" ")).Trim();
+      //if (!response.TrimStart().StartsWith("idling", StringComparison.OrdinalIgnoreCase))
+      //    throw new Exception(response);
     }
 
     private bool HasEvents {
@@ -140,7 +140,7 @@ namespace AE.Net.Mail {
           var data = resp.Split(' ');
           if (data[0] == "*" && data.Length >= 3) {
             var e = new MessageEventArgs { Client = this, MessageCount = int.Parse(data[1]) };
-            if (data[2].Is("EXISTS") && !last.Is("EXPUNGE")) {
+            if (data[2].Is("EXISTS") && !last.Is("EXPUNGE") && e.MessageCount > 0) {
               ThreadPool.QueueUserWorkItem(callback => _NewMessage.Fire(this, e));    //Fire the event on a separate thread
             } else if (data[2].Is("EXPUNGE")) {
               _MessageDeleted.Fire(this, e);
@@ -367,7 +367,6 @@ namespace AE.Net.Mail {
         mail.Load(body, headersonly);
         x.Add(mail);
         response = GetResponse(); // read last line terminated by )
-        response = GetResponse(); // read next line
         m = Regex.Match(response, reg);
       }
 
