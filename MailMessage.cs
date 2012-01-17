@@ -28,6 +28,11 @@ namespace AE.Net.Mail {
     public MailMessage() {
       RawFlags = new string[0];
       Attachments = new Collection<Attachment>();
+      To = new List<MailAddress>();
+      Cc = new List<MailAddress>();
+      Bcc = new List<MailAddress>();
+      ReplyTo = new List<MailAddress>();
+      Attachments = new List<Attachment>();
     }
 
     public DateTime Date { get; private set; }
@@ -36,18 +41,18 @@ namespace AE.Net.Mail {
 
     public int Size { get; internal set; }
     public string Subject { get; private set; }
-    public MailAddress[] To { get; private set; }
-    public MailAddress[] Cc { get; private set; }
-    public MailAddress[] Bcc { get; private set; }
+    public ICollection<MailAddress> To { get; private set; }
+    public ICollection<MailAddress> Cc { get; private set; }
+    public ICollection<MailAddress> Bcc { get; private set; }
+    public ICollection<MailAddress> ReplyTo { get; private set; }
+    public ICollection<Attachment> Attachments { get; private set; }
     public MailAddress From { get; private set; }
-    public MailAddress ReplyTo { get; private set; }
-    public MailAddress Sender { get; private set; }
-    public string MessageID { get; private set; }
+    public MailAddress Sender { get; set; }
+    public string MessageID { get; set; }
     public string Uid { get; internal set; }
     public string Raw { get; private set; }
-    public MailPriority Importance { get; private set; }
+    public MailPriority Importance { get; set; }
 
-    public ICollection<Attachment> Attachments { get; private set; }
 
     public void Load(string message, bool headersOnly = false) {
       Raw = message;
@@ -99,11 +104,11 @@ namespace AE.Net.Mail {
       }
 
       Date = Headers.GetDate();
-      To = Headers.GetAddresses("To");
-      Cc = Headers.GetAddresses("Cc");
-      Bcc = Headers.GetAddresses("Bcc");
+      To = Headers.GetAddresses("To").ToList();
+      Cc = Headers.GetAddresses("Cc").ToList();
+      Bcc = Headers.GetAddresses("Bcc").ToList();
       Sender = Headers.GetAddresses("Sender").FirstOrDefault();
-      ReplyTo = Headers.GetAddresses("Reply-To").FirstOrDefault();
+      ReplyTo = Headers.GetAddresses("Reply-To").ToList();
       From = Headers.GetAddresses("From").FirstOrDefault();
       MessageID = Headers["Message-ID"].RawValue;
 
@@ -175,6 +180,35 @@ namespace AE.Net.Mail {
           return flag;
         else return 0;
       }).Sum();
+    }
+
+    public void Save(System.IO.Stream stream, Encoding encoding = null) {
+      using (var str = new System.IO.StreamWriter(stream, encoding ?? System.Text.Encoding.Default))
+        Save(str);
+    }
+
+    private static readonly string[] SpecialHeaders = "Date,To,Cc,Reply-To,Bcc,Sender,From,Message-ID,Importance,Subject".Split(',');
+    public void Save(System.IO.TextWriter txt) {
+      txt.WriteLine("Date: {0:ddd, dd MMM yyyy hh:mm:ss} GMT", Date.ToUniversalTime());
+      txt.WriteLine("To: ", string.Join("; ", To.Select(x => x.ToString())));
+      txt.WriteLine("Cc: ", string.Join("; ", Cc.Select(x => x.ToString())));
+      txt.WriteLine("Reply-To: ", string.Join("; ", ReplyTo.Select(x => x.ToString())));
+      txt.WriteLine("Bcc: ", string.Join("; ", Bcc.Select(x => x.ToString())));
+      if (Sender != null) txt.WriteLine("Sender: ", Sender);
+      if (From != null) txt.WriteLine("From: ", Sender);
+      if (!string.IsNullOrEmpty(MessageID)) txt.WriteLine("Message-ID: ", MessageID);
+
+      var otherHeaders = Headers.Where(x => !SpecialHeaders.Contains(x.Key, StringComparer.InvariantCultureIgnoreCase));
+      foreach (var header in otherHeaders) {
+        txt.WriteLine("{0}: {1}", header.Key, header.Value);
+      }
+      if (Importance != MailPriority.Normal)
+        txt.WriteLine("Importance: {0}", (int)Importance);
+      txt.WriteLine("Subject: {0}", Subject);
+      txt.WriteLine();
+
+      //todo: attachments
+      txt.Write(Body);
     }
   }
 }
