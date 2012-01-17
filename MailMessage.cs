@@ -189,7 +189,7 @@ namespace AE.Net.Mail {
 
     private static readonly string[] SpecialHeaders = "Date,To,Cc,Reply-To,Bcc,Sender,From,Message-ID,Importance,Subject".Split(',');
     public void Save(System.IO.TextWriter txt) {
-      txt.WriteLine("Date: {0:ddd, dd MMM yyyy hh:mm:ss} GMT", Date.ToUniversalTime());
+      txt.WriteLine("Date: {0}", Date.GetRFC2060Date());
       txt.WriteLine("To: ", string.Join("; ", To.Select(x => x.ToString())));
       txt.WriteLine("Cc: ", string.Join("; ", Cc.Select(x => x.ToString())));
       txt.WriteLine("Reply-To: ", string.Join("; ", ReplyTo.Select(x => x.ToString())));

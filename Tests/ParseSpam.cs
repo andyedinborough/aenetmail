@@ -3,6 +3,7 @@ using System.Text.RegularExpressions;
 using AE.Net.Mail;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Should.Fluent;
+using System.Linq;
 
 namespace Tests {
   /// <summary>
@@ -39,9 +40,9 @@ namespace Tests {
           if (string.IsNullOrEmpty(msg.Subject) && rxSubject.IsMatch(msg.Raw))
             throw new AssertFailedException("subject is null or empty");
           //msg.From.Should().Not.Be.Null();
-          if (msg.To.Length > 0) msg.To[0].Should().Not.Be.Null();
-          if (msg.Cc.Length > 0) msg.Cc[0].Should().Not.Be.Null();
-          if (msg.Bcc.Length > 0) msg.Bcc[0].Should().Not.Be.Null();
+          if (msg.To.Count > 0) msg.To.First().Should().Not.Be.Null();
+          if (msg.Cc.Count > 0) msg.Cc.First().Should().Not.Be.Null();
+          if (msg.Bcc.Count > 0) msg.Bcc.First().Should().Not.Be.Null();
 
           (msg.Body ?? string.Empty).Trim().Should().Not.Be.NullOrEmpty();
 
