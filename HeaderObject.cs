@@ -45,7 +45,11 @@ namespace AE.Net.Mail {
         //only decode the content if it is a text document
               && ContentType.StartsWith("text/", StringComparison.OrdinalIgnoreCase)
               && Utilities.IsValidBase64String(value)) {
-        value = System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(value));
+        var data = Convert.FromBase64String(value);
+        using (var mem = new System.IO.MemoryStream(data))
+        using (var str = new System.IO.StreamReader(mem, true))
+          value = str.ReadToEnd();
+
         ContentTransferEncoding = string.Empty;
       }
 
