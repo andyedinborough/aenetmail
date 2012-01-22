@@ -5,6 +5,7 @@ using System.Security.Cryptography;
 using System.Text.RegularExpressions;
 using System.Threading;
 using AE.Net.Mail.Imap;
+using System.Text;
 
 namespace AE.Net.Mail {
 
@@ -339,22 +340,21 @@ namespace AE.Net.Mail {
       var x = new List<MailMessage>();
       string reg = @"\* \d+ FETCH.*?BODY.*?\{(\d+)\}";
       Match m = Regex.Match(response, reg);
-      string bodies = String.Empty;
+
       while (m.Groups.Count > 1) {
         int bodyremaininglen = Convert.ToInt32(m.Groups[1].ToString());
         MailMessage mail = new MailMessage();
-        //char[] body = new char[bodylen];
-        string body = String.Empty;
+
+        var body = new StringBuilder();
         while (bodyremaininglen > 0) {
-          bodies += GetResponse();
-          if (bodyremaininglen < bodies.Length) {
-            body += bodies.Substring(0, bodyremaininglen);
+          var line = GetResponse();
+
+          if (bodyremaininglen < line.Length) {
+            body.Append(line, 0, bodyremaininglen);
             bodyremaininglen = 0;
-            bodies = bodies.Remove(0);
           } else {
-            body += bodies + Environment.NewLine;
-            bodyremaininglen -= bodies.Length + 2;  //extra 2 for CRLF
-            bodies = "";
+            body.Append(line).Append(Environment.NewLine);
+            bodyremaininglen -= line.Length + 2;  //extra 2 for CRLF
           }
         }
 
@@ -364,7 +364,7 @@ namespace AE.Net.Mail {
         if (m2.Groups[1] != null) mail.SetFlags(m2.Groups[1].ToString());
         m2 = Regex.Match(response, @"RFC822\.SIZE (\d+)");
         if (m2.Groups[1] != null) mail.Size = Convert.ToInt32(m2.Groups[1].ToString());
-        mail.Load(body, headersonly);
+        mail.Load(body.ToString(), headersonly);
         x.Add(mail);
         response = GetResponse(); // read last line terminated by )
         m = Regex.Match(response, reg);
