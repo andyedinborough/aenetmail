@@ -122,7 +122,7 @@ namespace AE.Net.Mail {
         _Stream.Dispose();
         _Stream = null;
       }
-      if (!_ReadThread.Join(2000)) {
+      if (_ReadThread != null && !_ReadThread.Join(2000)) {
         _ReadThread.Abort();
       }
     }
