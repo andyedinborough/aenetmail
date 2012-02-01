@@ -15,7 +15,10 @@ namespace AE.Net.Mail {
         }
 
         internal override void OnLogout() {
-            SendCommand("QUIT");
+            if (_Stream != null)
+            {
+                SendCommand("QUIT");
+            }
         }
 
         internal override void CheckResultOK(string result) {
