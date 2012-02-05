@@ -2,10 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using AE.Net.Mail.Imap;
-using System.Text;
 
 namespace AE.Net.Mail {
 
@@ -366,7 +366,10 @@ namespace AE.Net.Mail {
         if (m2.Groups[1] != null) mail.Size = Convert.ToInt32(m2.Groups[1].ToString());
         mail.Load(body.ToString(), headersonly);
         x.Add(mail);
-        response = GetResponse(); // read last line terminated by )
+
+        response = response.Split('\n').LastOrDefault() ?? string.Empty;
+        while (!response.Contains(tag + "OK"))
+          response = GetResponse();
         m = Regex.Match(response, reg);
       }
 
@@ -459,7 +462,7 @@ namespace AE.Net.Mail {
           break;
 
         case AuthMethods.Login:
-          command = tag + "LOGIN " + login + " " + password;
+          command = tag + "LOGIN " + login.QuoteString() + " " + password.QuoteString();
           result = SendCommandGetResponse(command);
           break;
 
