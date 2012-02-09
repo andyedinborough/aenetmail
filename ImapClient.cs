@@ -646,7 +646,7 @@ namespace AE.Net.Mail {
         prefix = "UID ";
       }
 
-      string command = string.Concat(GetTag(), prefix, "STORE ", messageset, " ", replace ? "+" : "", "FLAGS.SILENT (" + flags + ")");
+      string command = string.Concat(GetTag(), prefix, "STORE ", messageset, " ", replace ? "" : "+", "FLAGS.SILENT (" + flags + ")");
       string response = SendCommandGetResponse(command);
       while (response.StartsWith("*")) {
         response = GetResponse();
