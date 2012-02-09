@@ -333,7 +333,7 @@ namespace AE.Net.Mail {
       UID = HEADERS = SETSEEN = String.Empty;
       if (uid) UID = "UID ";
       if (headersonly) HEADERS = "HEADER";
-      if (setseen) SETSEEN = ".PEEK";
+      if (!setseen) SETSEEN = ".PEEK";
       string tag = GetTag();
       string command = tag + UID + "FETCH " + start + ":" + end + " (UID RFC822.SIZE FLAGS BODY" + SETSEEN + "[" + HEADERS + "])";
       string response = SendCommandGetResponse(command);
