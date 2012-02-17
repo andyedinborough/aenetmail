@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Linq;
 using AE.Net.Mail;
-using AE.Net.Mail.Imap;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Should.Fluent;
 
@@ -35,10 +34,15 @@ namespace Tests {
       }
     }
 
-    void imap_NewMessage(object sender, MessageEventArgs e) {
-      var imap = (sender as ImapClient);
-      var msg = imap.GetMessage(e.MessageCount - 1);
-      Console.WriteLine(msg.Subject);
+    [TestMethod]
+    public void TestPolish() {
+      using (var imap = GetClient<ImapClient>()) {
+        var msg = imap.SearchMessages(SearchCondition.Subject("POLISH LANGUAGE TEST")).FirstOrDefault();
+        msg.Value.Should().Not.Be.Null();
+
+        msg.Value.Body.Should().Contain("Cię e-mailem, kiedy Kupują");
+
+      }
     }
 
     [TestMethod]
