@@ -56,3 +56,4 @@ obj/*
 TestResults/*
 */bin/*
 */obj/*
+Tests/packages/*

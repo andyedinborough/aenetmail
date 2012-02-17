@@ -1,15 +1,22 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Net.Mail;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Globalization;
 
 namespace AE.Net.Mail {
   internal static class Utilities {
+    internal static string Read(this System.IO.TextReader rdr, int length) {
+      var buffer = new char[length];
+      var read = rdr.Read(buffer, 0, length);
+      return new string(buffer, 0, read);
+    }
+
     internal static string NotEmpty(this string input, params string[] others) {
-      if (!string.IsNullOrEmpty(input)) return input;
+      if (!string.IsNullOrEmpty(input))
+        return input;
       foreach (var item in others) {
         if (!string.IsNullOrEmpty(item)) {
           return item;
@@ -67,7 +74,8 @@ namespace AE.Net.Mail {
     }
 
     internal static bool StartsWithWhiteSpace(this string line) {
-      if (string.IsNullOrEmpty(line)) return false;
+      if (string.IsNullOrEmpty(line))
+        return false;
       var chr = line[0];
       return chr == ' ' || chr == '\t' || chr == '\n' || chr == '\r';
     }
@@ -126,7 +134,8 @@ namespace AE.Net.Mail {
       var matches = Regex.Matches(encodedWords, strRegEx);
       foreach (Match match in matches) {
         // If this match was not a success, we should not use it
-        if (!match.Success) continue;
+        if (!match.Success)
+          continue;
 
         string fullMatchValue = match.Value;
 
@@ -251,7 +260,8 @@ namespace AE.Net.Mail {
     #endregion
 
     internal static VT Get<KT, VT>(this IDictionary<KT, VT> dictionary, KT key, VT defaultValue = default(VT)) {
-      if (dictionary == null) return defaultValue;
+      if (dictionary == null)
+        return defaultValue;
       VT value;
       if (dictionary.TryGetValue(key, out value))
         return value;
@@ -271,7 +281,8 @@ namespace AE.Net.Mail {
 
 
     internal static void Fire<T>(this EventHandler<T> events, object sender, T args) where T : EventArgs {
-      if (events == null) return;
+      if (events == null)
+        return;
       events(sender, args);
     }
 

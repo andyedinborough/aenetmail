@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography;
-using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using AE.Net.Mail.Imap;
@@ -26,7 +25,8 @@ namespace AE.Net.Mail {
     }
 
     public enum AuthMethods {
-      Login, CRAMMD5
+      Login,
+      CRAMMD5
     }
 
     public AuthMethods AuthMethod { get; set; }
@@ -48,7 +48,8 @@ namespace AE.Net.Mail {
       }
       remove {
         _NewMessage -= value;
-        if (!HasEvents) IdleStop();
+        if (!HasEvents)
+          IdleStop();
       }
     }
 
@@ -60,7 +61,8 @@ namespace AE.Net.Mail {
       }
       remove {
         _MessageDeleted -= value;
-        if (!HasEvents) IdleStop();
+        if (!HasEvents)
+          IdleStop();
       }
     }
 
@@ -78,15 +80,18 @@ namespace AE.Net.Mail {
 
     private void IdlePause() {
       CheckConnectionStatus();
-      if (_IdleEvents == null || !_Idling) return;
-      StopIdleEventsThread();
+      if (_IdleEvents == null || !_Idling)
+        return;
 
+      SendCommand("DONE");
+      if (!_IdleEvents.Join(2000))
+        _IdleEvents.Abort();
       _IdleEvents = null;
-      SendCommandGetResponse("DONE");
     }
 
     private void IdleResume() {
-      if (_IdleEvents != null || !_Idling) return;
+      if (!_Idling)
+        return;
 
       IdleResumeCommand();
 
@@ -98,10 +103,8 @@ namespace AE.Net.Mail {
     }
 
     private void IdleResumeCommand() {
-      var response = SendCommandGetResponse(GetTag() + "IDLE");
-      //response = response.Substring(response.IndexOf(" ")).Trim();
-      //if (!response.TrimStart().StartsWith("idling", StringComparison.OrdinalIgnoreCase))
-      //    throw new Exception(response);
+      SendCommandGetResponse(GetTag() + "IDLE");
+      _IdleARE.Set();
     }
 
     private bool HasEvents {
@@ -114,28 +117,41 @@ namespace AE.Net.Mail {
       _Idling = false;
       IdlePause();
       if (_IdleEvents != null) {
-        StopIdleEventsThread();
+        _IdleARE.Close();
+        if (!_IdleEvents.Join(2000))
+          _IdleEvents.Abort();
         _IdleEvents = null;
       }
     }
 
-    private void StopIdleEventsThread() {
-      _Responses.Add(IDLE_THREAD_ABORT);  //this will abort the thread
-      if (!_IdleEvents.Join(2000))
-        _IdleEvents.Abort();
+    public bool TryGetResponse(out string response, int millisecondsTimeout) {
+      var mre = new System.Threading.ManualResetEventSlim(false);
+      string resp = response = null;
+      ThreadPool.QueueUserWorkItem(_ => {
+        resp = GetResponse();
+        mre.Set();
+      });
+
+      if (mre.Wait(millisecondsTimeout)) {
+        response = resp;
+        return true;
+      } else
+        return false;
     }
 
+    private static readonly int idleTimeout = (int)TimeSpan.FromSeconds(20).TotalMilliseconds;
+    private static AutoResetEvent _IdleARE = new AutoResetEvent(false);
     private void WatchIdleQueue() {
       try {
-        string last = null;
+        string last = null, resp;
 
         while (true) {
-          string resp;
-          if (!TryGetResponse(out resp, (int)TimeSpan.FromMinutes(20).TotalMilliseconds)) {   //send NOOP every 20 minutes
+          if (!TryGetResponse(out resp, idleTimeout)) {   //send NOOP every 20 minutes
             Noop(false);        //call noop without aborting this Idle thread
             continue;
           }
-          if (resp == IDLE_THREAD_ABORT)       //string that tells us to close the thread
+
+          if (resp.Contains("OK IDLE"))
             return;
 
           var data = resp.Split(' ');
@@ -149,11 +165,7 @@ namespace AE.Net.Mail {
             last = data[2];
           }
         }
-      } catch (ThreadAbortException) {
-        Console.WriteLine("IdleEvent thread aborted");
-      } catch (Exception ex) {
-        Console.WriteLine(ex.Message);
-      }
+      } catch (Exception) { }
     }
 
     protected override void OnDispose() {
@@ -207,7 +219,8 @@ namespace AE.Net.Mail {
       IdlePause();
       string command = GetTag() + "CAPABILITY";
       string response = SendCommandGetResponse(command);
-      if (response.StartsWith("* CAPABILITY ")) response = response.Substring(13);
+      if (response.StartsWith("* CAPABILITY "))
+        response = response.Substring(13);
       _Capability = response.Trim().Split(' ');
       GetResponse();
       IdleResume();
@@ -255,11 +268,14 @@ namespace AE.Net.Mail {
           m = Regex.Match(response, @"(\d+) EXISTS");
           if (m.Groups.Count > 1) { x.NumMsg = Convert.ToInt32(m.Groups[1].ToString()); }
           m = Regex.Match(response, @"(\d+) RECENT");
-          if (m.Groups.Count > 1) x.NumNewMsg = Convert.ToInt32(m.Groups[1].ToString());
+          if (m.Groups.Count > 1)
+            x.NumNewMsg = Convert.ToInt32(m.Groups[1].ToString());
           m = Regex.Match(response, @"UNSEEN (\d+)");
-          if (m.Groups.Count > 1) x.NumUnSeen = Convert.ToInt32(m.Groups[1].ToString());
+          if (m.Groups.Count > 1)
+            x.NumUnSeen = Convert.ToInt32(m.Groups[1].ToString());
           m = Regex.Match(response, @" FLAGS \((.*?)\)");
-          if (m.Groups.Count > 1) x.SetFlags(m.Groups[1].ToString());
+          if (m.Groups.Count > 1)
+            x.SetFlags(m.Groups[1].ToString());
           response = GetResponse();
         }
         _SelectedMailbox = mailbox;
@@ -325,52 +341,53 @@ namespace AE.Net.Mail {
       return GetMessages((startIndex + 1).ToString(), (endIndex + 1).ToString(), false, headersonly, setseen);
     }
 
+    private static Regex rxGetBodyLength = new Regex(@"\* \d+ FETCH.*?BODY.*?\{(\d+)\}", RegexOptions.Compiled);
+    private static Regex rxUID = new Regex(@"UID (\d+)", RegexOptions.Compiled);
+    private static Regex rxFlags = new Regex(@"FLAGS \((.*?)\)", RegexOptions.Compiled);
+    private static Regex rxSize = new Regex(@"RFC822\.SIZE (\d+)", RegexOptions.Compiled);
+
     public MailMessage[] GetMessages(string start, string end, bool uid, bool headersonly, bool setseen) {
       CheckMailboxSelected();
       IdlePause();
 
       string UID, HEADERS, SETSEEN;
       UID = HEADERS = SETSEEN = String.Empty;
-      if (uid) UID = "UID ";
-      if (headersonly) HEADERS = "HEADER";
-      if (!setseen) SETSEEN = ".PEEK";
+      if (uid)
+        UID = "UID ";
+      if (headersonly)
+        HEADERS = "HEADER";
+      if (!setseen)
+        SETSEEN = ".PEEK";
       string tag = GetTag();
       string command = tag + UID + "FETCH " + start + ":" + end + " (UID RFC822.SIZE FLAGS BODY" + SETSEEN + "[" + HEADERS + "])";
-      string response = SendCommandGetResponse(command);
+      string response;
       var x = new List<MailMessage>();
-      string reg = @"\* \d+ FETCH.*?BODY.*?\{(\d+)\}";
-      Match m = Regex.Match(response, reg);
 
-      while (m.Groups.Count > 1) {
-        int bodyremaininglen = Convert.ToInt32(m.Groups[1].ToString());
-        MailMessage mail = new MailMessage();
+      SendCommand(command);
+      while (true) {
+        response = GetResponse();
+        if (response.Contains(tag + "OK"))
+          break;
 
-        var body = new StringBuilder();
-        while (bodyremaininglen > 0) {
-          var line = GetResponse();
+        var m = rxGetBodyLength.Match(response);
+        if (!m.Success)
+          continue;
 
-          if (bodyremaininglen < line.Length) {
-            body.Append(line, 0, bodyremaininglen);
-            bodyremaininglen = 0;
-          } else {
-            body.Append(line).Append(Environment.NewLine);
-            bodyremaininglen -= line.Length + 2;  //extra 2 for CRLF
-          }
-        }
+        int length = m.Groups[1].Value.ToInt();
+        var mail = new MailMessage();
+        mail.Load(_Reader.Read(length), headersonly);
 
-        Match m2 = Regex.Match(response, @"UID (\d+)");
-        if (m2.Groups[1] != null) mail.Uid = m2.Groups[1].ToString();
-        m2 = Regex.Match(response, @"FLAGS \((.*?)\)");
-        if (m2.Groups[1] != null) mail.SetFlags(m2.Groups[1].ToString());
-        m2 = Regex.Match(response, @"RFC822\.SIZE (\d+)");
-        if (m2.Groups[1] != null) mail.Size = Convert.ToInt32(m2.Groups[1].ToString());
-        mail.Load(body.ToString(), headersonly);
+        var m2 = rxUID.Match(response);
+        if (m2.Groups[1] != null)
+          mail.Uid = m2.Groups[1].ToString();
+        m2 = rxFlags.Match(response);
+        if (m2.Groups[1] != null)
+          mail.SetFlags(m2.Groups[1].ToString());
+        m2 = rxSize.Match(response);
+        if (m2.Groups[1] != null)
+          mail.Size = Convert.ToInt32(m2.Groups[1].ToString());
+
         x.Add(mail);
-
-        response = response.Split('\n').LastOrDefault() ?? string.Empty;
-        while (!response.Contains(tag + "OK"))
-          response = GetResponse();
-        m = Regex.Match(response, reg);
       }
 
       IdleResume();
@@ -501,7 +518,8 @@ namespace AE.Net.Mail {
       //[TODO] be sure to parse correctly namespace when not all namespaces are present. NIL character
       string reg = @"\((.*?)\) \((.*?)\) \((.*?)\)$";
       Match m = Regex.Match(response, reg);
-      if (m.Groups.Count != 4) throw new Exception("En error occure, this command is not fully supported !");
+      if (m.Groups.Count != 4)
+        throw new Exception("En error occure, this command is not fully supported !");
       string reg2 = "\\(\\\"(.*?)\\\" \\\"(.*?)\\\"\\)";
       Match m2 = Regex.Match(m.Groups[1].ToString(), reg2);
       while (m2.Groups.Count > 1) {
@@ -536,7 +554,8 @@ namespace AE.Net.Mail {
       int result = 0;
       while (response.StartsWith("*")) {
         Match m = Regex.Match(response, reg);
-        if (m.Groups.Count > 1) result = Convert.ToInt32(m.Groups[1].ToString());
+        if (m.Groups.Count > 1)
+          result = Convert.ToInt32(m.Groups[1].ToString());
         response = GetResponse();
         m = Regex.Match(response, reg);
       }
@@ -597,11 +616,14 @@ namespace AE.Net.Mail {
           m = Regex.Match(response, @"(\d+) EXISTS");
           if (m.Groups.Count > 1) { x.NumMsg = Convert.ToInt32(m.Groups[1].ToString()); }
           m = Regex.Match(response, @"(\d+) RECENT");
-          if (m.Groups.Count > 1) x.NumNewMsg = Convert.ToInt32(m.Groups[1].ToString());
+          if (m.Groups.Count > 1)
+            x.NumNewMsg = Convert.ToInt32(m.Groups[1].ToString());
           m = Regex.Match(response, @"UNSEEN (\d+)");
-          if (m.Groups.Count > 1) x.NumUnSeen = Convert.ToInt32(m.Groups[1].ToString());
+          if (m.Groups.Count > 1)
+            x.NumUnSeen = Convert.ToInt32(m.Groups[1].ToString());
           m = Regex.Match(response, @" FLAGS \((.*?)\)");
-          if (m.Groups.Count > 1) x.SetFlags(m.Groups[1].ToString());
+          if (m.Groups.Count > 1)
+            x.SetFlags(m.Groups[1].ToString());
           response = GetResponse();
         }
         if (IsResultOK(response)) {

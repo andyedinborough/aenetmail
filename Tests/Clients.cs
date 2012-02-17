@@ -12,15 +12,26 @@ namespace Tests {
 
     [TestMethod]
     public void TestIDLE() {
-      var mre = new System.Threading.ManualResetEvent(false);
+      var mre1 = new System.Threading.ManualResetEventSlim(false);
+      var mre2 = new System.Threading.ManualResetEventSlim(false);
       using (var imap = GetClient<ImapClient>()) {
-        imap.NewMessage += (sender, e) => {
-          var msg = imap.GetMessage(e.MessageCount - 1);
-          Console.WriteLine(msg.Subject);
+        bool fired = false;
+        imap.MessageDeleted += (sender, e) => {
+          fired = true;
+          mre2.Set();
         };
 
-        while (!mre.WaitOne(5000)) //low for the sake of testing; typical timeout is 30 minutes
-          imap.Noop();
+        var count = imap.GetMessageCount();
+        count.Should().Be.InRange(1, int.MaxValue); //interupt the idle thread
+
+        System.Threading.ThreadPool.QueueUserWorkItem(_ => {
+          TestDelete();
+          mre1.Set();
+        });
+
+        mre1.Wait();
+        mre2.Wait(TimeSpan.FromSeconds(15));//give the other thread a moment
+        fired.Should().Be.True();
       }
     }
 
@@ -87,6 +98,15 @@ namespace Tests {
     }
 
     [TestMethod]
+    public void TestGetSeveralMessages() {
+      using (var imap = GetClient<ImapClient>()) {
+        var msgs = imap.GetMessages(0, 9);
+        msgs.Length.Should().Equal(10);
+
+      }
+    }
+
+    [TestMethod]
     public void TestDelete() {
       using (var client = GetClient<ImapClient>()) {
         var lazymsg = client.SearchMessages(SearchCondition.From("DRAGONEXT")).FirstOrDefault();
@@ -101,8 +121,16 @@ namespace Tests {
       }
     }
 
+    private string GetSolutionDirectory() {
+      var dir = new System.IO.DirectoryInfo(Environment.CurrentDirectory);
+      while (dir.GetFiles("*.sln").Length == 0) {
+        dir = dir.Parent;
+      }
+      return dir.FullName;
+    }
+
     private T GetClient<T>(string host = "gmail", string type = "imap") where T : class, IMailClient {
-      var accountsToTest = System.IO.Path.Combine(Environment.CurrentDirectory.Split(new[] { "\\AE.Net.Mail\\" }, StringSplitOptions.RemoveEmptyEntries).First(), "ae.net.mail.usernames.txt");
+      var accountsToTest = System.IO.Path.Combine(GetSolutionDirectory(), "..\\ae.net.mail.usernames.txt");
       var lines = System.IO.File.ReadAllLines(accountsToTest)
           .Select(x => x.Split(','))
           .Where(x => x.Length == 6)

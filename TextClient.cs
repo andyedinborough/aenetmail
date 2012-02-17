@@ -1,15 +1,12 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.IO;
 using System.Net.Sockets;
-using System.Threading;
 
 namespace AE.Net.Mail {
   public abstract class TextClient : IDisposable {
     protected TcpClient _Connection;
     protected Stream _Stream;
-    protected BlockingCollection<String> _Responses = new BlockingCollection<String>();
-    private Thread _ReadThread;
+    protected StreamReader _Reader;
 
     public string Host { get; private set; }
 
@@ -58,12 +55,8 @@ namespace AE.Net.Mail {
           sslSream.AuthenticateAsClient(hostname);
         }
 
-        //Create a new thread to retrieve data (needed for Imap Idle).
-        _ReadThread = new Thread(ReceiveData);
-        _ReadThread.Name = "_ReadThread";
-        _ReadThread.Start();
-
-        string info = _Responses.Take();
+        _Reader = new StreamReader(_Stream);
+        string info = _Reader.ReadLine();
         OnConnected(info);
 
         IsConnected = true;
@@ -74,23 +67,13 @@ namespace AE.Net.Mail {
       }
     }
 
-    private void ReceiveData() {
-      try {
-        string line;
-        using (var reader = new StreamReader(_Stream, System.Text.Encoding.Default))
-          while (true) {
-            line = reader.ReadLine();
-            if (!_Responses.IsAddingCompleted) {
-              _Responses.Add(line);
-            }
-          }
-      } catch (Exception) { } //we don't want thread exceptions killing us
-    }
-
     protected void CheckConnectionStatus() {
-      if (IsDisposed) throw new ObjectDisposedException(this.GetType().Name);
-      if (!IsConnected) throw new Exception("You must connect first!");
-      if (!IsAuthenticated) throw new Exception("You must authenticate first!");
+      if (IsDisposed)
+        throw new ObjectDisposedException(this.GetType().Name);
+      if (!IsConnected)
+        throw new Exception("You must connect first!");
+      if (!IsAuthenticated)
+        throw new Exception("You must authenticate first!");
     }
 
     protected virtual void SendCommand(string command) {
@@ -104,11 +87,7 @@ namespace AE.Net.Mail {
     }
 
     protected virtual string GetResponse() {
-      return _Responses.Take();
-    }
-
-    protected virtual bool TryGetResponse(out string result, int milliseconds = 200) {
-      return _Responses.TryTake(out result, milliseconds);
+      return _Reader.ReadLine();
     }
 
     protected void SendCommandCheckOK(string command) {
@@ -117,13 +96,13 @@ namespace AE.Net.Mail {
 
     public void Disconnect() {
       Logout();
-      _Responses.CompleteAdding();
       if (_Stream != null) {
         _Stream.Dispose();
         _Stream = null;
       }
-      if (_ReadThread != null && !_ReadThread.Join(2000)) {
-        _ReadThread.Abort();
+      if (_Reader != null) {
+        _Reader.Dispose();
+        _Reader = null;
       }
     }
 
@@ -137,7 +116,7 @@ namespace AE.Net.Mail {
 
       IsDisposed = true;
       _Stream = null;
-      _ReadThread = null;
+      _Reader = null;
       _Connection = null;
     }
   }

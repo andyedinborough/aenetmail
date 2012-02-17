@@ -9,7 +9,9 @@ using System.Text;
 
 namespace AE.Net.Mail {
   public enum MailPriority {
-    Normal = 3, High = 5, Low = 1
+    Normal = 3,
+    High = 5,
+    Low = 1
   }
 
   [System.Flags]
@@ -75,7 +77,8 @@ namespace AE.Net.Mail {
           if (line.Trim().Length == 0)
             if (headers.Length == 0)
               continue;
-            else break;
+            else
+              break;
           headers.AppendLine(line);
         }
         RawHeaders = headers.ToString();
@@ -119,7 +122,8 @@ namespace AE.Net.Mail {
     [Obsolete("Use Body instead--check content-type to determine if it's HTML.  If HTML is needed, find an attachment in GetBodyAttachments() with a text/html content-type."), EditorBrowsable(EditorBrowsableState.Never)]
     public string BodyHtml {
       get {
-        if (ContentType.Contains("html")) return Body;
+        if (ContentType.Contains("html"))
+          return Body;
         return GetBodyAttachments()
           .Where(x => x.ContentType.Contains("html"))
           .Select(x => x.Body)
@@ -178,7 +182,8 @@ namespace AE.Net.Mail {
         int flag = 0;
         if (_FlagCache.TryGetValue(x.TrimStart('\\'), out flag))
           return flag;
-        else return 0;
+        else
+          return 0;
       }).Sum();
     }
 
@@ -194,9 +199,12 @@ namespace AE.Net.Mail {
       txt.WriteLine("Cc: ", string.Join("; ", Cc.Select(x => x.ToString())));
       txt.WriteLine("Reply-To: ", string.Join("; ", ReplyTo.Select(x => x.ToString())));
       txt.WriteLine("Bcc: ", string.Join("; ", Bcc.Select(x => x.ToString())));
-      if (Sender != null) txt.WriteLine("Sender: ", Sender);
-      if (From != null) txt.WriteLine("From: ", Sender);
-      if (!string.IsNullOrEmpty(MessageID)) txt.WriteLine("Message-ID: ", MessageID);
+      if (Sender != null)
+        txt.WriteLine("Sender: ", Sender);
+      if (From != null)
+        txt.WriteLine("From: ", Sender);
+      if (!string.IsNullOrEmpty(MessageID))
+        txt.WriteLine("Message-ID: ", MessageID);
 
       var otherHeaders = Headers.Where(x => !SpecialHeaders.Contains(x.Key, StringComparer.InvariantCultureIgnoreCase));
       foreach (var header in otherHeaders) {
