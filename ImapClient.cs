@@ -16,8 +16,6 @@ namespace AE.Net.Mail {
 
     private bool _Idling;
     private Thread _IdleEvents;
-    static readonly object _FinishedLock = new object();
-    const string IDLE_THREAD_ABORT = "!AbortThread";
 
     public ImapClient(string host, string username, string password, AuthMethods method = AuthMethods.Login, int port = 143, bool secure = false) {
       Connect(host, port, secure);
