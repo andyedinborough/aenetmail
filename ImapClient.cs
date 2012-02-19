@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using AE.Net.Mail.Imap;
@@ -375,7 +376,16 @@ namespace AE.Net.Mail {
 
         int length = m.Groups[1].Value.ToInt();
         var mail = new MailMessage();
-        mail.Load(_Reader.Read(length), headersonly);
+        var body = new StringBuilder();
+        var buffer = new char[8192];
+        int read;
+        while (length > 0) {
+          read = _Reader.Read(buffer, 0, Math.Min(length, buffer.Length));
+          body.Append(buffer, 0, read);
+          length -= read;
+        }
+
+        mail.Load(body.ToString(), headersonly);
 
         var m2 = rxUID.Match(response);
         if (m2.Groups[1] != null)

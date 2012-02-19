@@ -35,6 +35,16 @@ namespace Tests {
     }
 
     [TestMethod]
+    public void TestMessageWithAttachments() {
+      using (var imap = GetClient<ImapClient>()) {
+        var msg = imap.SearchMessages(SearchCondition.Larger(100 * 1000)).FirstOrDefault().Value;
+
+        msg.Attachments.Count.Should().Be.InRange(1, int.MaxValue);
+
+      }
+    }
+
+    [TestMethod]
     public void TestPolish() {
       using (var imap = GetClient<ImapClient>()) {
         var msg = imap.SearchMessages(SearchCondition.Subject("POLISH LANGUAGE TEST")).FirstOrDefault();

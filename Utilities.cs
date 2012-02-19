@@ -8,11 +8,6 @@ using System.Text.RegularExpressions;
 
 namespace AE.Net.Mail {
   internal static class Utilities {
-    internal static string Read(this System.IO.TextReader rdr, int length) {
-      var buffer = new char[length];
-      var read = rdr.Read(buffer, 0, length);
-      return new string(buffer, 0, read);
-    }
 
     internal static string NotEmpty(this string input, params string[] others) {
       if (!string.IsNullOrEmpty(input))
