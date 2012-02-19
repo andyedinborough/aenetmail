@@ -45,6 +45,14 @@ namespace Tests {
     }
 
     [TestMethod]
+    public void TestSelectFolder() {
+      using (var imap = GetClient<ImapClient>()) {
+        imap.SelectMailbox("Notes");
+        imap.GetMessageCount().Should().Be.InRange(1, int.MaxValue);
+      }
+    }
+
+    [TestMethod]
     public void TestPolish() {
       using (var imap = GetClient<ImapClient>()) {
         var msg = imap.SearchMessages(SearchCondition.Subject("POLISH LANGUAGE TEST")).FirstOrDefault();
