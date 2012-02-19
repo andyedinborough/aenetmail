@@ -8,6 +8,13 @@ using System.Text.RegularExpressions;
 
 namespace AE.Net.Mail {
   internal static class Utilities {
+    internal static void TryDispose<T>(ref T obj) where T : class, IDisposable {
+      try {
+        if (obj != null)
+          obj.Dispose();
+      } catch (Exception) { }
+      obj = null;
+    }
 
     internal static string NotEmpty(this string input, params string[] others) {
       if (!string.IsNullOrEmpty(input))

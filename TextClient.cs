@@ -96,28 +96,30 @@ namespace AE.Net.Mail {
 
     public void Disconnect() {
       Logout();
-      if (_Stream != null) {
-        _Stream.Dispose();
-        _Stream = null;
-      }
-      if (_Reader != null) {
-        _Reader.Dispose();
-        _Reader = null;
-      }
+
+      Utilities.TryDispose(ref _Stream);
+      Utilities.TryDispose(ref _Reader);
+      Utilities.TryDispose(ref _Connection);
     }
 
     public void Dispose() {
-      Disconnect();
+      Dispose(true);
+      GC.SuppressFinalize(this);
+    }
 
-      try {
-        OnDispose();
-      } catch (Exception) { }
+    public virtual void Dispose(bool disposing) {
+      if (disposing) {
+        Disconnect();
 
+        try {
+          OnDispose();
+        } catch (Exception) { }
 
-      IsDisposed = true;
-      _Stream = null;
-      _Reader = null;
-      _Connection = null;
+        IsDisposed = true;
+        _Stream = null;
+        _Reader = null;
+        _Connection = null;
+      }
     }
   }
 }

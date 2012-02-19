@@ -166,7 +166,8 @@ namespace AE.Net.Mail {
         // check for nested part
         string nestedboundary = a.Headers.GetBoundary();
         if (!string.IsNullOrEmpty(nestedboundary)) {
-          ParseMime(new System.IO.StringReader(body.ToString()), nestedboundary);
+          using (var nestedReader = new System.IO.StringReader(body.ToString()))
+            ParseMime(nestedReader, nestedboundary);
 
         } else { // nested
           a.SetBody(body.ToString());
