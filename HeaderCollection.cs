@@ -76,8 +76,8 @@ namespace AE.Net.Mail {
     }
   }
 
-  public class HeaderCollection : SafeDictionary<string, HeaderValue> {
-    public HeaderCollection() : base(StringComparer.OrdinalIgnoreCase) { }
+  public class HeaderDictionary : SafeDictionary<string, HeaderValue> {
+    public HeaderDictionary() : base(StringComparer.OrdinalIgnoreCase) { }
 
     public string GetBoundary() {
       return this["Content-Type"]["boundary"];
@@ -144,7 +144,7 @@ namespace AE.Net.Mail {
     }
 
 
-    public static HeaderCollection Parse(string headers) {
+    public static HeaderDictionary Parse(string headers) {
       headers = Utilities.DecodeWords(headers);
       var temp = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
       var lines = headers.Split(new char[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
@@ -164,7 +164,7 @@ namespace AE.Net.Mail {
         }
       }
 
-      var result = new HeaderCollection();
+      var result = new HeaderDictionary();
       foreach (var item in temp) {
         result.Add(item.Key, new HeaderValue(item.Value));
       }

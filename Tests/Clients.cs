@@ -124,7 +124,8 @@ namespace Tests {
       using (var imap = GetClient<ImapClient>()) {
         var msgs = imap.GetMessages(0, 9);
         msgs.Length.Should().Equal(10);
-
+        msgs.Count(x => string.IsNullOrEmpty(x.Subject)).Should().Equal(0);
+        msgs.GroupBy(x => x.Subject).Count().Should().Equal(10);
       }
     }
 

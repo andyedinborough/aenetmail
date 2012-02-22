@@ -25,6 +25,28 @@ namespace AE.Net.Mail {
   }
 
   public class MailMessage : ObjectWHeaders {
+    public static implicit operator System.Net.Mail.MailMessage(MailMessage msg) {
+      var ret = new System.Net.Mail.MailMessage();
+      ret.Subject = msg.Subject;
+      ret.Sender = msg.Sender;
+      foreach (var a in msg.Bcc)
+        ret.Bcc.Add(a);
+      ret.Body = msg.Body;
+      ret.From = msg.From;
+      ret.Priority = (System.Net.Mail.MailPriority)msg.Importance;
+      foreach (var a in msg.ReplyTo)
+        ret.ReplyToList.Add(a);
+      foreach (var a in msg.To)
+        ret.To.Add(a);
+      foreach (var a in msg.Attachments) {
+        if (a.IsAttachment)
+          ret.Attachments.Add(new System.Net.Mail.Attachment(new System.IO.MemoryStream(a.GetData()), a.Filename, a.ContentType));
+        else
+          ret.AlternateViews.Add(new System.Net.Mail.AlternateView(new System.IO.MemoryStream(a.GetData()), a.ContentType));
+      }
+      return ret;
+    }
+
     private bool _HeadersOnly; // set to true if only headers have been fetched. 
 
     public MailMessage() {
