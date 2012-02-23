@@ -17,6 +17,8 @@ namespace AE.Net.Mail {
     private bool _Idling;
     private Thread _IdleEvents;
 
+    private string _FetchHeaders = null;
+
     public ImapClient(string host, string username, string password, AuthMethods method = AuthMethods.Login, int port = 143, bool secure = false) {
       Connect(host, port, secure);
       AuthMethod = method;
@@ -78,10 +80,10 @@ namespace AE.Net.Mail {
     }
 
     private void IdlePause() {
-      CheckConnectionStatus();
       if (_IdleEvents == null || !_Idling)
         return;
 
+      CheckConnectionStatus();
       SendCommand("DONE");
       if (!_IdleEvents.Join(2000))
         _IdleEvents.Abort();
@@ -354,11 +356,11 @@ namespace AE.Net.Mail {
       if (uid)
         UID = "UID ";
       if (headersonly)
-        HEADERS = "HEADER";
+        HEADERS = "[HEADER]";
       if (!setseen)
         SETSEEN = ".PEEK";
       string tag = GetTag();
-      string command = tag + UID + "FETCH " + start + ":" + end + " (UID RFC822.SIZE FLAGS BODY" + SETSEEN + "[" + HEADERS + "])";
+      string command = tag + UID + "FETCH " + start + ":" + end + " (" + _FetchHeaders + "UID RFC822.SIZE FLAGS BODY" + SETSEEN + HEADERS + ")";
       string response;
       var x = new List<MailMessage>();
 
@@ -393,7 +395,7 @@ namespace AE.Net.Mail {
           mail.SetFlags(m2.Groups[1].ToString());
         m2 = rxSize.Match(response);
         if (m2.Groups[1] != null)
-          mail.Size = Convert.ToInt32(m2.Groups[1].ToString());
+          mail.Size = m2.Groups[1].Value.ToInt();
 
         x.Add(mail);
       }
@@ -502,6 +504,16 @@ namespace AE.Net.Mail {
 
       if (!result.StartsWith(tag + "OK")) {
         throw new Exception(result);
+      }
+
+      if (Supports("COMPRESS=DEFLATE")) {
+        //SendCommandCheckOK(GetTag() + "compress deflate");
+        //_Reader = new System.IO.StreamReader(new System.IO.Compression.DeflateStream(_Stream, System.IO.Compression.CompressionMode.Decompress));
+        //_Writer = new System.IO.StreamWriter(new System.IO.Compression.DeflateStream(_Stream, System.IO.Compression.CompressionMode.Compress));
+      }
+
+      if (Supports("X-GM-EXT-1")) {
+        _FetchHeaders = "X-GM-MSGID X-GM-THRID X-GM-LABELS ";
       }
     }
 

@@ -7,6 +7,7 @@ namespace AE.Net.Mail {
     protected TcpClient _Connection;
     protected Stream _Stream;
     protected StreamReader _Reader;
+    //protected StreamWriter _Writer;
 
     public string Host { get; private set; }
 
@@ -50,12 +51,13 @@ namespace AE.Net.Mail {
         _Connection = new TcpClient(hostname, port);
         _Stream = _Connection.GetStream();
         if (ssl) {
-          var sslSream = new System.Net.Security.SslStream(_Stream);
-          _Stream = sslSream;
-          sslSream.AuthenticateAsClient(hostname);
+          var sslStream = new System.Net.Security.SslStream(_Stream, false);
+          _Stream = sslStream;
+          sslStream.AuthenticateAsClient(hostname);
         }
 
         _Reader = new StreamReader(_Stream);
+        //_Writer = new StreamWriter(_Stream);
         string info = _Reader.ReadLine();
         OnConnected(info);
 
@@ -63,6 +65,9 @@ namespace AE.Net.Mail {
         Host = hostname;
       } catch (Exception) {
         IsConnected = false;
+        Utilities.TryDispose(ref _Reader);
+        //Utilities.TryDispose(ref _Writer);
+        Utilities.TryDispose(ref _Stream);
         throw;
       }
     }
@@ -77,8 +82,8 @@ namespace AE.Net.Mail {
     }
 
     protected virtual void SendCommand(string command) {
-      byte[] data = System.Text.Encoding.Default.GetBytes(command + "\r\n");
-      _Stream.Write(data, 0, data.Length);
+      var bytes = System.Text.Encoding.Default.GetBytes(command + "\r\n");
+      _Stream.Write(bytes, 0, bytes.Length);
     }
 
     protected string SendCommandGetResponse(string command) {
@@ -97,8 +102,9 @@ namespace AE.Net.Mail {
     public void Disconnect() {
       Logout();
 
-      Utilities.TryDispose(ref _Stream);
       Utilities.TryDispose(ref _Reader);
+      //Utilities.TryDispose(ref _Writer);
+      Utilities.TryDispose(ref _Stream);
       Utilities.TryDispose(ref _Connection);
     }
 
