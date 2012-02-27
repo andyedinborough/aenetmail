@@ -140,7 +140,7 @@ namespace AE.Net.Mail {
         return false;
     }
 
-    private static readonly int idleTimeout = (int)TimeSpan.FromSeconds(20).TotalMilliseconds;
+    private static readonly int idleTimeout = (int)TimeSpan.FromMinutes(10).TotalMilliseconds;
     private static AutoResetEvent _IdleARE = new AutoResetEvent(false);
     private void WatchIdleQueue() {
       try {
