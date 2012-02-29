@@ -7,7 +7,6 @@ namespace AE.Net.Mail {
     protected TcpClient _Connection;
     protected Stream _Stream;
     protected StreamReader _Reader;
-    //protected StreamWriter _Writer;
 
     public string Host { get; private set; }
 
@@ -57,7 +56,6 @@ namespace AE.Net.Mail {
         }
 
         _Reader = new StreamReader(_Stream);
-        //_Writer = new StreamWriter(_Stream);
         string info = _Reader.ReadLine();
         OnConnected(info);
 
@@ -66,7 +64,6 @@ namespace AE.Net.Mail {
       } catch (Exception) {
         IsConnected = false;
         Utilities.TryDispose(ref _Reader);
-        //Utilities.TryDispose(ref _Writer);
         Utilities.TryDispose(ref _Stream);
         throw;
       }
@@ -103,7 +100,6 @@ namespace AE.Net.Mail {
       Logout();
 
       Utilities.TryDispose(ref _Reader);
-      //Utilities.TryDispose(ref _Writer);
       Utilities.TryDispose(ref _Stream);
       Utilities.TryDispose(ref _Connection);
     }

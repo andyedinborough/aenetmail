@@ -205,8 +205,6 @@ namespace AE.Net.Mail {
       var tag = GetTag();
       var response = SendCommandGetResponse(tag + "NOOP");
       while (!response.StartsWith(tag)) {
-        //if (_IdleEvents != null && _IdleQueue != null)    //NK: I'm not sure how to deal with this... Add to the _Responses queue?
-        //    _IdleQueue.Enqueue(response);
         response = GetResponse();
       }
 
@@ -356,11 +354,11 @@ namespace AE.Net.Mail {
       if (uid)
         UID = "UID ";
       if (headersonly)
-        HEADERS = "[HEADER]";
+        HEADERS = "HEADER";
       if (!setseen)
         SETSEEN = ".PEEK";
       string tag = GetTag();
-      string command = tag + UID + "FETCH " + start + ":" + end + " (" + _FetchHeaders + "UID RFC822.SIZE FLAGS BODY" + SETSEEN + HEADERS + ")";
+      string command = tag + UID + "FETCH " + start + ":" + end + " (" + _FetchHeaders + "UID RFC822.SIZE FLAGS BODY" + SETSEEN + "[" + HEADERS + "])";
       string response;
       var x = new List<MailMessage>();
 
@@ -506,11 +504,12 @@ namespace AE.Net.Mail {
         throw new Exception(result);
       }
 
-      if (Supports("COMPRESS=DEFLATE")) {
-        //SendCommandCheckOK(GetTag() + "compress deflate");
-        //_Reader = new System.IO.StreamReader(new System.IO.Compression.DeflateStream(_Stream, System.IO.Compression.CompressionMode.Decompress));
-        //_Writer = new System.IO.StreamWriter(new System.IO.Compression.DeflateStream(_Stream, System.IO.Compression.CompressionMode.Compress));
-      }
+      //if (Supports("COMPRESS=DEFLATE")) {
+      //  SendCommandCheckOK(GetTag() + "compress deflate");
+      //  _Stream0 = _Stream;
+      // // _Reader = new System.IO.StreamReader(new System.IO.Compression.DeflateStream(_Stream0, System.IO.Compression.CompressionMode.Decompress, true), System.Text.Encoding.Default);
+      // // _Stream = new System.IO.Compression.DeflateStream(_Stream0, System.IO.Compression.CompressionMode.Compress, true);
+      //}
 
       if (Supports("X-GM-EXT-1")) {
         _FetchHeaders = "X-GM-MSGID X-GM-THRID X-GM-LABELS ";
