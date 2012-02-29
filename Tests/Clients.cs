@@ -120,6 +120,18 @@ namespace Tests {
     }
 
     [TestMethod]
+    public void TestParseImapHeader() {
+      var header = @"X-GM-THRID 1320777376118077475 X-GM-MSGID 1320777376118077475 X-GM-LABELS () UID 8286 RFC822.SIZE 9369 FLAGS (\Seen) BODY[] {9369}";
+
+      var values = ImapClient.ParseImapHeader(header);
+      values["FLAGS"].Should().Equal(@"\Seen");
+      values["UID"].Should().Equal("8286");
+      values["X-GM-MSGID"].Should().Equal("1320777376118077475");
+      values["X-GM-LABELS"].Should().Be.NullOrEmpty();
+      values["RFC822.SIZE"].Should().Equal("9369");
+    }
+
+    [TestMethod]
     public void TestGetSeveralMessages() {
       using (var imap = GetClient<ImapClient>()) {
         var msgs = imap.GetMessages(0, 9);

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
@@ -340,25 +341,53 @@ namespace AE.Net.Mail {
       return GetMessages((startIndex + 1).ToString(), (endIndex + 1).ToString(), false, headersonly, setseen);
     }
 
-    private static Regex rxGetBodyLength = new Regex(@"\* \d+ FETCH.*?BODY.*?\{(\d+)\}", RegexOptions.Compiled);
-    private static Regex rxUID = new Regex(@"UID (\d+)", RegexOptions.Compiled);
-    private static Regex rxFlags = new Regex(@"FLAGS \((.*?)\)", RegexOptions.Compiled);
-    private static Regex rxSize = new Regex(@"RFC822\.SIZE (\d+)", RegexOptions.Compiled);
+    internal static NameValueCollection ParseImapHeader(string data) {
+      var values = new NameValueCollection();
+      string name = null;
+      int nump = 0;
+      var temp = new StringBuilder();
+      if (data != null)
+        foreach (var c in data) {
+          if (c == ' ') {
+            if (name == null) {
+              name = temp.ToString();
+              temp.Clear();
+
+            } else if (nump == 0) {
+              values[name] = temp.ToString();
+              name = null;
+              temp.Clear();
+            } else
+              temp.Append(c);
+          } else if (c == '(') {
+            if (nump > 0)
+              temp.Append(c);
+            nump++;
+          } else if (c == ')') {
+            nump--;
+            if (nump > 0)
+              temp.Append(c);
+          } else
+            temp.Append(c);
+        }
+
+      if (name != null)
+        values[name] = temp.ToString();
+
+      return values;
+    }
 
     public MailMessage[] GetMessages(string start, string end, bool uid, bool headersonly, bool setseen) {
       CheckMailboxSelected();
       IdlePause();
 
-      string UID, HEADERS, SETSEEN;
-      UID = HEADERS = SETSEEN = String.Empty;
-      if (uid)
-        UID = "UID ";
-      if (headersonly)
-        HEADERS = "HEADER";
-      if (!setseen)
-        SETSEEN = ".PEEK";
       string tag = GetTag();
-      string command = tag + UID + "FETCH " + start + ":" + end + " (" + _FetchHeaders + "UID RFC822.SIZE FLAGS BODY" + SETSEEN + "[" + HEADERS + "])";
+      string command = tag + (uid ? "UID " : null)
+        + "FETCH " + start + ":" + end + " ("
+        + _FetchHeaders + "UID RFC822.SIZE FLAGS BODY"
+        + (setseen ? ".PEEK" : null)
+        + "[" + (headersonly ? "HEADER" : null) + "])";
+
       string response;
       var x = new List<MailMessage>();
 
@@ -368,12 +397,24 @@ namespace AE.Net.Mail {
         if (response.Contains(tag + "OK"))
           break;
 
-        var m = rxGetBodyLength.Match(response);
-        if (!m.Success)
+        if (response[0] != '*' || !response.Contains("FETCH ("))
           continue;
 
-        int length = m.Groups[1].Value.ToInt();
         var mail = new MailMessage();
+        var imapHeaders = ParseImapHeader(response.Substring(response.IndexOf('(') + 1));
+        if (imapHeaders["UID"] != null)
+          mail.Uid = imapHeaders["UID"];
+
+        if (imapHeaders["Flags"] != null)
+          mail.SetFlags(imapHeaders["Flags"]);
+
+        if (imapHeaders["RFC822.SIZE"] != null)
+          mail.Size = imapHeaders["RFC822.SIZE"].ToInt();
+
+        foreach (var key in imapHeaders.AllKeys.Except(new[] { "UID", "Flags", "RFC822.SIZE", "BODY[]", "BODY[HEADER]" }, StringComparer.OrdinalIgnoreCase))
+          mail.Headers.Add(key, new HeaderValue(imapHeaders[key]));
+
+        int length = (imapHeaders["BODY[HEADER]"] ?? imapHeaders["BODY[]"]).Trim('{', '}').ToInt();
         var body = new StringBuilder();
         var buffer = new char[8192];
         int read;
@@ -384,16 +425,6 @@ namespace AE.Net.Mail {
         }
 
         mail.Load(body.ToString(), headersonly);
-
-        var m2 = rxUID.Match(response);
-        if (m2.Groups[1] != null)
-          mail.Uid = m2.Groups[1].ToString();
-        m2 = rxFlags.Match(response);
-        if (m2.Groups[1] != null)
-          mail.SetFlags(m2.Groups[1].ToString());
-        m2 = rxSize.Match(response);
-        if (m2.Groups[1] != null)
-          mail.Size = m2.Groups[1].Value.ToInt();
 
         x.Add(mail);
       }
