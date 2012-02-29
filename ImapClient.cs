@@ -360,7 +360,7 @@ namespace AE.Net.Mail {
       if (!setseen)
         SETSEEN = ".PEEK";
       string tag = GetTag();
-      string command = tag + UID + "FETCH " + start + ":" + end + " (" + _FetchHeaders + "UID RFC822.SIZE FLAGS BODY" + SETSEEN + HEADERS + ")";
+      string command = tag + UID + "FETCH " + start + ":" + end + " (" + _FetchHeaders + "UID RFC822.SIZE FLAGS BODY" + SETSEEN + "[]" + HEADERS + ")";
       string response;
       var x = new List<MailMessage>();
 
