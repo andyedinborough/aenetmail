@@ -394,7 +394,7 @@ namespace AE.Net.Mail {
       SendCommand(command);
       while (true) {
         response = GetResponse();
-        if (response.Contains(tag + "OK"))
+        if (string.IsNullOrEmpty(response) || response.Contains(tag + "OK"))
           break;
 
         if (response[0] != '*' || !response.Contains("FETCH ("))
