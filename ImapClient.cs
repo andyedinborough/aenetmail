@@ -414,14 +414,22 @@ namespace AE.Net.Mail {
         foreach (var key in imapHeaders.AllKeys.Except(new[] { "UID", "Flags", "RFC822.SIZE", "BODY[]", "BODY[HEADER]" }, StringComparer.OrdinalIgnoreCase))
           mail.Headers.Add(key, new HeaderValue(imapHeaders[key]));
 
-        int length = (imapHeaders["BODY[HEADER]"] ?? imapHeaders["BODY[]"]).Trim('{', '}').ToInt();
+        int bodySize = (imapHeaders["BODY[HEADER]"] ?? imapHeaders["BODY[]"]).Trim('{', '}').ToInt();
+
+        int size = Math.Min(bodySize, mail.Size > 0 ? mail.Size : bodySize);
         var body = new StringBuilder();
         var buffer = new char[8192];
         int read;
-        while (length > 0) {
-          read = _Reader.Read(buffer, 0, Math.Min(length, buffer.Length));
+        while (size > 0) {
+          read = _Reader.Read(buffer, 0, Math.Min(size, buffer.Length));
           body.Append(buffer, 0, read);
-          length -= read;
+          size -= read;
+          if (size == 0) {
+            if (_Reader.Peek() != ')') {
+              size = Math.Max(bodySize, mail.Size) - Math.Min(bodySize, mail.Size > 0 ? mail.Size : bodySize);
+              bodySize = Math.Max(bodySize, mail.Size);
+            }
+          }
         }
 
         mail.Load(body.ToString(), headersonly);
