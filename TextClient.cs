@@ -41,7 +41,8 @@ namespace AE.Net.Mail {
     }
 
 
-    public void Connect(string hostname, int port, bool ssl) {
+    public void Connect(string hostname, int port, bool ssl, bool skipSslValidation)
+    {
       try {
         Host = hostname;
         Port = port;
@@ -50,7 +51,11 @@ namespace AE.Net.Mail {
         _Connection = new TcpClient(hostname, port);
         _Stream = _Connection.GetStream();
         if (ssl) {
-          var sslStream = new System.Net.Security.SslStream(_Stream, false);
+            System.Net.Security.SslStream sslStream;
+            if (skipSslValidation)
+                sslStream = new System.Net.Security.SslStream(_Stream, false, (sender, cert, chain, err) => true);
+            else
+                sslStream = new System.Net.Security.SslStream(_Stream, false);
           _Stream = sslStream;
           sslStream.AuthenticateAsClient(hostname);
         }
