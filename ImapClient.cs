@@ -384,7 +384,7 @@ namespace AE.Net.Mail {
       string tag = GetTag();
       string command = tag + (uid ? "UID " : null)
         + "FETCH " + start + ":" + end + " ("
-        + _FetchHeaders + "UID RFC822.SIZE FLAGS BODY"
+        + _FetchHeaders + "UID FLAGS BODY"
         + (setseen ? ".PEEK" : null)
         + "[" + (headersonly ? "HEADER" : null) + "])";
 
@@ -402,35 +402,30 @@ namespace AE.Net.Mail {
 
         var mail = new MailMessage();
         var imapHeaders = ParseImapHeader(response.Substring(response.IndexOf('(') + 1));
+        mail.Size = (imapHeaders["BODY[HEADER]"] ?? imapHeaders["BODY[]"]).Trim('{', '}').ToInt();
+
         if (imapHeaders["UID"] != null)
           mail.Uid = imapHeaders["UID"];
 
         if (imapHeaders["Flags"] != null)
           mail.SetFlags(imapHeaders["Flags"]);
 
-        if (imapHeaders["RFC822.SIZE"] != null)
-          mail.Size = imapHeaders["RFC822.SIZE"].ToInt();
 
-        foreach (var key in imapHeaders.AllKeys.Except(new[] { "UID", "Flags", "RFC822.SIZE", "BODY[]", "BODY[HEADER]" }, StringComparer.OrdinalIgnoreCase))
+        foreach (var key in imapHeaders.AllKeys.Except(new[] { "UID", "Flags", "BODY[]", "BODY[HEADER]" }, StringComparer.OrdinalIgnoreCase))
           mail.Headers.Add(key, new HeaderValue(imapHeaders[key]));
 
-        int bodySize = (imapHeaders["BODY[HEADER]"] ?? imapHeaders["BODY[]"]).Trim('{', '}').ToInt();
-
-        int size = Math.Min(bodySize, mail.Size > 0 ? mail.Size : bodySize);
         var body = new StringBuilder();
-        var buffer = new char[8192];
+        int remaining = mail.Size;
+        var buffer = new byte[8192];
         int read;
-        while (size > 0) {
-          read = _Reader.Read(buffer, 0, Math.Min(size, buffer.Length));
-          body.Append(buffer, 0, read);
-          size -= read;
-          if (size == 0) {
-            if (_Reader.Peek() != ')') {
-              size = Math.Max(bodySize, mail.Size) - Math.Min(bodySize, mail.Size > 0 ? mail.Size : bodySize);
-              bodySize = Math.Max(bodySize, mail.Size);
-            }
-          }
+        while (remaining > 0) {
+          read = _Stream.Read(buffer, 0, Math.Min(remaining, buffer.Length));
+          body.Append(System.Text.Encoding.UTF8.GetString(buffer, 0, read));
+          remaining -= read;
         }
+
+        var next = Convert.ToChar(_Stream.ReadByte());
+        System.Diagnostics.Debug.Assert(next == ')');
 
         mail.Load(body.ToString(), headersonly);
 
@@ -517,7 +512,7 @@ namespace AE.Net.Mail {
           key = result.Replace("+ ", "");
           key = System.Text.Encoding.Default.GetString(Convert.FromBase64String(key));
           // calcul hash
-          using (HMACMD5 kMd5 = new HMACMD5(System.Text.Encoding.ASCII.GetBytes(password))) {
+          using (var kMd5 = new HMACMD5(System.Text.Encoding.ASCII.GetBytes(password))) {
             byte[] hash1 = kMd5.ComputeHash(System.Text.Encoding.ASCII.GetBytes(key));
             key = BitConverter.ToString(hash1).ToLower().Replace("-", "");
             result = Convert.ToBase64String(System.Text.Encoding.ASCII.GetBytes(login + " " + key));
