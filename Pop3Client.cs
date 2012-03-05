@@ -4,8 +4,9 @@ using System.Text;
 namespace AE.Net.Mail {
     public class Pop3Client : TextClient, IMailClient {
         public Pop3Client() { }
-        public Pop3Client(string host, string username, string password, int port = 110, bool secure = false) {
-            Connect(host, port, secure);
+        public Pop3Client(string host, string username, string password, int port = 110, bool secure = false, bool skipSslValidation = false)
+        {
+            Connect(host, port, secure, skipSslValidation);
             Login(username, password);
         }
 
