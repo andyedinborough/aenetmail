@@ -44,8 +44,13 @@ namespace AE.Net.Mail {
     }
 
 
-    public void Connect(string hostname, int port, bool ssl, bool skipSslValidation)
-    {
+    public void Connect(string hostname, int port, bool ssl, bool skipSslValidation) {
+      System.Net.Security.RemoteCertificateValidationCallback validateCertificate = null;
+      if (skipSslValidation) validateCertificate = (sender, cert, chain, err) => true;
+      Connect(hostname, port, ssl, validateCertificate);
+    }
+
+    public void Connect(string hostname, int port, bool ssl, System.Net.Security.RemoteCertificateValidationCallback validateCertificate) {
       try {
         Host = hostname;
         Port = port;
@@ -54,11 +59,11 @@ namespace AE.Net.Mail {
         _Connection = new TcpClient(hostname, port);
         _Stream = _Connection.GetStream();
         if (ssl) {
-            System.Net.Security.SslStream sslStream;
-            if (skipSslValidation)
-                sslStream = new System.Net.Security.SslStream(_Stream, false, (sender, cert, chain, err) => true);
-            else
-                sslStream = new System.Net.Security.SslStream(_Stream, false);
+          System.Net.Security.SslStream sslStream;
+          if (validateCertificate != null)
+            sslStream = new System.Net.Security.SslStream(_Stream, false, validateCertificate);
+          else
+            sslStream = new System.Net.Security.SslStream(_Stream, false);
           _Stream = sslStream;
           sslStream.AuthenticateAsClient(hostname);
         }
