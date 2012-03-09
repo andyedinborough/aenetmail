@@ -35,3 +35,6 @@ to simplify the creation of the Pop3 client.
           pop.DeleteMessage(i); //WE DON'T NEED NO STINKIN' EMAIL!
        }
     }
+
+###License
+http://andyedinborough.mit-license.org/
