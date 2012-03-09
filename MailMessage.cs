@@ -115,8 +115,7 @@ namespace AE.Net.Mail {
           SetBody((line + Environment.NewLine + reader.ReadToEnd()).Trim());
         }
 
-        if (string.IsNullOrEmpty(Body.Trim()) && Attachments != null && Attachments.Count > 0) {
-          var att = Attachments.FirstOrDefault(x => !x.IsAttachment && x.ContentType.Is("text/plain"));
+       if (string.IsNullOrEmpty(Body) && string.IsNullOrEmpty(Body.Trim()) && Attachments != null && Attachments.Count > 0) {    var att = Attachments.FirstOrDefault(x => !x.IsAttachment && x.ContentType.Is("text/plain"));
           if (att == null) {
             att = Attachments.FirstOrDefault(x => !x.IsAttachment && x.ContentType.Contains("html"));
           }
