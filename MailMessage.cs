@@ -32,6 +32,7 @@ namespace AE.Net.Mail {
       foreach (var a in msg.Bcc)
         ret.Bcc.Add(a);
       ret.Body = msg.Body;
+      ret.IsBodyHtml = msg.ContentType.Contains("html");
       ret.From = msg.From;
       ret.Priority = (System.Net.Mail.MailPriority)msg.Importance;
       foreach (var a in msg.ReplyTo)
@@ -113,10 +114,9 @@ namespace AE.Net.Mail {
         } else {
           SetBody((line + Environment.NewLine + reader.ReadToEnd()).Trim());
         }
-
-        if (string.IsNullOrEmpty(Body) && Attachments != null && Attachments.Count > 0) {
-          var att = Attachments.FirstOrDefault(x => !x.IsAttachment && x.ContentType.Is("text/plain"));
-          if (att == null) {
+        
+      if ((Body == null || string.IsNullOrEmpty(Body.Trim())) && Attachments != null && Attachments.Count > 0) {
+        if (att == null) {
             att = Attachments.FirstOrDefault(x => !x.IsAttachment && x.ContentType.Contains("html"));
           }
 
