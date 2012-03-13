@@ -116,6 +116,19 @@ namespace AE.Net.Mail {
         }
       }
 
+      if (string.IsNullOrWhiteSpace(Body) && AlternateViews.Count > 0) {
+        var att = AlternateViews.FirstOrDefault(x => x.ContentType.Is("text/plain"));
+        if (att == null) {
+          att = AlternateViews.FirstOrDefault(x => x.ContentType.Contains("html"));
+        }
+
+        if (att != null) {
+          Body = att.Body;
+          ContentTransferEncoding = att.Headers["Content-Transfer-Encoding"].RawValue;
+          ContentType = att.Headers["Content-Type"].RawValue;
+        }
+      }
+
       Date = Headers.GetDate();
       To = Headers.GetAddresses("To").ToList();
       Cc = Headers.GetAddresses("Cc").ToList();
