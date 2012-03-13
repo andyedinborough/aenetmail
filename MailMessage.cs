@@ -39,11 +39,11 @@ namespace AE.Net.Mail {
         ret.ReplyToList.Add(a);
       foreach (var a in msg.To)
         ret.To.Add(a);
-      foreach (var a in msg.Attachments) 
-          ret.Attachments.Add(new System.Net.Mail.Attachment(new System.IO.MemoryStream(a.GetData()), a.Filename, a.ContentType));
-      foreach (var a in msg.AlternateViews) 
-          ret.AlternateViews.Add(new System.Net.Mail.AlternateView(new System.IO.MemoryStream(a.GetData()), a.ContentType));
-      
+      foreach (var a in msg.Attachments)
+        ret.Attachments.Add(new System.Net.Mail.Attachment(new System.IO.MemoryStream(a.GetData()), a.Filename, a.ContentType));
+      foreach (var a in msg.AlternateViews)
+        ret.AlternateViews.Add(new System.Net.Mail.AlternateView(new System.IO.MemoryStream(a.GetData()), a.ContentType));
+
       return ret;
     }
 
@@ -59,19 +59,19 @@ namespace AE.Net.Mail {
       AlternateViews = new List<Attachment>();
     }
 
-    public DateTime Date { get; private set; }
-    public string[] RawFlags { get; private set; }
-    public Flags Flags { get; private set; }
+    public DateTime Date { get; set; }
+    public string[] RawFlags { get; set; }
+    public Flags Flags { get; set; }
 
     public int Size { get; internal set; }
-    public string Subject { get; private set; }
+    public string Subject { get; set; }
     public ICollection<MailAddress> To { get; private set; }
     public ICollection<MailAddress> Cc { get; private set; }
     public ICollection<MailAddress> Bcc { get; private set; }
     public ICollection<MailAddress> ReplyTo { get; private set; }
-    private ICollection<Attachment> Attachments { get; set; }
-    private ICollection<Attachment> AlternateViews { get; set; }
-    public MailAddress From { get; private set; }
+    public ICollection<Attachment> Attachments { get; set; }
+    public ICollection<Attachment> AlternateViews { get; set; }
+    public MailAddress From { get; set; }
     public MailAddress Sender { get; set; }
     public string MessageID { get; set; }
     public string Uid { get; internal set; }
