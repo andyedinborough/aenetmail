@@ -32,18 +32,18 @@ namespace AE.Net.Mail {
       foreach (var a in msg.Bcc)
         ret.Bcc.Add(a);
       ret.Body = msg.Body;
+      ret.IsBodyHtml = msg.ContentType.Contains("html");
       ret.From = msg.From;
       ret.Priority = (System.Net.Mail.MailPriority)msg.Importance;
       foreach (var a in msg.ReplyTo)
         ret.ReplyToList.Add(a);
       foreach (var a in msg.To)
         ret.To.Add(a);
-      foreach (var a in msg.Attachments) {
-        if (a.IsAttachment)
+      foreach (var a in msg.Attachments) 
           ret.Attachments.Add(new System.Net.Mail.Attachment(new System.IO.MemoryStream(a.GetData()), a.Filename, a.ContentType));
-        else
+      foreach (var a in msg.AlternateViews) 
           ret.AlternateViews.Add(new System.Net.Mail.AlternateView(new System.IO.MemoryStream(a.GetData()), a.ContentType));
-      }
+      
       return ret;
     }
 
@@ -51,12 +51,12 @@ namespace AE.Net.Mail {
 
     public MailMessage() {
       RawFlags = new string[0];
-      Attachments = new Collection<Attachment>();
       To = new List<MailAddress>();
       Cc = new List<MailAddress>();
       Bcc = new List<MailAddress>();
       ReplyTo = new List<MailAddress>();
       Attachments = new List<Attachment>();
+      AlternateViews = new List<Attachment>();
     }
 
     public DateTime Date { get; private set; }
@@ -69,7 +69,8 @@ namespace AE.Net.Mail {
     public ICollection<MailAddress> Cc { get; private set; }
     public ICollection<MailAddress> Bcc { get; private set; }
     public ICollection<MailAddress> ReplyTo { get; private set; }
-    public ICollection<Attachment> Attachments { get; private set; }
+    private ICollection<Attachment> Attachments { get; set; }
+    private ICollection<Attachment> AlternateViews { get; set; }
     public MailAddress From { get; private set; }
     public MailAddress Sender { get; set; }
     public string MessageID { get; set; }
@@ -113,19 +114,6 @@ namespace AE.Net.Mail {
         } else {
           SetBody((line + Environment.NewLine + reader.ReadToEnd()).Trim());
         }
-
-        if (string.IsNullOrEmpty(Body) && Attachments != null && Attachments.Count > 0) {
-          var att = Attachments.FirstOrDefault(x => !x.IsAttachment && x.ContentType.Is("text/plain"));
-          if (att == null) {
-            att = Attachments.FirstOrDefault(x => !x.IsAttachment && x.ContentType.Contains("html"));
-          }
-
-          if (att != null) {
-            Body = att.Body;
-            ContentTransferEncoding = att.Headers["Content-Transfer-Encoding"].RawValue;
-            ContentType = att.Headers["Content-Type"].RawValue;
-          }
-        }
       }
 
       Date = Headers.GetDate();
@@ -141,20 +129,16 @@ namespace AE.Net.Mail {
       Subject = Headers["Subject"].RawValue;
     }
 
-    [Obsolete("Use Body instead--check content-type to determine if it's HTML.  If HTML is needed, find an attachment in GetBodyAttachments() with a text/html content-type."), EditorBrowsable(EditorBrowsableState.Never)]
+    [Obsolete("Use Body instead--check content-type to determine if it's HTML.  If HTML is needed, find an attachment in AlternateViews with a text/html content-type."), EditorBrowsable(EditorBrowsableState.Never)]
     public string BodyHtml {
       get {
         if (ContentType.Contains("html"))
           return Body;
-        return GetBodyAttachments()
+        return AlternateViews
           .Where(x => x.ContentType.Contains("html"))
           .Select(x => x.Body)
           .FirstOrDefault();
       }
-    }
-
-    public IEnumerable<Attachment> GetBodyAttachments() {
-      return Attachments.Where(x => !x.IsAttachment);
     }
 
     private void ParseMime(TextReader reader, string boundary) {
@@ -193,7 +177,7 @@ namespace AE.Net.Mail {
 
         } else { // nested
           a.SetBody(body.ToString());
-          Attachments.Add(a);
+          (a.IsAttachment ? Attachments : AlternateViews).Add(a);
         }
       }
     }

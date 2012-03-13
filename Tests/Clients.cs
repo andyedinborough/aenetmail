@@ -120,6 +120,15 @@ namespace Tests {
     }
 
     [TestMethod]
+    public void TestIssue49() {
+      using (var client = GetClient<ImapClient>()) {
+        var msg = client.SearchMessages(SearchCondition.Subject("aenetmail").And(SearchCondition.Subject("#49"))).Select(x => x.Value).FirstOrDefault();
+        msg.Should().Not.Be.Null();
+        msg.BodyHtml.Should().Not.Be.Null();
+      }
+    }
+
+    [TestMethod]
     public void TestParseImapHeader() {
       var header = @"X-GM-THRID 1320777376118077475 X-GM-MSGID 1320777376118077475 X-GM-LABELS () UID 8286 RFC822.SIZE 9369 FLAGS (\Seen) BODY[] {9369}";
 

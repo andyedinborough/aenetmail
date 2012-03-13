@@ -88,9 +88,9 @@ namespace AE.Net.Mail {
       }
 
       value = Regex.Replace(value, @"\=[\r\n]+", string.Empty, RegexOptions.Singleline);
-      var matches = Regex.Matches(value, @"\=[0-9A-F]{2}");
+      var matches = Regex.Matches(value, @"(\=[0-9A-F]{2})+");
       foreach (var match in matches.Cast<Match>().Reverse()) {
-        int ascii = int.Parse(match.Value.Substring(1), System.Globalization.NumberStyles.HexNumber);
+        int ascii = int.Parse(match.Value.Replace("=",string.Empty), System.Globalization.NumberStyles.HexNumber);
 
         //http://stackoverflow.com/questions/1318933/c-sharp-int-to-byte
         byte[] result = BitConverter.GetBytes(ascii);
