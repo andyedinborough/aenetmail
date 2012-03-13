@@ -179,18 +179,26 @@ namespace AE.Net.Mail {
       }
     }
 
-    public void AppendMail(string mailbox, MailMessage email) {
+    public void AppendMail(MailMessage email, string mailbox = null) {
       IdlePause();
 
       string flags = String.Empty;
-      string size = (email.Body.Length - 1).ToString();
+      var body = new StringBuilder();
+      using (var txt = new System.IO.StringWriter(body))
+        email.Save(txt);
+      
+      string size = body.Length.ToString();
       if (email.RawFlags.Length > 0) {
-        flags = string.Concat("(", string.Join(" ", email.Flags), ")");
+        flags = " (" + string.Join(" ", email.Flags) + ")";
       }
-      string command = GetTag() + "APPEND " + mailbox.QuoteString() + " " + flags + " {" + size + "}";
+      
+      if (mailbox == null) CheckMailboxSelected();
+      mailbox = mailbox ?? _SelectedMailbox;
+
+      string command = GetTag() + "APPEND " + (mailbox ?? _SelectedMailbox).QuoteString() + flags + " {" + size + "}";
       string response = SendCommandGetResponse(command);
       if (response.StartsWith("+")) {
-        response = SendCommandGetResponse(email.Body);
+        response = SendCommandGetResponse(body.ToString());
       }
       IdleResume();
     }

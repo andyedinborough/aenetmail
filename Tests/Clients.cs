@@ -129,6 +129,19 @@ namespace Tests {
     }
 
     [TestMethod]
+    public void TestAppendMail() {
+      using (var client = GetClient<ImapClient>()) {
+        var msg = new MailMessage {
+          Subject = "TEST",
+          Body = "Appended!"          
+        };
+        msg.Date = DateTime.Now;
+
+        client.AppendMail("Inbox", msg);
+      }
+    }
+
+    [TestMethod]
     public void TestParseImapHeader() {
       var header = @"X-GM-THRID 1320777376118077475 X-GM-MSGID 1320777376118077475 X-GM-LABELS () UID 8286 RFC822.SIZE 9369 FLAGS (\Seen) BODY[] {9369}";
 
