@@ -202,7 +202,7 @@ namespace AE.Net.Mail {
 
       string size = body.Length.ToString();
       if (email.RawFlags.Length > 0) {
-        flags = " (" + email.Flags.Join(" ") + ")";
+        flags = " (" + email.RawFlags.Join(" ") + ")";
       }
 
       if (mailbox == null)

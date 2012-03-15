@@ -8,11 +8,11 @@ using System.Text.RegularExpressions;
 
 namespace AE.Net.Mail {
   internal static class Utilities {
-    internal void Clear(this StringBuilder str) {
+    internal static void Clear(this StringBuilder str) {
       str.Remove(0, str.Length);
     }
 
-    internal string Join<T>(this IEnumerable<T> list, string separator) {
+    internal static string Join<T>(this IEnumerable<T> list, string separator) {
       return string.Join(separator, list.Select(x => Convert.ToString(x)).ToArray());
     }
 
