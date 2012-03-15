@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
@@ -35,8 +34,13 @@ namespace AE.Net.Mail {
       ret.IsBodyHtml = msg.ContentType.Contains("html");
       ret.From = msg.From;
       ret.Priority = (System.Net.Mail.MailPriority)msg.Importance;
+
+      string replyToAddress = string.Empty;
       foreach (var a in msg.ReplyTo)
-        ret.ReplyToList.Add(a);
+        replyToAddress += a.Address + ";";
+      ret.ReplyTo = new MailAddress(replyToAddress);
+
+
       foreach (var a in msg.To)
         ret.To.Add(a);
       foreach (var a in msg.Attachments)
@@ -79,14 +83,23 @@ namespace AE.Net.Mail {
     public MailPriority Importance { get; set; }
 
 
-    public void Load(string message, bool headersOnly = false) {
+    public void Load(string message) {
+      bool headersOnly = false;
+      this.Load(message, headersOnly);
+    }
+    public void Load(string message, bool headersOnly) {
       Raw = message;
       using (var reader = new StringReader(message)) {
         Load(reader, headersOnly);
       }
     }
 
-    public void Load(TextReader reader, bool headersOnly = false) {
+    public void Load(TextReader reader) {
+      bool headersOnly = false;
+      this.Load(reader, headersOnly);
+    }
+
+    public void Load(TextReader reader, bool headersOnly) {
       _HeadersOnly = headersOnly;
       Headers = null;
       Body = null;
@@ -116,7 +129,8 @@ namespace AE.Net.Mail {
         }
       }
 
-      if (string.IsNullOrWhiteSpace(Body) && AlternateViews.Count > 0) {
+      if ((Body == string.Empty || Body == null || Body.Trim() == string.Empty) && AlternateViews.Count > 0) {
+        //if (string.IsNullOrWhiteSpace(Body) && AlternateViews.Count > 0) {
         var att = AlternateViews.FirstOrDefault(x => x.ContentType.Is("text/plain"));
         if (att == null) {
           att = AlternateViews.FirstOrDefault(x => x.ContentType.Contains("html"));
@@ -207,7 +221,11 @@ namespace AE.Net.Mail {
       }).Sum();
     }
 
-    public void Save(System.IO.Stream stream, Encoding encoding = null) {
+    public void Save(System.IO.Stream stream) {
+      Encoding encoding = null;
+      this.Save(stream, encoding);
+    }
+    public void Save(System.IO.Stream stream, Encoding encoding) {
       using (var str = new System.IO.StreamWriter(stream, encoding ?? System.Text.Encoding.Default))
         Save(str);
     }
@@ -215,10 +233,10 @@ namespace AE.Net.Mail {
     private static readonly string[] SpecialHeaders = "Date,To,Cc,Reply-To,Bcc,Sender,From,Message-ID,Importance,Subject".Split(',');
     public void Save(System.IO.TextWriter txt) {
       txt.WriteLine("Date: {0}", Date.GetRFC2060Date());
-      txt.WriteLine("To: ", string.Join("; ", To.Select(x => x.ToString())));
-      txt.WriteLine("Cc: ", string.Join("; ", Cc.Select(x => x.ToString())));
-      txt.WriteLine("Reply-To: ", string.Join("; ", ReplyTo.Select(x => x.ToString())));
-      txt.WriteLine("Bcc: ", string.Join("; ", Bcc.Select(x => x.ToString())));
+      txt.WriteLine("To: ", To.Select(x => x.ToString()).Join("; "));
+      txt.WriteLine("Cc: ", Cc.Select(x => x.ToString()).Join("; "));
+      txt.WriteLine("Reply-To: ", ReplyTo.Select(x => x.ToString()).Join("; "));
+      txt.WriteLine("Bcc: ", Bcc.Select(x => x.ToString()).Join("; "));
       if (Sender != null)
         txt.WriteLine("Sender: ", Sender);
       if (From != null)

@@ -71,7 +71,7 @@ namespace AE.Net.Mail {
     }
 
     public override string ToString() {
-      var props = _Values.Where(x => !string.IsNullOrEmpty(x.Key)).Select(x => x.Key + "=" + x.Value);
+      var props = _Values.Where(x => !string.IsNullOrEmpty(x.Key)).Select(x => x.Key + "=" + x.Value).ToArray();
       return Value + (props.Any() ? ("; " + string.Join(", ", props)) : null);
     }
   }

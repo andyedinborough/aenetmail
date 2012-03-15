@@ -8,6 +8,14 @@ using System.Text.RegularExpressions;
 
 namespace AE.Net.Mail {
   internal static class Utilities {
+    internal void Clear(this StringBuilder str) {
+      str.Remove(0, str.Length);
+    }
+
+    internal string Join<T>(this IEnumerable<T> list, string separator) {
+      return string.Join(separator, list.Select(x => Convert.ToString(x)).ToArray());
+    }
+
     internal static void TryDispose<T>(ref T obj) where T : class, IDisposable {
       try {
         if (obj != null)
@@ -82,7 +90,11 @@ namespace AE.Net.Mail {
       return chr == ' ' || chr == '\t' || chr == '\n' || chr == '\r';
     }
 
-    internal static string DecodeQuotedPrintable(string value, Encoding encoding = null) {
+    internal static string DecodeQuotedPrintable(string value) {
+      Encoding encoding = null;
+      return Utilities.DecodeQuotedPrintable(value, encoding);
+    }
+    internal static string DecodeQuotedPrintable(string value, Encoding encoding) {
       if (encoding == null) {
         encoding = System.Text.Encoding.UTF8;
       }
@@ -90,13 +102,7 @@ namespace AE.Net.Mail {
       value = Regex.Replace(value, @"\=[\r\n]+", string.Empty, RegexOptions.Singleline);
       var matches = Regex.Matches(value, @"(\=[0-9A-F]{2}){1,2}");
       foreach (var match in matches.Cast<Match>().Reverse()) {
-
-        int ascii;
-        try {
-          ascii = int.Parse(match.Value.Replace("=", string.Empty), System.Globalization.NumberStyles.HexNumber);
-        } catch (Exception ex) {
-          throw new Exception("Failed parsing \"" + match.Value + "\" as an integer", ex);
-        }
+        int ascii = int.Parse(match.Value.Replace("=", string.Empty), System.Globalization.NumberStyles.HexNumber);
 
         //http://stackoverflow.com/questions/1318933/c-sharp-int-to-byte
         var result = BitConverter.GetBytes(ascii);
@@ -110,7 +116,11 @@ namespace AE.Net.Mail {
       return value;
     }
 
-    internal static string DecodeBase64(string data, Encoding encoding = null) {
+    internal static string DecodeBase64(string data) {
+      Encoding encoding = null;
+      return Utilities.DecodeBase64(data, encoding);
+    }
+    internal static string DecodeBase64(string data, Encoding encoding) {
       if (!IsValidBase64String(data)) {
         return data;
       }
@@ -267,7 +277,11 @@ namespace AE.Net.Mail {
     }
     #endregion
 
-    internal static VT Get<KT, VT>(this IDictionary<KT, VT> dictionary, KT key, VT defaultValue = default(VT)) {
+    internal static VT Get<KT, VT>(this IDictionary<KT, VT> dictionary, KT key) {
+      VT defaultValue = default(VT);
+      return Utilities.Get<KT, VT>(dictionary, key, defaultValue);
+    }
+    internal static VT Get<KT, VT>(this IDictionary<KT, VT> dictionary, KT key, VT defaultValue) {
       if (dictionary == null)
         return defaultValue;
       VT value;

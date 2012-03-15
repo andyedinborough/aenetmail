@@ -19,8 +19,18 @@ namespace AE.Net.Mail {
     private Thread _IdleEvents;
 
     private string _FetchHeaders = null;
+    public ImapClient(string host, string username, string password) {
+      AuthMethods method = AuthMethods.Login;
+      int port = 143;
+      bool secure = false;
+      bool skipSslValidation = false;
 
-    public ImapClient(string host, string username, string password, AuthMethods method = AuthMethods.Login, int port = 143, bool secure = false, bool skipSslValidation = false) {
+      Connect(host, port, secure, skipSslValidation);
+      AuthMethod = method;
+      Login(username, password);
+    }
+
+    public ImapClient(string host, string username, string password, AuthMethods method, int port, bool secure, bool skipSslValidation) {
       Connect(host, port, secure, skipSslValidation);
       AuthMethod = method;
       Login(username, password);
@@ -127,14 +137,14 @@ namespace AE.Net.Mail {
     }
 
     public bool TryGetResponse(out string response, int millisecondsTimeout) {
-      var mre = new System.Threading.ManualResetEventSlim(false);
+      var mre = new System.Threading.ManualResetEvent(false);
       string resp = response = null;
       ThreadPool.QueueUserWorkItem(_ => {
         resp = GetResponse();
         mre.Set();
       });
 
-      if (mre.Wait(millisecondsTimeout)) {
+      if (mre.WaitOne(millisecondsTimeout)) {
         response = resp;
         return true;
       } else
@@ -178,7 +188,11 @@ namespace AE.Net.Mail {
       }
     }
 
-    public void AppendMail(MailMessage email, string mailbox = null) {
+    public void AppendMail(MailMessage email) {
+      string mailbox = null;
+      this.AppendMail(email, mailbox);
+    }
+    public void AppendMail(MailMessage email, string mailbox) {
       IdlePause();
 
       string flags = String.Empty;
@@ -188,7 +202,7 @@ namespace AE.Net.Mail {
 
       string size = body.Length.ToString();
       if (email.RawFlags.Length > 0) {
-        flags = " (" + string.Join(" ", email.Flags) + ")";
+        flags = " (" + email.Flags.Join(" ") + ")";
       }
 
       if (mailbox == null)
@@ -326,11 +340,20 @@ namespace AE.Net.Mail {
         SelectMailbox("INBOX");
     }
 
-    public MailMessage GetMessage(string uid, bool headersonly = false) {
+    public MailMessage GetMessage(string uid) {
+      bool headersonly = false;
+      return this.GetMessage(uid, headersonly);
+    }
+
+    public MailMessage GetMessage(string uid, bool headersonly) {
       return GetMessage(uid, headersonly, true);
     }
 
-    public MailMessage GetMessage(int index, bool headersonly = false) {
+    public MailMessage GetMessage(int index) {
+      bool headersonly = false;
+      return this.GetMessage(index, headersonly);
+    }
+    public MailMessage GetMessage(int index, bool headersonly) {
       return GetMessage(index, headersonly, true);
     }
 
@@ -342,11 +365,21 @@ namespace AE.Net.Mail {
       return GetMessages(uid, uid, headersonly, setseen).FirstOrDefault();
     }
 
-    public MailMessage[] GetMessages(string startUID, string endUID, bool headersonly = true, bool setseen = false) {
+    public MailMessage[] GetMessages(string startUID, string endUID) {
+      bool headersonly = true;
+      bool setseen = false;
+      return this.GetMessages(startUID, endUID, headersonly, setseen);
+    }
+    public MailMessage[] GetMessages(string startUID, string endUID, bool headersonly, bool setseen) {
       return GetMessages(startUID, endUID, true, headersonly, setseen);
     }
 
-    public MailMessage[] GetMessages(int startIndex, int endIndex, bool headersonly = true, bool setseen = false) {
+    public MailMessage[] GetMessages(int startIndex, int endIndex) {
+      bool headersonly = true;
+      bool setseen = false;
+      return this.GetMessages(startIndex, endIndex, headersonly, setseen);
+    }
+    public MailMessage[] GetMessages(int startIndex, int endIndex, bool headersonly, bool setseen) {
       return GetMessages((startIndex + 1).ToString(), (endIndex + 1).ToString(), false, headersonly, setseen);
     }
 
@@ -634,11 +667,19 @@ namespace AE.Net.Mail {
       IdleResume();
     }
 
-    public string[] Search(SearchCondition criteria, bool uid = true) {
+    public string[] Search(SearchCondition criteria) {
+      bool uid = true;
+      return this.Search(criteria, uid);
+    }
+    public string[] Search(SearchCondition criteria, bool uid) {
       return Search(criteria.ToString(), uid);
     }
 
-    public string[] Search(string criteria, bool uid = true) {
+    public string[] Search(string criteria) {
+      bool uid = true;
+      return this.Search(criteria, uid);
+    }
+    public string[] Search(string criteria, bool uid) {
       CheckMailboxSelected();
 
       string isuid = uid ? "UID " : "";
@@ -659,7 +700,11 @@ namespace AE.Net.Mail {
       return m.Groups[1].Value.Trim().Split(' ').Where(x => !string.IsNullOrEmpty(x)).ToArray();
     }
 
-    public Lazy<MailMessage>[] SearchMessages(SearchCondition criteria, bool headersonly = false) {
+    public Lazy<MailMessage>[] SearchMessages(SearchCondition criteria) {
+      bool headersonly = false;
+      return this.SearchMessages(criteria, headersonly);
+    }
+    public Lazy<MailMessage>[] SearchMessages(SearchCondition criteria, bool headersonly) {
       return Search(criteria, true)
           .Select(x => new Lazy<MailMessage>(() => GetMessage(x, headersonly)))
           .ToArray();
@@ -701,24 +746,24 @@ namespace AE.Net.Mail {
     }
 
     public void SetFlags(Flags flags, params MailMessage[] msgs) {
-      SetFlags(string.Join(" ", flags.ToString().Split(',').Select(x => "\\" + x.Trim())), msgs);
+      SetFlags(flags.ToString().Split(',').Select(x => "\\" + x.Trim()).Join(" "), msgs);
     }
 
     public void SetFlags(string flags, params MailMessage[] msgs) {
-      Store("UID " + string.Join(" ", msgs.Select(x => x.Uid)), true, flags);
+      Store("UID " + msgs.Select(x => x.Uid).Join(" "), true, flags);
       foreach (var msg in msgs) {
         msg.SetFlags(flags);
       }
     }
 
     public void AddFlags(Flags flags, params MailMessage[] msgs) {
-      AddFlags(string.Join(" ", flags.ToString().Split(',').Select(x => "\\" + x.Trim())), msgs);
+      AddFlags(flags.ToString().Split(',').Select(x => "\\" + x.Trim()).Join(" "), msgs);
     }
 
     public void AddFlags(string flags, params MailMessage[] msgs) {
-      Store("UID " + string.Join(" ", msgs.Select(x => x.Uid)), false, flags);
+      Store("UID " + msgs.Select(x => x.Uid).Join(" "), false, flags);
       foreach (var msg in msgs) {
-        msg.SetFlags(string.Join(" ", msg.Flags) + flags);
+        msg.SetFlags(msg.Flags.Join(" ") + flags);
       }
     }
 

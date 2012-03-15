@@ -4,7 +4,18 @@ using System.Text;
 namespace AE.Net.Mail {
     public class Pop3Client : TextClient, IMailClient {
         public Pop3Client() { }
-        public Pop3Client(string host, string username, string password, int port = 110, bool secure = false, bool skipSslValidation = false)
+
+        public Pop3Client(string host, string username, string password)
+        {
+            int port = 110;
+            bool secure = false;
+            bool skipSslValidation = false;
+
+            Connect(host, port, secure, skipSslValidation);
+            Login(username, password);
+        }
+
+        public Pop3Client(string host, string username, string password, int port, bool secure, bool skipSslValidation)
         {
             Connect(host, port, secure, skipSslValidation);
             Login(username, password);
@@ -49,11 +60,22 @@ namespace AE.Net.Mail {
         //    return ids.ToArray();
         //}
 
-        public MailMessage GetMessage(int index, bool headersOnly = false) {
+        public MailMessage GetMessage(int index)
+        {
+            bool headersOnly = false;
             return GetMessage((index + 1).ToString(), headersOnly);
         }
 
-        public MailMessage GetMessage(string uid, bool headersOnly = false) {
+        public MailMessage GetMessage(int index, bool headersOnly) {
+            return GetMessage((index + 1).ToString(), headersOnly);
+        }
+        public MailMessage GetMessage(string uid) 
+        {
+            bool headersOnly = false;
+            return GetMessage(uid, headersOnly);
+        }
+        public MailMessage GetMessage(string uid, bool headersOnly)
+        {
             CheckConnectionStatus();
             var result = new StringBuilder();
             string line = SendCommandGetResponse(string.Format(headersOnly ? "TOP {0} 0" : "RETR {0}", uid));
