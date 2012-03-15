@@ -46,7 +46,8 @@ namespace AE.Net.Mail {
 
     public void Connect(string hostname, int port, bool ssl, bool skipSslValidation) {
       System.Net.Security.RemoteCertificateValidationCallback validateCertificate = null;
-      if (skipSslValidation) validateCertificate = (sender, cert, chain, err) => true;
+      if (skipSslValidation)
+        validateCertificate = (sender, cert, chain, err) => true;
       Connect(hostname, port, ssl, validateCertificate);
     }
 
@@ -119,7 +120,8 @@ namespace AE.Net.Mail {
     }
 
     public void Disconnect() {
-      Logout();
+      if (IsAuthenticated)
+        Logout();
 
       Utilities.TryDispose(ref _Stream);
       Utilities.TryDispose(ref _Connection);

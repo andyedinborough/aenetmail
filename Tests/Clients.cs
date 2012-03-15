@@ -82,6 +82,9 @@ namespace Tests {
           msg.Subject.Should().Not.Be.NullOrEmpty();
           msg = mail.GetMessage(0, false);
           msg.Body.Should().Not.Be.NullOrEmpty();
+
+          mail.Disconnect();
+          mail.Disconnect();
         }
     }
 
@@ -133,11 +136,11 @@ namespace Tests {
       using (var client = GetClient<ImapClient>()) {
         var msg = new MailMessage {
           Subject = "TEST",
-          Body = "Appended!"          
+          Body = "Appended!"
         };
         msg.Date = DateTime.Now;
 
-        client.AppendMail("Inbox", msg);
+        client.AppendMail(msg, "Inbox");
       }
     }
 

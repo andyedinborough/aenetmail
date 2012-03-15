@@ -20,9 +20,8 @@ namespace AE.Net.Mail {
 
     private string _FetchHeaders = null;
 
-    public ImapClient(string host, string username, string password, AuthMethods method = AuthMethods.Login, int port = 143, bool secure = false, bool skipSslValidation = false)
-    {
-        Connect(host, port, secure, skipSslValidation);
+    public ImapClient(string host, string username, string password, AuthMethods method = AuthMethods.Login, int port = 143, bool secure = false, bool skipSslValidation = false) {
+      Connect(host, port, secure, skipSslValidation);
       AuthMethod = method;
       Login(username, password);
     }
@@ -186,13 +185,14 @@ namespace AE.Net.Mail {
       var body = new StringBuilder();
       using (var txt = new System.IO.StringWriter(body))
         email.Save(txt);
-      
+
       string size = body.Length.ToString();
       if (email.RawFlags.Length > 0) {
         flags = " (" + string.Join(" ", email.Flags) + ")";
       }
-      
-      if (mailbox == null) CheckMailboxSelected();
+
+      if (mailbox == null)
+        CheckMailboxSelected();
       mailbox = mailbox ?? _SelectedMailbox;
 
       string command = GetTag() + "APPEND " + (mailbox ?? _SelectedMailbox).QuoteString() + flags + " {" + size + "}";
@@ -560,7 +560,8 @@ namespace AE.Net.Mail {
     }
 
     internal override void OnLogout() {
-      SendCommand(GetTag() + "LOGOUT");
+      if (IsConnected)
+        SendCommand(GetTag() + "LOGOUT");
     }
 
     public Namespaces Namespace() {
