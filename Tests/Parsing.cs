@@ -217,6 +217,10 @@ E-mail Deployment Division
 
     [TestMethod]
     public void TestQuotedPrintable() {
+      var test = "=0D=0A=0D=0A=0D=0A=0D=0A=0D=0A";
+      test = Utilities.DecodeQuotedPrintable(test);
+      test.Should().Equal("\r\n\r\n\r\n\r\n\r\n");
+
       var msg = GetMessage(quotedPrintable);
       msg.Body.Should().Contain("E-mail Deployment Division");
     }
@@ -239,7 +243,7 @@ E-mail Deployment Division
       msg = GetMessage(anotherMessage);
       msg.Body.Should().Contain("Joplin");
     }
-
+     
     [TestMethod]
     public void TestBasicMessage() {
       var msg = GetMessage(@"From: test@localhost

@@ -88,7 +88,7 @@ namespace AE.Net.Mail {
       }
 
       value = Regex.Replace(value, @"\=[\r\n]+", string.Empty, RegexOptions.Singleline);
-      var matches = Regex.Matches(value, @"(\=[0-9A-F]{2})+");
+      var matches = Regex.Matches(value, @"(\=[0-9A-F]{2}){1,2}");
       foreach (var match in matches.Cast<Match>().Reverse()) {
 
         int ascii;
