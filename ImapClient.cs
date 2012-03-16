@@ -763,7 +763,7 @@ namespace AE.Net.Mail {
     public void AddFlags(string flags, params MailMessage[] msgs) {
       Store("UID " + msgs.Select(x => x.Uid).Join(" "), false, flags);
       foreach (var msg in msgs) {
-        msg.SetFlags(msg.Flags.Join(" ") + flags);
+        msg.SetFlags(msg.RawFlags.Join(" ") + " " + flags);
       }
     }
 
