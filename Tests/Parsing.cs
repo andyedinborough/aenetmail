@@ -221,6 +221,9 @@ E-mail Deployment Division
       test = Utilities.DecodeQuotedPrintable(test);
       test.Should().Equal("\r\n\r\n\r\n\r\n\r\n");
 
+      test = Utilities.DecodeWords("coucou =?ISO-8859-1?Q?=E0_tous?=");
+      test.Should().Equal("coucou à tous");
+
       var msg = GetMessage(quotedPrintable);
       msg.Body.Should().Contain("E-mail Deployment Division");
     }
