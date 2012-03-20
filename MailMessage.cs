@@ -155,19 +155,7 @@ namespace AE.Net.Mail {
       Importance = Headers.GetEnum<MailPriority>("Importance");
       Subject = Headers["Subject"].RawValue;
     }
-
-    [Obsolete("Use Body instead--check content-type to determine if it's HTML.  If HTML is needed, find an attachment in AlternateViews with a text/html content-type."), EditorBrowsable(EditorBrowsableState.Never)]
-    public string BodyHtml {
-      get {
-        if (ContentType.Contains("html"))
-          return Body;
-        return AlternateViews
-          .Where(x => x.ContentType.Contains("html"))
-          .Select(x => x.Body)
-          .FirstOrDefault();
-      }
-    }
-
+     
     private void ParseMime(TextReader reader, string boundary) {
       string data,
         bounderInner = "--" + boundary,

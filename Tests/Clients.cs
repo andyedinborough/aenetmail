@@ -127,7 +127,7 @@ namespace Tests {
       using (var client = GetClient<ImapClient>()) {
         var msg = client.SearchMessages(SearchCondition.Subject("aenetmail").And(SearchCondition.Subject("#49"))).Select(x => x.Value).FirstOrDefault();
         msg.Should().Not.Be.Null();
-        msg.BodyHtml.Should().Not.Be.Null();
+        msg.AlternateViews.FirstOrDefault(x=>x.ContentType.Contains("html")).Body.Should().Not.Be.Null();
       }
     }
 
