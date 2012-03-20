@@ -94,13 +94,19 @@ namespace AE.Net.Mail {
       Encoding encoding = null;
       return Utilities.DecodeQuotedPrintable(value, encoding);
     }
+
+    private static Regex rxNewLines = new Regex(@"\=[\r\n]+", RegexOptions.Singleline | RegexOptions.Compiled);
+    private static Regex rxEscaped = new Regex(@"(\=[0-9A-F]{2}){1,2}", RegexOptions.Compiled);
     internal static string DecodeQuotedPrintable(string value, Encoding encoding) {
       if (encoding == null) {
         encoding = System.Text.Encoding.UTF8;
       }
 
-      value = Regex.Replace(value, @"\=[\r\n]+", string.Empty, RegexOptions.Singleline);
-      var matches = Regex.Matches(value, @"(\=[0-9A-F]{2}){1,2}");
+      if (value.IndexOf('_') > -1 && value.IndexOf(' ') == -1)
+        value = value.Replace('_', ' ');
+
+      value = rxNewLines.Replace(value, string.Empty);
+      var matches = rxEscaped.Matches(value);
       foreach (var match in matches.Cast<Match>().Reverse()) {
         int ascii = int.Parse(match.Value.Replace("=", string.Empty), System.Globalization.NumberStyles.HexNumber);
 
