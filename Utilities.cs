@@ -113,6 +113,10 @@ namespace AE.Net.Mail {
          + encoding.GetString(result).Trim('\0')
          + value.Substring(match.Index + match.Length);
       }
+
+      if (value.IndexOf('_') > -1 && value.IndexOf(' ') == -1)
+        value = value.Replace('_', ' ');
+
       return value;
     }
 
