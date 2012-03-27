@@ -20,6 +20,7 @@ namespace AE.Net.Mail {
 
     private string _FetchHeaders = null;
 
+    public ImapClient() { }
     public ImapClient(string host, string username, string password, AuthMethods method = AuthMethods.Login, int port = 143, bool secure = false, bool skipSslValidation = false) {
       Connect(host, port, secure, skipSslValidation);
       AuthMethod = method;
