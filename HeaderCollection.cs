@@ -115,32 +115,48 @@ namespace AE.Net.Mail {
       return values.FirstOrDefault(x => x.ToString().Equals(value, StringComparison.OrdinalIgnoreCase));
     }
 
+    private static string ReadUntil(string values, ref int start, params char[] until) {
+      char c, nil = '\0', q = nil;
+      var hash = new System.Collections.Generic.HashSet<char>(until);
+      string value;
+      for (int i = start; i < values.Length; i++) {
+        c = values[i];
+        if (q != nil ) {
+          if(q == c){ 
+            q = nil;
+          }
+        } else  if (c == '"' || c == '\'') {
+            q = c;
+          } else if (c == '<') {
+            q = '>';
+
+        } else if (hash.Contains(c)) {
+           value = values.Substring(start, i - start);
+          start = i + 1;
+          return value;
+        }
+      }
+
+      value = values.Substring(start);
+      start = values.Length;
+      return value;
+    }
+
     public MailAddress[] GetAddresses(string header) {
       string values = this[header].RawValue.Trim();
       List<MailAddress> addrs = new List<MailAddress>();
-      while (true) {
-        int semicolon = values.IndexOf(';');
-        int comma = values.IndexOf(',');
-        if (comma < semicolon || semicolon == -1) semicolon = comma;
 
-        int bracket = values.IndexOf('>');
-        string temp = null;
-        if (semicolon == -1 && bracket == -1) {
-          if (values.Length > 0) addrs.Add(values.ToEmailAddress());
-          return addrs.Where(x => x != null).ToArray();
-        } else {
-          if (bracket > -1 && (semicolon == -1 || bracket < semicolon)) {
-            temp = values.Substring(0, bracket + 1);
-            values = values.Substring(temp.Length);
-          } else if (semicolon > -1 && (bracket == -1 || semicolon < bracket)) {
-            temp = values.Substring(0, semicolon);
-            values = values.Substring(semicolon + 1);
-          }
-          if (temp.Length > 0)
-            addrs.Add(temp.Trim().ToEmailAddress());
-          values = values.Trim();
-        }
+      int i = 0;
+      string value;
+      MailAddress addr;
+      while (i < values.Length) {
+        value = ReadUntil(values, ref i, ';', ',', '\n');
+        addr = value.ToEmailAddress();
+        if (addr != null)
+          addrs.Add(addr);
       }
+
+      return addrs.ToArray();
     }
 
 

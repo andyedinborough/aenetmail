@@ -280,6 +280,7 @@ WE REPOSE IN YOU.");
     [TestMethod]
     public void TestBasicMimeMessage() {
       var msg = GetMessage(@"From: John Doe <example@example.com>
+To: <example@example.com>; example@example.com; John Doe <example@example.com>
 MIME-Version: 1.0
 Content-Type: multipart/mixed;
         boundary=""XXXXboundary text""
@@ -301,7 +302,17 @@ this is the attachment text
 --XXXXboundary text--");
 
       msg.From.Should().Not.Be.Null();
-      msg.Attachments.Count.Should().Equal(2);
+      msg.From.DisplayName.Should().Equal("John Doe");
+      msg.From.Address.Should().Equal("example@example.com");
+
+      var to = msg.To.ToArray();
+      to.Length.Should().Equal(3);
+      to[0].Address.Should().Equal("example@example.com");
+      to[1].Address.Should().Equal("example@example.com");
+      to[2].Address.Should().Equal("example@example.com");
+
+      msg.Attachments.Count.Should().Equal(1);
+      msg.AlternateViews.Count.Should().Equal(1);
       msg.Attachments.All(a => a.GetData().Any().Should().Be.True());
     }
 
