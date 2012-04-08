@@ -221,6 +221,10 @@ E-mail Deployment Division
       test = Utilities.DecodeQuotedPrintable(test);
       test.Should().Equal("\r\n\r\n\r\n\r\n\r\n");
 
+      test = "H=C3=BAsv=C3=A9ti=20=C3=9Cnnepeket!";
+      test = Utilities.DecodeQuotedPrintable(test);
+      test.Should().Equal("Húsvéti Ünnepeket!");
+
       test = Utilities.DecodeWords("coucou =?ISO-8859-1?Q?=E0_tous?=");
       test.Should().Equal("coucou à tous");
       test = Utilities.DecodeWords("=?iso-8859-1?Q?h=E9llo=5Fthere?=");
@@ -248,7 +252,7 @@ E-mail Deployment Division
       msg = GetMessage(anotherMessage);
       msg.Body.Should().Contain("Joplin");
     }
-     
+
     [TestMethod]
     public void TestBasicMessage() {
       var msg = GetMessage(@"From: test@localhost

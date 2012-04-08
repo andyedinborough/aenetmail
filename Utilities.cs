@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.Linq;
 using System.Net.Mail;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -82,8 +81,6 @@ namespace AE.Net.Mail {
       return chr == ' ' || chr == '\t' || chr == '\n' || chr == '\r';
     }
 
-    private static Regex rxNewLines = new Regex(@"\=[\r\n]+", RegexOptions.Singleline | RegexOptions.Compiled);
-    private static Regex rxEscaped = new Regex(@"(\=[0-9A-F]{2}){1,2}", RegexOptions.Compiled);
     internal static string DecodeQuotedPrintable(string value, Encoding encoding = null) {
       if (encoding == null) {
         encoding = System.Text.Encoding.UTF8;
@@ -92,27 +89,35 @@ namespace AE.Net.Mail {
       if (value.IndexOf('_') > -1 && value.IndexOf(' ') == -1)
         value = value.Replace('_', ' ');
 
-      value = rxNewLines.Replace(value, string.Empty);
-      var matches = rxEscaped.Matches(value);
-      foreach (var match in matches.Cast<Match>().Reverse()) {
+      var data = System.Text.Encoding.ASCII.GetBytes(value);
+      var eq = Convert.ToByte('=');
+      var n = 0;
+      for (int i = 0; i < data.Length; i++) {
+        var b = data[i];
+        if (b == 10 || b == 13) {
+          continue;
 
-        int ascii;
-        try {
-          ascii = int.Parse(match.Value.Replace("=", string.Empty), System.Globalization.NumberStyles.HexNumber);
-        } catch (Exception ex) {
-          throw new Exception("Failed parsing \"" + match.Value + "\" as an integer", ex);
+        } else if (b == eq) {
+          byte b1 = data[i + 1], b2 = data[i + 2];
+          if (b1 == 10 || b1 == 13) {
+            i++;
+            if (b2 == 10 || b2 == 13) {
+              i++;
+            }
+            continue;
+          }
+
+          data[n] = (byte)int.Parse(value.Substring(i + 1, 2), NumberStyles.HexNumber);
+          n++;
+          i += 2;
+
+        } else {
+          data[n] = b;
+          n++;
         }
-
-        //http://stackoverflow.com/questions/1318933/c-sharp-int-to-byte
-        var result = BitConverter.GetBytes(ascii);
-        if (BitConverter.IsLittleEndian)
-          Array.Reverse(result);
-
-        value = value.Substring(0, match.Index)
-         + encoding.GetString(result).Trim('\0')
-         + value.Substring(match.Index + match.Length);
       }
 
+      value = encoding.GetString(data, 0, n);
       return value;
     }
 
