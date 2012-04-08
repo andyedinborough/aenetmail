@@ -7,6 +7,8 @@ using System.Text.RegularExpressions;
 
 namespace AE.Net.Mail {
   internal static class Utilities {
+    public const string DEFAULT_CHARSET = "ISO-8859-1";
+
     internal static void TryDispose<T>(ref T obj) where T : class, IDisposable {
       try {
         if (obj != null)
@@ -207,7 +209,7 @@ namespace AE.Net.Mail {
     /// <exception cref="ArgumentNullException">If <paramref name="characterSet"/> is <see langword="null"/></exception>
     public static Encoding ParseCharsetToEncoding(string characterSet) {
       if (string.IsNullOrEmpty(characterSet))
-        return null;
+        characterSet = DEFAULT_CHARSET;
 
       string charSetUpper = characterSet.ToUpperInvariant();
       if (charSetUpper.Contains("WINDOWS") || charSetUpper.Contains("CP")) {

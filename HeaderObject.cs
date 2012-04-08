@@ -38,8 +38,9 @@ namespace AE.Net.Mail {
     public string Body { get; set; }
 
     internal void SetBody(string value) {
+      var encoding = Utilities.ParseCharsetToEncoding(Charset);
       if (ContentTransferEncoding.Is("quoted-printable")) {
-        value = Utilities.DecodeQuotedPrintable(value, Utilities.ParseCharsetToEncoding(Charset));
+        value = Utilities.DecodeQuotedPrintable(value, encoding);
 
       } else if (ContentTransferEncoding.Is("base64")
         //only decode the content if it is a text document
@@ -47,7 +48,7 @@ namespace AE.Net.Mail {
               && Utilities.IsValidBase64String(value)) {
         var data = Convert.FromBase64String(value);
         using (var mem = new System.IO.MemoryStream(data))
-        using (var str = new System.IO.StreamReader(mem, true))
+        using (var str = new System.IO.StreamReader(mem, encoding))
           value = str.ReadToEnd();
 
         ContentTransferEncoding = string.Empty;
