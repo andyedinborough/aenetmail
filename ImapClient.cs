@@ -410,7 +410,7 @@ namespace AE.Net.Mail {
         if (response[0] != '*' || !response.Contains("FETCH ("))
           continue;
 
-        var mail = new MailMessage();
+        var mail = new MailMessage { Encoding = Encoding };
         var imapHeaders = ParseImapHeader(response.Substring(response.IndexOf('(') + 1));
         mail.Size = (imapHeaders["BODY[HEADER]"] ?? imapHeaders["BODY[]"]).Trim('{', '}').ToInt();
 

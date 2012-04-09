@@ -6,7 +6,7 @@ namespace AE.Net.Mail {
     private HeaderDictionary _Headers;
     public HeaderDictionary Headers {
       get {
-        return _Headers ?? (_Headers = HeaderDictionary.Parse(RawHeaders));
+        return _Headers ?? (_Headers = HeaderDictionary.Parse(RawHeaders, Encoding));
       }
       internal set {
         _Headers = value;
@@ -35,12 +35,24 @@ namespace AE.Net.Mail {
       }
     }
 
+    System.Text.Encoding _DefaultEncoding;
+    System.Text.Encoding _Encoding;
+    public System.Text.Encoding Encoding {
+      get {
+        return _Encoding ?? (_Encoding = Utilities.ParseCharsetToEncoding(Charset, _DefaultEncoding));
+      }
+      set {
+        _DefaultEncoding = value;
+        if (_Encoding != null) //Encoding has been initialized from the specified Charset
+          _Encoding = value;
+      }
+    }
+
     public string Body { get; set; }
 
     internal void SetBody(string value) {
-      var encoding = Utilities.ParseCharsetToEncoding(Charset);
       if (ContentTransferEncoding.Is("quoted-printable")) {
-        value = Utilities.DecodeQuotedPrintable(value, encoding);
+        value = Utilities.DecodeQuotedPrintable(value, Encoding);
 
       } else if (ContentTransferEncoding.Is("base64")
         //only decode the content if it is a text document
@@ -48,7 +60,7 @@ namespace AE.Net.Mail {
               && Utilities.IsValidBase64String(value)) {
         var data = Convert.FromBase64String(value);
         using (var mem = new System.IO.MemoryStream(data))
-        using (var str = new System.IO.StreamReader(mem, encoding))
+        using (var str = new System.IO.StreamReader(mem, Encoding))
           value = str.ReadToEnd();
 
         ContentTransferEncoding = string.Empty;

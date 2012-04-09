@@ -144,8 +144,8 @@ namespace AE.Net.Mail {
     }
 
 
-    public static HeaderDictionary Parse(string headers) {
-      headers = Utilities.DecodeWords(headers);
+    public static HeaderDictionary Parse(string headers, System.Text.Encoding encoding) {
+      headers = Utilities.DecodeWords(headers, encoding);
       var temp = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
       var lines = headers.Split(new char[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
       int i;

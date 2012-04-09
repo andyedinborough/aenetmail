@@ -1,7 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Net.Mail;
@@ -78,7 +76,6 @@ namespace AE.Net.Mail {
     public string Raw { get; private set; }
     public MailPriority Importance { get; set; }
 
-
     public void Load(string message, bool headersOnly = false) {
       Raw = message;
       using (var reader = new StringReader(message)) {
@@ -141,7 +138,7 @@ namespace AE.Net.Mail {
       Importance = Headers.GetEnum<MailPriority>("Importance");
       Subject = Headers["Subject"].RawValue;
     }
-     
+
     private void ParseMime(TextReader reader, string boundary) {
       string data,
         bounderInner = "--" + boundary,
@@ -153,7 +150,7 @@ namespace AE.Net.Mail {
 
       while (data != null && !data.StartsWith(bounderOuter)) {
         data = reader.ReadLine();
-        var a = new Attachment();
+        var a = new Attachment { Encoding = Encoding };
 
         var part = new StringBuilder();
         // read part header

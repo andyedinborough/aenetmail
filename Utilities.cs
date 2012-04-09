@@ -84,7 +84,7 @@ namespace AE.Net.Mail {
 
     internal static string DecodeQuotedPrintable(string value, Encoding encoding = null) {
       if (encoding == null) {
-        encoding = System.Text.Encoding.UTF8;
+        encoding = System.Text.Encoding.Default;
       }
 
       if (value.IndexOf('_') > -1 && value.IndexOf(' ') == -1)
@@ -125,11 +125,11 @@ namespace AE.Net.Mail {
         return data;
       }
       var bytes = Convert.FromBase64String(data);
-      return (encoding ?? System.Text.Encoding.UTF8).GetString(bytes);
+      return (encoding ?? System.Text.Encoding.Default).GetString(bytes);
     }
 
     #region OpenPOP.NET
-    internal static string DecodeWords(string encodedWords) {
+    internal static string DecodeWords(string encodedWords, Encoding @default) {
       if (string.IsNullOrEmpty(encodedWords))
         return string.Empty;
 
@@ -162,7 +162,7 @@ namespace AE.Net.Mail {
         string charset = match.Groups["Charset"].Value;
 
         // Get the encoding which corrosponds to the character set
-        Encoding charsetEncoding = ParseCharsetToEncoding(charset);
+        Encoding charsetEncoding = ParseCharsetToEncoding(charset, @default);
 
         // Store decoded text here when done
         string decodedText;
@@ -204,9 +204,9 @@ namespace AE.Net.Mail {
     /// <param name="characterSet">The character set to parse</param>
     /// <returns>An encoding which corresponds to the character set</returns>
     /// <exception cref="ArgumentNullException">If <paramref name="characterSet"/> is <see langword="null"/></exception>
-    public static Encoding ParseCharsetToEncoding(string characterSet) {
+    public static Encoding ParseCharsetToEncoding(string characterSet, Encoding @default) {
       if (string.IsNullOrEmpty(characterSet))
-        return Encoding.Default;
+        return @default ?? Encoding.Default;
 
       string charSetUpper = characterSet.ToUpperInvariant();
       if (charSetUpper.Contains("WINDOWS") || charSetUpper.Contains("CP")) {
@@ -219,12 +219,12 @@ namespace AE.Net.Mail {
         int codepageNumber = int.Parse(charSetUpper, System.Globalization.CultureInfo.InvariantCulture);
 
         return Encoding.GetEncodings().Where(x => x.CodePage == codepageNumber)
-          .Select(x => x.GetEncoding()).FirstOrDefault() ?? Encoding.Default;
+          .Select(x => x.GetEncoding()).FirstOrDefault() ?? @default ?? Encoding.Default;
       }
 
       // It seems there is no codepage value in the characterSet. It must be a named encoding
       return Encoding.GetEncodings().Where(x => x.Name.Is(characterSet))
-        .Select(x => x.GetEncoding()).FirstOrDefault() ?? Encoding.Default;
+        .Select(x => x.GetEncoding()).FirstOrDefault() ?? @default ?? System.Text.Encoding.Default;
     }
     #endregion
 

@@ -1,12 +1,11 @@
 using System;
-using System.ComponentModel;
 
 namespace AE.Net.Mail {
   public class Attachment : ObjectWHeaders {
     public string Filename {
-      get { return Headers["Content-Disposition"]["filename"]; }
+      get { return Headers["Content-Disposition"]["filename"].NotEmpty(Headers["Content-Disposition"]["name"]); }
     }
-    
+
     private string _ContentDisposition;
     private string ContentDisposition {
       get { return _ContentDisposition ?? (_ContentDisposition = Headers["Content-Disposition"].Value.ToLower()); }
@@ -36,10 +35,10 @@ namespace AE.Net.Mail {
         try {
           data = Convert.FromBase64String(Body);
         } catch (Exception) {
-          data = System.Text.Encoding.UTF8.GetBytes(Body);
+          data = Encoding.GetBytes(Body);
         }
       } else {
-        data = System.Text.Encoding.UTF8.GetBytes(Body);
+        data = Encoding.GetBytes(Body);
       }
       return data;
     }
