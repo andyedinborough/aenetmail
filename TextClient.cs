@@ -16,7 +16,7 @@ namespace AE.Net.Mail {
     public System.Text.Encoding Encoding { get; set; }
 
     public TextClient() {
-      Encoding = System.Text.Encoding.Default;
+      Encoding = System.Text.Encoding.GetEncoding(1252);
     }
 
     internal abstract void OnLogin(string username, string password);
