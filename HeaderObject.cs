@@ -6,7 +6,7 @@ namespace AE.Net.Mail {
     private HeaderDictionary _Headers;
     public HeaderDictionary Headers {
       get {
-        return _Headers ?? (_Headers = HeaderDictionary.Parse(RawHeaders, Encoding));
+        return _Headers ?? (_Headers = HeaderDictionary.Parse(RawHeaders, _DefaultEncoding));
       }
       internal set {
         _Headers = value;
