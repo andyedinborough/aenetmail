@@ -129,7 +129,7 @@ namespace AE.Net.Mail {
     }
 
     #region OpenPOP.NET
-    internal static string DecodeWords(string encodedWords, Encoding @default) {
+    internal static string DecodeWords(string encodedWords, Encoding @default = null) {
       if (string.IsNullOrEmpty(encodedWords))
         return string.Empty;
 
