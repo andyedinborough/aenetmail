@@ -1,14 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using System.Net.Mail;
 using System.Text;
 using System.Text.RegularExpressions;
 
 namespace AE.Net.Mail {
   internal static class Utilities {
-    public const string DEFAULT_CHARSET = "ISO-8859-1";
-
     internal static void TryDispose<T>(ref T obj) where T : class, IDisposable {
       try {
         if (obj != null)
@@ -207,7 +206,7 @@ namespace AE.Net.Mail {
     /// <exception cref="ArgumentNullException">If <paramref name="characterSet"/> is <see langword="null"/></exception>
     public static Encoding ParseCharsetToEncoding(string characterSet) {
       if (string.IsNullOrEmpty(characterSet))
-        characterSet = DEFAULT_CHARSET;
+        return Encoding.Default;
 
       string charSetUpper = characterSet.ToUpperInvariant();
       if (charSetUpper.Contains("WINDOWS") || charSetUpper.Contains("CP")) {
@@ -219,11 +218,13 @@ namespace AE.Net.Mail {
         // Now we hope the only thing left in the characterSet is numbers.
         int codepageNumber = int.Parse(charSetUpper, System.Globalization.CultureInfo.InvariantCulture);
 
-        return Encoding.GetEncoding(codepageNumber);
+        return Encoding.GetEncodings().Where(x => x.CodePage == codepageNumber)
+          .Select(x => x.GetEncoding()).FirstOrDefault() ?? Encoding.Default;
       }
 
       // It seems there is no codepage value in the characterSet. It must be a named encoding
-      return Encoding.GetEncoding(characterSet);
+      return Encoding.GetEncodings().Where(x => x.Name.Is(characterSet))
+        .Select(x => x.GetEncoding()).FirstOrDefault() ?? Encoding.Default;
     }
     #endregion
 
