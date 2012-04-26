@@ -424,24 +424,27 @@ namespace AE.Net.Mail {
         foreach (var key in imapHeaders.AllKeys.Except(new[] { "UID", "Flags", "BODY[]", "BODY[HEADER]" }, StringComparer.OrdinalIgnoreCase))
           mail.Headers.Add(key, new HeaderValue(imapHeaders[key]));
 
-        using (var body = new System.IO.MemoryStream()) {
-          int remaining = mail.Size;
-          var buffer = new byte[8192];
-          int read;
-          while (remaining > 0) {
-            read = _Stream.Read(buffer, 0, Math.Min(remaining, buffer.Length));
-            body.Write(buffer, 0, read);
-            remaining -= read;
-          }
+        //using (var body = new System.IO.MemoryStream()) {
+        //  int remaining = mail.Size;
+        //  var buffer = new byte[8192];
+        //  int read;
+        //  while (remaining > 0) {
+        //    read = _Stream.Read(buffer, 0, Math.Min(remaining, buffer.Length));
+        //    body.Write(buffer, 0, read);
+        //    remaining -= read;
+        //  }
 
-          var next = Convert.ToChar(_Stream.ReadByte());
-          System.Diagnostics.Debug.Assert(next == ')');
+        //  var next = Convert.ToChar(_Stream.ReadByte());
+        //  System.Diagnostics.Debug.Assert(next == ')');
 
-          body.Position = 0;
-          using (var rdr = new System.IO.StreamReader(body, Encoding)) {
-            mail.Load(rdr, headersonly);
-          }
-        }
+        //  body.Position = 0;
+        //  mail.Load(body, headersonly);
+        //}
+
+        mail.Load(_Stream, headersonly, mail.Size);
+
+        var n = Convert.ToChar(_Stream.ReadByte());
+        System.Diagnostics.Debug.Assert(n == ')');
 
         x.Add(mail);
       }

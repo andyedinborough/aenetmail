@@ -64,6 +64,14 @@ namespace Tests {
     }
 
     [TestMethod]
+    public void TestPOP() {
+      using (var client = GetClient<Pop3Client>("gmail", "pop3")) {
+        var msg = client.GetMessage(0);
+        Console.WriteLine(msg.Body);
+      }
+    }
+
+    [TestMethod]
     public void TestConnections() {
       var accountsToTest = System.IO.Path.Combine(Environment.CurrentDirectory.Split(new[] { "\\aenetmail\\" }, StringSplitOptions.RemoveEmptyEntries).First(), "ae.net.mail.usernames.txt");
       var lines = System.IO.File.ReadAllLines(accountsToTest)
@@ -127,7 +135,7 @@ namespace Tests {
       using (var client = GetClient<ImapClient>()) {
         var msg = client.SearchMessages(SearchCondition.Subject("aenetmail").And(SearchCondition.Subject("#49"))).Select(x => x.Value).FirstOrDefault();
         msg.Should().Not.Be.Null();
-        msg.AlternateViews.FirstOrDefault(x=>x.ContentType.Contains("html")).Body.Should().Not.Be.Null();
+        msg.AlternateViews.FirstOrDefault(x => x.ContentType.Contains("html")).Body.Should().Not.Be.Null();
       }
     }
 

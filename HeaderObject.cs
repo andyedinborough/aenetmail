@@ -35,16 +35,16 @@ namespace AE.Net.Mail {
       }
     }
 
-    System.Text.Encoding _DefaultEncoding;
-    System.Text.Encoding _Encoding;
+    protected System.Text.Encoding _DefaultEncoding = System.Text.Encoding.GetEncoding(1252);
+    protected System.Text.Encoding _Encoding;
     public System.Text.Encoding Encoding {
       get {
         return _Encoding ?? (_Encoding = Utilities.ParseCharsetToEncoding(Charset, _DefaultEncoding));
       }
       set {
-        _DefaultEncoding = value;
+        _DefaultEncoding = value ?? _DefaultEncoding;
         if (_Encoding != null) //Encoding has been initialized from the specified Charset
-          _Encoding = value;
+          _Encoding = value ?? _DefaultEncoding;
       }
     }
 

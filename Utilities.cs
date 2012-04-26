@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Net.Mail;
 using System.Text;
@@ -8,6 +9,35 @@ using System.Text.RegularExpressions;
 
 namespace AE.Net.Mail {
   internal static class Utilities {
+    internal static string ReadLine(this Stream stream, ref int maxLength, Encoding encoding) {
+      byte b;
+      using (var mem = new MemoryStream()) {
+        while (true) {
+          b = (byte)stream.ReadByte();
+          if (b == 10 || b == 13) {
+            if (mem.Length == 0 && b == 10) continue;
+            break;
+          } else mem.WriteByte(b);
+          if (maxLength > 0 && mem.Length == maxLength) break;
+        }
+        if (maxLength > 0) maxLength -= (int)mem.Length;
+        return encoding.GetString(mem.ToArray());
+      }
+    }
+
+    internal static string ReadToEnd(this Stream stream, int maxLength, Encoding encoding) {
+      int read = 1;
+      byte[] buffer = new byte[8192];
+      using (var mem = new MemoryStream()) {
+        while (read > 0) {
+          read = stream.Read(buffer, 0, maxLength == 0 ? buffer.Length : Math.Min(maxLength - (int)mem.Length, buffer.Length));
+          mem.Write(buffer, 0, read);
+          if (maxLength > 0 && mem.Length == maxLength) break;
+        }
+        return encoding.GetString(mem.ToArray());
+      }
+    }
+
     internal static void TryDispose<T>(ref T obj) where T : class, IDisposable {
       try {
         if (obj != null)

@@ -78,22 +78,22 @@ namespace AE.Net.Mail {
 
     public void Load(string message, bool headersOnly = false) {
       Raw = message;
-      using (var reader = new StringReader(message)) {
-        Load(reader, headersOnly);
+      using (var mem = new MemoryStream(_DefaultEncoding.GetBytes(message))) {
+        Load(mem, headersOnly, 0);
       }
     }
 
-    public void Load(TextReader reader, bool headersOnly = false) {
+    public void Load(Stream reader, bool headersOnly = false, int maxLength = 0) {
       _HeadersOnly = headersOnly;
       Headers = null;
       Body = null;
 
       if (headersOnly) {
-        RawHeaders = reader.ReadToEnd();
+        RawHeaders = reader.ReadToEnd(maxLength, _DefaultEncoding);
       } else {
         var headers = new StringBuilder();
         string line;
-        while ((line = reader.ReadLine()) != null) {
+        while ((line = reader.ReadLine(ref maxLength, _DefaultEncoding)) != null) {
           if (line.Trim().Length == 0)
             if (headers.Length == 0)
               continue;
@@ -106,10 +106,10 @@ namespace AE.Net.Mail {
         string boundary = Headers.GetBoundary();
         if (!string.IsNullOrEmpty(boundary)) {
           //else this is a multipart Mime Message
-          using (var subreader = new StringReader(line + Environment.NewLine + reader.ReadToEnd()))
-            ParseMime(subreader, boundary);
+          //using (var subreader = new StringReader(line + Environment.NewLine + reader.ReadToEnd()))
+          ParseMime(reader, boundary, maxLength);
         } else {
-          SetBody((line + Environment.NewLine + reader.ReadToEnd()).Trim());
+          SetBody(reader.ReadToEnd(maxLength, Encoding).Trim());
         }
       }
 
@@ -139,39 +139,44 @@ namespace AE.Net.Mail {
       Subject = Headers["Subject"].RawValue;
     }
 
-    private void ParseMime(TextReader reader, string boundary) {
+    private void ParseMime(string body, string boundary) {
+      using (var mem = new MemoryStream(Encoding.GetBytes(body))) {
+        ParseMime(mem, boundary, 0);
+      }
+    }
+
+    private void ParseMime(Stream reader, string boundary, int maxLength) {
       string data,
         bounderInner = "--" + boundary,
         bounderOuter = bounderInner + "--";
 
       do {
-        data = reader.ReadLine();
+        data = reader.ReadLine(ref maxLength, Encoding);
       } while (data != null && !data.StartsWith(bounderInner));
 
       while (data != null && !data.StartsWith(bounderOuter)) {
-        data = reader.ReadLine();
+        data = reader.ReadLine(ref maxLength, Encoding);
         var a = new Attachment { Encoding = Encoding };
 
         var part = new StringBuilder();
         // read part header
         while (!data.StartsWith(bounderInner) && data != string.Empty) {
           part.AppendLine(data);
-          data = reader.ReadLine();
+          data = reader.ReadLine(ref maxLength, Encoding);
         }
         a.RawHeaders = part.ToString();
         // header body
 
-        data = reader.ReadLine();
+        data = reader.ReadLine(ref maxLength, Encoding);
         var body = new StringBuilder();
         while (data != null && !data.StartsWith(bounderInner)) {
           body.AppendLine(data);
-          data = reader.ReadLine();
+          data = reader.ReadLine(ref maxLength, Encoding);
         }
         // check for nested part
         string nestedboundary = a.Headers.GetBoundary();
         if (!string.IsNullOrEmpty(nestedboundary)) {
-          using (var nestedReader = new System.IO.StringReader(body.ToString()))
-            ParseMime(nestedReader, nestedboundary);
+          ParseMime(body.ToString(), nestedboundary);
 
         } else { // nested
           a.SetBody(body.ToString());
