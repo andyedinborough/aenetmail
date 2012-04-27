@@ -96,7 +96,7 @@ namespace AE.Net.Mail {
       for (int i = 0; i < data.Length; i++) {
         var b = data[i];
 
-        if (b == eq) {
+        if ((b == eq) && ((i + 1) < data.Length)) {
           byte b1 = data[i + 1], b2 = data[i + 2];
           if (b1 == 10 || b1 == 13) {
             i++;
