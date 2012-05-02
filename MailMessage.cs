@@ -73,11 +73,9 @@ namespace AE.Net.Mail {
     public MailAddress Sender { get; set; }
     public string MessageID { get; set; }
     public string Uid { get; internal set; }
-    public string Raw { get; private set; }
     public MailPriority Importance { get; set; }
 
     public void Load(string message, bool headersOnly = false) {
-      Raw = message;
       using (var mem = new MemoryStream(_DefaultEncoding.GetBytes(message))) {
         Load(mem, headersOnly, 0);
       }

@@ -1,9 +1,9 @@
 ﻿using System;
+using System.Linq;
 using System.Text.RegularExpressions;
 using AE.Net.Mail;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Should.Fluent;
-using System.Linq;
 
 namespace Tests {
   /// <summary>
@@ -25,7 +25,10 @@ namespace Tests {
       MailMessage msg = new MailMessage();
       for (var i = 0; i < files.Length; i++) {
         var file = files[i];
-        msg.Load(System.IO.File.ReadAllText(file), false);
+        var txt = System.IO.File.ReadAllText(file);
+        using (var stream = System.IO.File.OpenRead(file))
+          msg.Load(stream, false, (int)stream.Length);
+
         if (msg.ContentTransferEncoding.IndexOf("quoted", StringComparison.OrdinalIgnoreCase) == -1) {
           continue;
         }
@@ -37,7 +40,7 @@ namespace Tests {
         try {
 
           msg.Date.Ticks.Should().Be.InRange(mindate, maxdate);
-          if (string.IsNullOrEmpty(msg.Subject) && rxSubject.IsMatch(msg.Raw))
+          if (string.IsNullOrEmpty(msg.Subject) && rxSubject.IsMatch(txt))
             throw new AssertFailedException("subject is null or empty");
           //msg.From.Should().Not.Be.Null();
           if (msg.To.Count > 0) msg.To.First().Should().Not.Be.Null();
@@ -49,7 +52,7 @@ namespace Tests {
 
         } catch (Exception ex) {
           Console.WriteLine(ex);
-          Console.WriteLine(msg.Raw);
+          Console.WriteLine(txt);
           throw;
         }
       }
