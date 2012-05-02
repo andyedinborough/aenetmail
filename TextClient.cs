@@ -128,22 +128,20 @@ namespace AE.Net.Mail {
     }
 
     public void Dispose() {
-      Dispose(true);
-      GC.SuppressFinalize(this);
-    }
-
-    public virtual void Dispose(bool disposing) {
-      if (disposing) {
+      if (IsDisposed) return;
+      lock (this) {
+        if (IsDisposed) return;
+        IsDisposed = true;
         Disconnect();
 
         try {
           OnDispose();
         } catch (Exception) { }
 
-        IsDisposed = true;
         _Stream = null;
         _Connection = null;
       }
+      GC.SuppressFinalize(this);
     }
   }
 }
