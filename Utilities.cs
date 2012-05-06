@@ -69,7 +69,7 @@ namespace AE.Net.Mail {
     internal static DateTime? ToNullDate(this string input) {
       DateTime result;
       input = NormalizeDate(input);
-      if (DateTime.TryParse(input, out result)) {
+      if (DateTime.TryParse(input, CultureInfo.GetCultureInfo("en"), DateTimeStyles.None, out result)) {
         return result;
       } else {
         return null;
