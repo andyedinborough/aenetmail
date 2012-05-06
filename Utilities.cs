@@ -9,6 +9,8 @@ using System.Text.RegularExpressions;
 
 namespace AE.Net.Mail {
   internal static class Utilities {
+    private static CultureInfo _enUsCulture = CultureInfo.GetCultureInfo("en-US");
+
     internal static string ReadLine(this Stream stream, ref int maxLength, Encoding encoding) {
       byte b;
       using (var mem = new MemoryStream()) {
@@ -69,7 +71,7 @@ namespace AE.Net.Mail {
     internal static DateTime? ToNullDate(this string input) {
       DateTime result;
       input = NormalizeDate(input);
-      if (DateTime.TryParse(input, CultureInfo.GetCultureInfo("en"), DateTimeStyles.None, out result)) {
+      if (DateTime.TryParse(input, _enUsCulture, DateTimeStyles.None, out result)) {
         return result;
       } else {
         return null;
@@ -93,8 +95,7 @@ namespace AE.Net.Mail {
     }
 
     internal static string GetRFC2060Date(this DateTime date) {
-      CultureInfo enUsCulture = CultureInfo.GetCultureInfo("en-US");
-      return date.ToString("dd-MMM-yyyy hh:mm:ss zz", enUsCulture);
+      return date.ToString("dd-MMM-yyyy hh:mm:ss zz", _enUsCulture);
     }
 
     internal static string QuoteString(this string value) {
