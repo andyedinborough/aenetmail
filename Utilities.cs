@@ -12,30 +12,34 @@ namespace AE.Net.Mail {
     private static CultureInfo _enUsCulture = CultureInfo.GetCultureInfo("en-US");
 
     internal static string ReadLine(this Stream stream, ref int maxLength, Encoding encoding) {
+      stream.ReadTimeout = 10000;
+      var maxLengthSpecified = maxLength > 0;
       byte b;
       using (var mem = new MemoryStream()) {
         while (true) {
           b = (byte)stream.ReadByte();
+          if (maxLength > 0) maxLength--;
           if (b == 10 || b == 13) {
             if (mem.Length == 0 && b == 10) continue;
             break;
           } else mem.WriteByte(b);
-          if (maxLength > 0 && mem.Length == maxLength) break;
+          if (maxLengthSpecified && maxLength == 0) break;
         }
-        if (maxLength > 0) maxLength -= (int)mem.Length;
         return encoding.GetString(mem.ToArray());
       }
     }
 
     internal static string ReadToEnd(this Stream stream, int maxLength, Encoding encoding) {
+      stream.ReadTimeout = 10000;
       int read = 1;
       byte[] buffer = new byte[8192];
       using (var mem = new MemoryStream()) {
-        while (read > 0) {
-          read = stream.Read(buffer, 0, maxLength == 0 ? buffer.Length : Math.Min(maxLength - (int)mem.Length, buffer.Length));
+        do {
+          var length = maxLength == 0 ? buffer.Length : Math.Min(maxLength - (int)mem.Length, buffer.Length);
+          read = stream.Read(buffer, 0, length);
           mem.Write(buffer, 0, read);
           if (maxLength > 0 && mem.Length == maxLength) break;
-        }
+        } while (read > 0);
         return encoding.GetString(mem.ToArray());
       }
     }
