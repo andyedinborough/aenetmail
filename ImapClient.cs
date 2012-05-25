@@ -29,7 +29,8 @@ namespace AE.Net.Mail {
 
     public enum AuthMethods {
       Login,
-      CRAMMD5
+      CRAMMD5,
+      SaslOAuth
     }
 
     public AuthMethods AuthMethod { get; set; }
@@ -541,6 +542,11 @@ namespace AE.Net.Mail {
           command = tag + "LOGIN " + login.QuoteString() + " " + password.QuoteString();
           result = SendCommandGetResponse(command);
           break;
+
+		case AuthMethods.SaslOAuth:
+		  command = tag + "AUTHENTICATE XOAUTH " + password;
+		  result = SendCommandGetResponse(command);
+		  break;
 
         default:
           throw new NotSupportedException();
