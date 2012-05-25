@@ -182,7 +182,8 @@ namespace AE.Net.Mail {
         }
       }
 
-      data = reader.ReadToEnd(maxLength, Encoding);
+      if (maxLength > 0)
+        data = reader.ReadToEnd(maxLength, Encoding);
     }
 
     private static Dictionary<string, int> _FlagCache = System.Enum.GetValues(typeof(Flags)).Cast<Flags>().ToDictionary(x => x.ToString(), x => (int)x, StringComparer.OrdinalIgnoreCase);
