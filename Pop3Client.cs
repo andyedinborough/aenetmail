@@ -63,6 +63,7 @@ namespace AE.Net.Mail {
       msg.Load(_Stream, headersOnly, size);
       msg.Uid = uid;
       var last = GetResponse();
+      if (last.StartsWith("-")) last = GetResponse();
       System.Diagnostics.Debug.Assert(last == ".");
       return msg;
     }

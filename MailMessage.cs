@@ -144,6 +144,7 @@ namespace AE.Net.Mail {
     }
 
     private void ParseMime(Stream reader, string boundary, int maxLength) {
+      var maxLengthSpecified = maxLength > 0;
       string data,
         bounderInner = "--" + boundary,
         bounderOuter = bounderInner + "--";
@@ -152,7 +153,7 @@ namespace AE.Net.Mail {
         data = reader.ReadLine(ref maxLength, Encoding);
       } while (data != null && !data.StartsWith(bounderInner));
 
-      while (data != null && !data.StartsWith(bounderOuter)) {
+      while (data != null && !data.StartsWith(bounderOuter) && (maxLength > 0 || !maxLengthSpecified)) {
         data = reader.ReadLine(ref maxLength, Encoding);
         var a = new Attachment { Encoding = Encoding };
 
