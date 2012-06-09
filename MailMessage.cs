@@ -168,7 +168,7 @@ namespace AE.Net.Mail {
 
         data = reader.ReadLine(ref maxLength, Encoding);
         var body = new StringBuilder();
-        while (data != null && !data.StartsWith(bounderInner)) {
+        while (data != string.Empty && !data.StartsWith(bounderInner)) {
           body.AppendLine(data);
           data = reader.ReadLine(ref maxLength, Encoding);
         }
