@@ -715,7 +715,7 @@ namespace AE.Net.Mail {
     }
 
     public void SetFlags(Flags flags, params MailMessage[] msgs) {
-      SetFlags(string.Join(" ", flags.ToString().Split(',').Select(x => "\\" + x.Trim())), msgs);
+      SetFlags(FlagsToFlagString(flags), msgs);
     }
 
     public void SetFlags(string flags, params MailMessage[] msgs) {
@@ -725,14 +725,20 @@ namespace AE.Net.Mail {
       }
     }
 
+    private string FlagsToFlagString(Flags flags)
+    {
+        return string.Join(" ", flags.ToString().Split(',').Select(x => "\\" + x.Trim()));
+    }
+
+
     public void AddFlags(Flags flags, params MailMessage[] msgs) {
-      AddFlags(string.Join(" ", flags.ToString().Split(',').Select(x => "\\" + x.Trim())), msgs);
+      AddFlags(FlagsToFlagString(flags), msgs);
     }
 
     public void AddFlags(string flags, params MailMessage[] msgs) {
       Store("UID " + string.Join(" ", msgs.Select(x => x.Uid)), false, flags);
       foreach (var msg in msgs) {
-        msg.SetFlags(string.Join(" ", msg.Flags) + flags);
+          msg.SetFlags(FlagsToFlagString(msg.Flags) + " " + flags);
       }
     }
 
