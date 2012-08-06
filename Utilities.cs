@@ -12,9 +12,6 @@ namespace AE.Net.Mail {
     private static CultureInfo _enUsCulture = CultureInfo.GetCultureInfo("en-US");
 
     internal static string ReadLine(this Stream stream, ref int maxLength, Encoding encoding) {
-      if (stream.CanTimeout)
-        stream.ReadTimeout = 10000;
-
       var maxLengthSpecified = maxLength > 0;
       byte b;
       using (var mem = new MemoryStream()) {
@@ -32,9 +29,6 @@ namespace AE.Net.Mail {
     }
 
     internal static string ReadToEnd(this Stream stream, int maxLength, Encoding encoding) {
-      if (stream.CanTimeout)
-        stream.ReadTimeout = 10000;
-
       int read = 1;
       byte[] buffer = new byte[8192];
       using (var mem = new MemoryStream()) {

@@ -7,6 +7,10 @@ namespace AE.Net.Mail {
     protected TcpClient _Connection;
     protected Stream _Stream;
 
+    private readonly object _ReadLock = new object();
+    private readonly object _WriteLock = new object();
+    private readonly object _RWLock = new object();
+
     public string Host { get; private set; }
     public int Port { get; set; }
     public bool Ssl { get; set; }
@@ -91,25 +95,34 @@ namespace AE.Net.Mail {
 
     protected virtual void SendCommand(string command) {
       var bytes = System.Text.Encoding.Default.GetBytes(command + "\r\n");
-      _Stream.Write(bytes, 0, bytes.Length);
+
+      lock (_WriteLock) {
+        _Stream.Write(bytes, 0, bytes.Length);
+      };
     }
 
     protected string SendCommandGetResponse(string command) {
-      SendCommand(command);
-      return GetResponse();
+      string response = null;
+      lock (_RWLock) {
+        SendCommand(command);
+        response = GetResponse();
+      }
+      return response;
     }
 
     protected virtual string GetResponse() {
-      byte b;
-      using (var mem = new System.IO.MemoryStream()) {
-        while (true) {
-          b = (byte)_Stream.ReadByte();
-          if ((b == 10 || b == 13)) {
-            if (mem.Length > 0 && b == 10) {
-              return Encoding.GetString(mem.ToArray());
+      lock (_ReadLock) {
+        byte b;
+        using (var mem = new System.IO.MemoryStream()) {
+          while (true) {
+            b = (byte)_Stream.ReadByte();
+            if ((b == 10 || b == 13)) {
+              if (mem.Length > 0 && b == 10) {
+                return Encoding.GetString(mem.ToArray());
+              }
+            } else {
+              mem.WriteByte(b);
             }
-          } else {
-            mem.WriteByte(b);
           }
         }
       }
@@ -127,6 +140,9 @@ namespace AE.Net.Mail {
       Utilities.TryDispose(ref _Connection);
     }
 
+    /// <summary>
+    /// Releases all resources used by this ImapClient object.
+    /// </summary>
     public void Dispose() {
       if (IsDisposed) return;
       lock (this) {
