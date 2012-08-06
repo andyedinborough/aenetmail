@@ -162,7 +162,7 @@ namespace AE.Net.Mail {
     /// <returns>The IMAP command received from the server</returns>
     private string WaitForResponse() {
       string response = null;
-      int noopInterval = (int)TimeSpan.FromSeconds(30).TotalMilliseconds;
+      int noopInterval = (int)TimeSpan.FromMinutes(10).TotalMilliseconds;
       /* Fixme: Does 'ev' need explicit disposing? */
       AutoResetEvent ev = new AutoResetEvent(false);
 
