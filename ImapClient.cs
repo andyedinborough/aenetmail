@@ -204,16 +204,19 @@ namespace AE.Net.Mail {
 
       while (true) {
         resp = WaitForResponse();
+        /* Quit idle thread */
         if (resp.Contains("OK IDLE"))
           return;
+
         var data = resp.Split(' ');
         if (data[0] == "*" && data.Length >= 3) {
           var e = new MessageEventArgs { Client = this, MessageCount = int.Parse(data[1]) };
-          if (data[2].Is("EXISTS") && !last.Is("EXPUNGE") && e.MessageCount > 0) {
-            ThreadPool.QueueUserWorkItem(callback => _NewMessage.Fire(this, e));    //Fire the event on a separate thread
-          } else if (data[2].Is("EXPUNGE")) {
-            _MessageDeleted.Fire(this, e);
-          }
+          /* Fire event on a separate thread */
+          if (data[2].Is("EXISTS") && !last.Is("EXPUNGE") && e.MessageCount > 0)
+            ThreadPool.QueueUserWorkItem(callback => _NewMessage.Fire(this, e));
+          else if (data[2].Is("EXPUNGE"))
+            ThreadPool.QueueUserWorkItem(callback => _MessageDeleted.Fire(this, e));
+
           last = data[2];
         }
       }
@@ -520,7 +523,6 @@ namespace AE.Net.Mail {
         //  body.Position = 0;
         //  mail.Load(body, headersonly);
         //}
-
         mail.Load(_Stream, headersonly, mail.Size);
 
         var n = Convert.ToChar(_Stream.ReadByte());

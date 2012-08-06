@@ -148,45 +148,90 @@ namespace AE.Net.Mail {
       string data,
         bounderInner = "--" + boundary,
         bounderOuter = bounderInner + "--";
-
       do {
+        /* read up to the first boundary */
         data = reader.ReadLine(ref maxLength, Encoding);
       } while (data != null && !data.StartsWith(bounderInner));
 
-      while (data != null && !data.StartsWith(bounderOuter) && (maxLength > 0 || !maxLengthSpecified)) {
-        data = reader.ReadLine(ref maxLength, Encoding);
+      /* read parts enclosed in boundary strings */
+      while (data.StartsWith(bounderInner) && (maxLength > 0 || !maxLengthSpecified)) {
         var a = new Attachment { Encoding = Encoding };
 
-        var part = new StringBuilder();
-        // read part header
-        while (!data.StartsWith(bounderInner) && data != string.Empty) {
-          part.AppendLine(data);
-          data = reader.ReadLine(ref maxLength, Encoding);
-        }
-        a.RawHeaders = part.ToString();
-        // header body
+        /* read content-header of part */
+        StringBuilder header = new StringBuilder();
+        while ((data = reader.ReadLine(ref maxLength, Encoding)) != String.Empty)
+          header.AppendLine(data);
+        a.RawHeaders = header.ToString();
 
-        data = reader.ReadLine(ref maxLength, Encoding);
-        var body = new StringBuilder();
-        while (data != string.Empty && !data.StartsWith(bounderInner)) {
+        /* part content-header and content-body are separated by an empty line */
+        StringBuilder body = new StringBuilder();
+        while (!(data = reader.ReadLine(ref maxLength, Encoding)).StartsWith(bounderInner))
           body.AppendLine(data);
-          data = reader.ReadLine(ref maxLength, Encoding);
-        }
-        // check for nested part
-        string nestedboundary = a.Headers.GetBoundary();
-        if (!string.IsNullOrEmpty(nestedboundary)) {
-          ParseMime(body.ToString(), nestedboundary);
 
-        } else { // nested
+        /* check for nested part */
+        string nestedBoundary = a.Headers.GetBoundary();
+        if (!string.IsNullOrEmpty(nestedBoundary))
+          ParseMime(body.ToString(), nestedBoundary);
+        else {
           a.SetBody(body.ToString());
           (a.IsAttachment ? Attachments : AlternateViews).Add(a);
         }
+        /* if data is outer boundary, we're done */
+        if (data.Equals(bounderOuter))
+          break;
       }
-
+      /* Fixme: What's this for? */
       if (maxLength > 0)
         data = reader.ReadToEnd(maxLength, Encoding);
     }
 
+    /*
+        private void ParseMime(Stream reader, string boundary, int maxLength) {
+          var maxLengthSpecified = maxLength > 0;
+          string data,
+            bounderInner = "--" + boundary,
+            bounderOuter = bounderInner + "--";
+          do {
+            data = reader.ReadLine(ref maxLength, Encoding);
+          } while (data != null && !data.StartsWith(bounderInner));
+
+          while (data != null && !data.StartsWith(bounderOuter) && (maxLength > 0 || !maxLengthSpecified)) {
+            data = reader.ReadLine(ref maxLength, Encoding);
+            var a = new Attachment { Encoding = Encoding };
+
+            var part = new StringBuilder();
+            // read part header
+            while (!data.StartsWith(bounderInner) && data != string.Empty) {
+          MessageBox.Show(data);
+
+              part.AppendLine(data);
+              data = reader.ReadLine(ref maxLength, Encoding);
+            }
+            a.RawHeaders = part.ToString();
+            // header body
+
+            data = reader.ReadLine(ref maxLength, Encoding);
+
+            var body = new StringBuilder();
+            while (data != string.Empty && !data.StartsWith(bounderInner)) {
+              body.AppendLine(data);
+              data = reader.ReadLine(ref maxLength, Encoding);
+            }
+            // check for nested part
+            string nestedboundary = a.Headers.GetBoundary();
+            if (!string.IsNullOrEmpty(nestedboundary)) {
+              ParseMime(body.ToString(), nestedboundary);
+
+            } else { // nested
+              a.SetBody(body.ToString());
+              (a.IsAttachment ? Attachments : AlternateViews).Add(a);
+            }
+          }
+        MessageBox.Show("Very end of ParseMime");
+          if (maxLength > 0)
+            data = reader.ReadToEnd(maxLength, Encoding);
+        }
+    */
     private static Dictionary<string, int> _FlagCache = System.Enum.GetValues(typeof(Flags)).Cast<Flags>().ToDictionary(x => x.ToString(), x => (int)x, StringComparer.OrdinalIgnoreCase);
     internal void SetFlags(string flags) {
       RawFlags = flags.Split(' ').Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
