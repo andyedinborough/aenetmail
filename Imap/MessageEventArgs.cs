@@ -1,8 +1,14 @@
 using System;
 
 namespace AE.Net.Mail.Imap {
-    public class MessageEventArgs : EventArgs {
-        public int MessageCount { get; set; }
-        internal ImapClient Client { get; set; }
-    }
+  /// <summary>
+  /// Provides data for the NewMessage event.
+  /// </summary>
+  public class MessageEventArgs : EventArgs {
+    /// <summary>
+    /// The total number of messages in the mailbox
+    /// </summary>
+    public int MessageCount { get; set; }
+    internal ImapClient Client { get; set; }
+  }
 }

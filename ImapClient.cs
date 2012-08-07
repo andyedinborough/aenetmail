@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
+using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
@@ -21,6 +22,18 @@ namespace AE.Net.Mail {
     private string _FetchHeaders = null;
 
     public ImapClient() { }
+
+    /// <summary>
+    /// Initializes a new instance of the ImapClient class and connects to the specified
+    /// IMAP server using the specified credentials.
+    /// </summary>
+    /// <param name="host">The DNS name of the IMAP server to which you intend to connect.</param>
+    /// <param name="username">The username with which to log in to the IMAP server.</param>
+    /// <param name="password">The password with which to log in to the IMAP server.</param>
+    /// <param name="method">The requested method of authorization, can be one of the values of the AuthMethods enumeration.</param>
+    /// <param name="port">The port number of the IMAP server to which you intend to connect.</param>
+    /// <param name="secure">Set to true to use the Secure Socket Layer (SSL) security protocol.</param>
+    /// <param name="skipSslValidation">Set to true to skip SSL validation.</param>
     public ImapClient(string host, string username, string password, AuthMethods method = AuthMethods.Login, int port = 143, bool secure = false, bool skipSslValidation = false) {
       Connect(host, port, secure, skipSslValidation);
       AuthMethod = method;
@@ -40,11 +53,20 @@ namespace AE.Net.Mail {
       return string.Format("xm{0:000} ", _tag);
     }
 
+    /// <summary>
+    /// Returns whether the requested feature is supported by the IMAP server
+    /// </summary>
+    /// <param name="command">IMAP feature to probe for</param>
+    /// <returns>True if feature is supported by the server, otherwise false is returned</returns>
     public bool Supports(string command) {
       return (_Capability ?? Capability()).Contains(command, StringComparer.OrdinalIgnoreCase);
     }
 
     private EventHandler<MessageEventArgs> _NewMessage;
+
+    /// <summary>
+    /// Occurs when a new mail message arrives on the server.
+    /// </summary>
     public event EventHandler<MessageEventArgs> NewMessage {
       add {
         _NewMessage += value;
@@ -58,6 +80,10 @@ namespace AE.Net.Mail {
     }
 
     private EventHandler<MessageEventArgs> _MessageDeleted;
+
+    /// <summary>
+    /// Occurs when a mail message is being deleted on the server.
+    /// </summary>
     public event EventHandler<MessageEventArgs> MessageDeleted {
       add {
         _MessageDeleted += value;
@@ -88,8 +114,8 @@ namespace AE.Net.Mail {
 
       CheckConnectionStatus();
       SendCommand("DONE");
-      if (!_IdleEvents.Join(2000))
-        _IdleEvents.Abort();
+
+      _IdleEvents.Join();
       _IdleEvents = null;
     }
 
@@ -108,7 +134,14 @@ namespace AE.Net.Mail {
 
     private void IdleResumeCommand() {
       SendCommandGetResponse(GetTag() + "IDLE");
-      _IdleARE.Set();
+    }
+
+    private void NoopCommand() {
+      string tag = GetTag();
+      string response = SendCommandGetResponse(tag + "NOOP");
+      while (!response.StartsWith(tag)) {
+        response = GetResponse();
+      }
     }
 
     private bool HasEvents {
@@ -118,58 +151,75 @@ namespace AE.Net.Mail {
     }
 
     private void IdleStop() {
-      _Idling = false;
       IdlePause();
-      if (_IdleEvents != null) {
-        _IdleARE.Close();
-        if (!_IdleEvents.Join(2000))
-          _IdleEvents.Abort();
-        _IdleEvents = null;
-      }
+      _Idling = false;
     }
 
-    public bool TryGetResponse(out string response, int millisecondsTimeout) {
-      var mre = new System.Threading.ManualResetEventSlim(false);
-      string resp = response = null;
+    /// <summary>
+    /// Blocks until an IMAP notification has been received while taking
+    /// care of issuing NOOP's to the IMAP server at regular intervals
+    /// </summary>
+    /// <returns>The IMAP command received from the server</returns>
+    private string WaitForResponse() {
+      string response = null;
+      int noopInterval = (int)TimeSpan.FromMinutes(10).TotalMilliseconds;
+      /* Fixme: Does 'ev' need explicit disposing? */
+      AutoResetEvent ev = new AutoResetEvent(false);
+
       ThreadPool.QueueUserWorkItem(_ => {
-        resp = GetResponse();
-        mre.Set();
+        try {
+          response = GetResponse();
+          ev.Set();
+        } catch (IOException) {
+          /* Closing _Stream or the underlying _Connection instance will
+           * cause a WSACancelBlockingCall exception on a blocking socket.
+           * This is not an error so just let it pass.
+           */
+        }
       });
+      if (ev.WaitOne(noopInterval))
+        return response;
+      /* Still here means NOOP timeout was hit. WorkItem thread is still in a
+       * blocking read which _must_ be consumed.
+       */
+      SendCommand("DONE");
+      ev.WaitOne();
+      if (response.Contains("OK IDLE") == false) {
+        /* Shouldn't happen really */
+      }
 
-      if (mre.Wait(millisecondsTimeout)) {
-        response = resp;
-        return true;
-      } else
-        return false;
+      /* Perform actual noop command and resume idling */
+      NoopCommand();
+      IdleResumeCommand();
+      /* Start another round */
+      return WaitForResponse();
     }
 
-    private static readonly int idleTimeout = (int)TimeSpan.FromMinutes(10).TotalMilliseconds;
-    private static AutoResetEvent _IdleARE = new AutoResetEvent(false);
+    /// <summary>
+    /// Waits for incoming IMAP IDLE notifications and dispatches them as events.
+    /// This method is run in its own thread when IMAP IDLE is requested.
+    /// </summary>
     private void WatchIdleQueue() {
-      try {
-        string last = null, resp;
+      string last = null, resp;
 
-        while (true) {
-          if (!TryGetResponse(out resp, idleTimeout)) {   //send NOOP every 20 minutes
-            Noop(false);        //call noop without aborting this Idle thread
-            continue;
-          }
+      while (true) {
+        resp = WaitForResponse();
+        /* Quit idle thread */
+        if (resp.Contains("OK IDLE"))
+          return;
 
-          if (resp.Contains("OK IDLE"))
-            return;
+        var data = resp.Split(' ');
+        if (data[0] == "*" && data.Length >= 3) {
+          var e = new MessageEventArgs { Client = this, MessageCount = int.Parse(data[1]) };
+          /* Fire event on a separate thread */
+          if (data[2].Is("EXISTS") && !last.Is("EXPUNGE") && e.MessageCount > 0)
+            ThreadPool.QueueUserWorkItem(callback => _NewMessage.Fire(this, e));
+          else if (data[2].Is("EXPUNGE"))
+            ThreadPool.QueueUserWorkItem(callback => _MessageDeleted.Fire(this, e));
 
-          var data = resp.Split(' ');
-          if (data[0] == "*" && data.Length >= 3) {
-            var e = new MessageEventArgs { Client = this, MessageCount = int.Parse(data[1]) };
-            if (data[2].Is("EXISTS") && !last.Is("EXPUNGE") && e.MessageCount > 0) {
-              ThreadPool.QueueUserWorkItem(callback => _NewMessage.Fire(this, e));    //Fire the event on a separate thread
-            } else if (data[2].Is("EXPUNGE")) {
-              _MessageDeleted.Fire(this, e);
-            }
-            last = data[2];
-          }
+          last = data[2];
         }
-      } catch (Exception) { }
+      }
     }
 
     protected override void OnDispose() {
@@ -205,27 +255,10 @@ namespace AE.Net.Mail {
       IdleResume();
     }
 
-    public void Noop() {
-      Noop(true);
-    }
-    private void Noop(bool pauseIdle) {
-      if (pauseIdle)
-        IdlePause();
-      else
-        SendCommandGetResponse("DONE");
-
-      var tag = GetTag();
-      var response = SendCommandGetResponse(tag + "NOOP");
-      while (!response.StartsWith(tag)) {
-        response = GetResponse();
-      }
-
-      if (pauseIdle)
-        IdleResume();
-      else
-        IdleResumeCommand();
-    }
-
+    /// <summary>
+    /// Returns a listing of capabilities that the IMAP server supports
+    /// </summary>
+    /// <returns>listing of supported capabilities as an array of strings</returns>
     public string[] Capability() {
       IdlePause();
       string command = GetTag() + "CAPABILITY";
@@ -328,26 +361,75 @@ namespace AE.Net.Mail {
         SelectMailbox("INBOX");
     }
 
+    /// <summary>
+    /// Retrieves a mail message by its unique identifier message attribute (uid).
+    /// The retrieved message is marked as "seen" on the IMAP server.
+    /// For an in-depth description of UIDs, refer to RFC 3501.
+    /// </summary>
+    /// <param name="uid">Unique identifier of the mail message to fetch</param>
+    /// <param name="headersonly">Set to true to retrieve the mail headers only</param>
+    /// <returns>Mail message with the respective unique identifier (uid)</returns>
     public MailMessage GetMessage(string uid, bool headersonly = false) {
       return GetMessage(uid, headersonly, true);
     }
 
+    /// <summary>
+    /// Retrieves a mail message by index where the first message in the mail box
+    /// has index 0. The retrieved message is marked as "seen" on the IMAP server.
+    /// </summary>
+    /// <param name="index">Index of the mail message to fetch</param>
+    /// <param name="headersonly">Set to true to retrieve the mail headers only</param>
+    /// <returns>Mail message with the respective index</returns>
     public MailMessage GetMessage(int index, bool headersonly = false) {
       return GetMessage(index, headersonly, true);
     }
 
+    /// <summary>
+    /// Retrieves a mail message by index where the first message in the mail box
+    /// has index 0.
+    /// </summary>
+    /// <param name="index">Index of the mail message to fetch</param>
+    /// <param name="headersonly">Set to true to retrieve the mail headers only</param>
+    /// <param name="setseen">Set to true to mark the mail message as "seen" on the IMAP server</param>
+    /// <returns>Mail message with the respective index</returns>
     public MailMessage GetMessage(int index, bool headersonly, bool setseen) {
       return GetMessages(index, index, headersonly, setseen).FirstOrDefault();
     }
 
+    /// <summary>
+    /// Retrieves a mail message by its unique identifier message attribute (uid).
+    /// For an in-depth description of UIDs, refer to RFC 3501.
+    /// </summary>
+    /// <param name="uid">Unique identifier of the mail message to fetch</param>
+    /// <param name="headersonly">Set to true to retrieve the mail headers only</param>
+    /// <param name="setseen">Set to true to mark the mail message as "seen" on the IMAP server</param> 
+    /// <returns>Mail message with the respective unique identifier (uid)</returns>
     public MailMessage GetMessage(string uid, bool headersonly, bool setseen) {
       return GetMessages(uid, uid, headersonly, setseen).FirstOrDefault();
     }
 
+    /// <summary>
+    /// Retrieves a list of mail messages by their unique identifier message attributes (uid).
+    /// For an in-depth description of UIDs, refer to RFC 3501.
+    /// </summary>
+    /// <param name="startUID">Unique identifier of the first mail message to fetch</param>
+    /// <param name="endUID">Unique identifier of the last mail message to fetch</param>
+    /// <param name="headersonly">Set to true to retrieve the mail headers only</param>
+    /// <param name="setseen">Set to true to mark the mail message as "seen" on the IMAP server</param> 
+    /// <returns>All mail messages with a UID greater than or equal to startUID and less than or equal to endUID</returns>
     public MailMessage[] GetMessages(string startUID, string endUID, bool headersonly = true, bool setseen = false) {
       return GetMessages(startUID, endUID, true, headersonly, setseen);
     }
 
+    /// <summary>
+    /// Retrieves a list of mail messages by index where the first message in the mail box
+    /// has index 0.
+    /// </summary>
+    /// <param name="startIndex">Index of the first mail message to fetch</param>
+    /// <param name="endIndex">Index of the last mail message to fetch</param>
+    /// <param name="headersonly">Set to true to retrieve the mail headers only</param>
+    /// <param name="setseen">Set to true to mark the mail message as "seen" on the IMAP server</param> 
+    /// <returns>All mail messages with an index greater than or equal to startIndex and less than or equal to endIndex</returns>
     public MailMessage[] GetMessages(int startIndex, int endIndex, bool headersonly = true, bool setseen = false) {
       return GetMessages((startIndex + 1).ToString(), (endIndex + 1).ToString(), false, headersonly, setseen);
     }
@@ -388,7 +470,7 @@ namespace AE.Net.Mail {
       return values;
     }
 
-    public MailMessage[] GetMessages(string start, string end, bool uid, bool headersonly, bool setseen) {
+    private MailMessage[] GetMessages(string start, string end, bool uid, bool headersonly, bool setseen) {
       CheckMailboxSelected();
       IdlePause();
 
@@ -396,7 +478,7 @@ namespace AE.Net.Mail {
       string command = tag + (uid ? "UID " : null)
         + "FETCH " + start + ":" + end + " ("
         + _FetchHeaders + "UID FLAGS BODY"
-        + (setseen ? ".PEEK" : null)
+        + (setseen ? null : ".PEEK")
         + "[" + (headersonly ? "HEADER" : null) + "])";
 
       string response;
@@ -441,7 +523,6 @@ namespace AE.Net.Mail {
         //  body.Position = 0;
         //  mail.Load(body, headersonly);
         //}
-
         mail.Load(_Stream, headersonly, mail.Size);
 
         var n = Convert.ToChar(_Stream.ReadByte());
@@ -543,10 +624,10 @@ namespace AE.Net.Mail {
           result = SendCommandGetResponse(command);
           break;
 
-		case AuthMethods.SaslOAuth:
-		  command = tag + "AUTHENTICATE XOAUTH " + password;
-		  result = SendCommandGetResponse(command);
-		  break;
+        case AuthMethods.SaslOAuth:
+          command = tag + "AUTHENTICATE XOAUTH " + password;
+          result = SendCommandGetResponse(command);
+          break;
 
         default:
           throw new NotSupportedException();
@@ -618,10 +699,20 @@ namespace AE.Net.Mail {
       return n;
     }
 
+    /// <summary>
+    /// Retrieves the total number of mail messages in the currently selected mailbox.
+    /// </summary>
+    /// <returns>Total number of mail messages in the selected mailbox</returns>
     public int GetMessageCount() {
       CheckMailboxSelected();
       return GetMessageCount(null);
     }
+
+    /// <summary>
+    /// Retrieves the total number of mail messages in the respective mailbox.
+    /// </summary>
+    /// <param name="mailbox">Mailbox to receive number of messages for</param>
+    /// <returns>Total number of mail messages in the respective mailbox</returns>
     public int GetMessageCount(string mailbox) {
       IdlePause();
 
@@ -636,6 +727,18 @@ namespace AE.Net.Mail {
         response = GetResponse();
         m = Regex.Match(response, reg);
       }
+      IdleResume();
+      return result;
+    }
+
+    /// <summary>
+    /// Returns the number of unread e-mails in the currently selected mailbox.
+    /// </summary>
+    /// <returns>Number of unread e-mails</returns>
+    public int GetUnreadCount() {
+      CheckMailboxSelected();
+      IdlePause();
+      int result = Search(SearchCondition.Unseen()).Length;
       IdleResume();
       return result;
     }
@@ -725,9 +828,8 @@ namespace AE.Net.Mail {
       }
     }
 
-    private string FlagsToFlagString(Flags flags)
-    {
-        return string.Join(" ", flags.ToString().Split(',').Select(x => "\\" + x.Trim()));
+    private string FlagsToFlagString(Flags flags) {
+      return string.Join(" ", flags.ToString().Split(',').Select(x => "\\" + x.Trim()));
     }
 
 
@@ -738,7 +840,7 @@ namespace AE.Net.Mail {
     public void AddFlags(string flags, params MailMessage[] msgs) {
       Store("UID " + string.Join(" ", msgs.Select(x => x.Uid)), false, flags);
       foreach (var msg in msgs) {
-          msg.SetFlags(FlagsToFlagString(msg.Flags) + " " + flags);
+        msg.SetFlags(FlagsToFlagString(msg.Flags) + " " + flags);
       }
     }
 
