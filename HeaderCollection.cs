@@ -6,10 +6,10 @@ using System.Text.RegularExpressions;
 
 namespace AE.Net.Mail {
   public class SafeDictionary<KT, VT> : Dictionary<KT, VT> {
-    public SafeDictionary() { }
-    public SafeDictionary(IEqualityComparer<KT> comparer) : base(comparer) { }
+    public  SafeDictionary() { }
+    public  SafeDictionary(IEqualityComparer<KT> comparer) : base(comparer) { }
 
-    public new VT this[KT key] {
+    public virtual new VT this[KT key] {
       get {
         return this.Get(key);
       }
@@ -76,99 +76,121 @@ namespace AE.Net.Mail {
     }
   }
 
-  public class HeaderDictionary : SafeDictionary<string, HeaderValue> {
-    public HeaderDictionary() : base(StringComparer.OrdinalIgnoreCase) { }
+  public class HeaderDictionary : SafeDictionary<string, HeaderValue>
+  {
+      public HeaderDictionary() : base(StringComparer.OrdinalIgnoreCase) { }
 
-    public string GetBoundary() {
-      return this["Content-Type"]["boundary"];
-    }
+      public virtual string GetBoundary()
+      {
+          return this["Content-Type"]["boundary"];
+      }
 
-    private static Regex[] rxDates = new[]{
+      private static Regex[] rxDates = new[]{
         @"\d{1,2}\s+[a-z]{3}\s+\d{2,4}\s+\d{1,2}\:\d{2}\:\d{1,2}\s+[\+\-\d\:]*",
         @"\d{4}\-\d{1,2}-\d{1,2}\s+\d{1,2}\:\d{2}(?:\:\d{2})?(?:\s+[\+\-\d:]+)?",
       }.Select(x => new Regex(x, RegexOptions.Compiled | RegexOptions.IgnoreCase)).ToArray();
 
-    public DateTime GetDate() {
-      var value = this["Date"].RawValue.ToNullDate();
-      if (value == null) {
-        foreach (var rx in rxDates) {
-          var match = rx.Matches(this["Received"].RawValue ?? string.Empty)
-            .Cast<Match>().LastOrDefault();
-          if (match != null) {
-            value = match.Value.ToNullDate();
-            if (value != null) {
-              break;
-            }
+      public virtual DateTime GetDate()
+      {
+          var value = this["Date"].RawValue.ToNullDate();
+          if (value == null)
+          {
+              foreach (var rx in rxDates)
+              {
+                  var match = rx.Matches(this["Received"].RawValue ?? string.Empty)
+                    .Cast<Match>().LastOrDefault();
+                  if (match != null)
+                  {
+                      value = match.Value.ToNullDate();
+                      if (value != null)
+                      {
+                          break;
+                      }
+                  }
+              }
           }
-        }
+
+          //written this way so a break can be set on the null condition
+          if (value == null) return DateTime.MinValue;
+          return value.Value;
       }
 
-      //written this way so a break can be set on the null condition
-      if (value == null) return DateTime.MinValue;
-      return value.Value;
-    }
+      public virtual T GetEnum<T>(string name) where T : struct, IConvertible
+      {
+          var value = this[name].RawValue;
+          if (string.IsNullOrEmpty(value)) return default(T);
+          var values = System.Enum.GetValues(typeof(T)).Cast<T>().ToArray();
+          return values.FirstOrDefault(x => x.ToString().Equals(value, StringComparison.OrdinalIgnoreCase));
+      }
 
-    public T GetEnum<T>(string name) where T : struct, IConvertible {
-      var value = this[name].RawValue;
-      if (string.IsNullOrEmpty(value)) return default(T);
-      var values = System.Enum.GetValues(typeof(T)).Cast<T>().ToArray();
-      return values.FirstOrDefault(x => x.ToString().Equals(value, StringComparison.OrdinalIgnoreCase));
-    }
+      public virtual MailAddress[] GetAddresses(string header)
+      {
+          string values = this[header].RawValue.Trim();
+          List<MailAddress> addrs = new List<MailAddress>();
+          while (true)
+          {
+              int semicolon = values.IndexOf(';');
+              int comma = values.IndexOf(',');
+              if (comma < semicolon || semicolon == -1) semicolon = comma;
 
-    public MailAddress[] GetAddresses(string header) {
-      string values = this[header].RawValue.Trim();
-      List<MailAddress> addrs = new List<MailAddress>();
-      while (true) {
-        int semicolon = values.IndexOf(';');
-        int comma = values.IndexOf(',');
-        if (comma < semicolon || semicolon == -1) semicolon = comma;
-
-        int bracket = values.IndexOf('>');
-        string temp = null;
-        if (semicolon == -1 && bracket == -1) {
-          if (values.Length > 0) addrs.Add(values.ToEmailAddress());
-          return addrs.Where(x => x != null).ToArray();
-        } else {
-          if (bracket > -1 && (semicolon == -1 || bracket < semicolon)) {
-            temp = values.Substring(0, bracket + 1);
-            values = values.Substring(temp.Length);
-          } else if (semicolon > -1 && (bracket == -1 || semicolon < bracket)) {
-            temp = values.Substring(0, semicolon);
-            values = values.Substring(semicolon + 1);
+              int bracket = values.IndexOf('>');
+              string temp = null;
+              if (semicolon == -1 && bracket == -1)
+              {
+                  if (values.Length > 0) addrs.Add(values.ToEmailAddress());
+                  return addrs.Where(x => x != null).ToArray();
+              }
+              else
+              {
+                  if (bracket > -1 && (semicolon == -1 || bracket < semicolon))
+                  {
+                      temp = values.Substring(0, bracket + 1);
+                      values = values.Substring(temp.Length);
+                  }
+                  else if (semicolon > -1 && (bracket == -1 || semicolon < bracket))
+                  {
+                      temp = values.Substring(0, semicolon);
+                      values = values.Substring(semicolon + 1);
+                  }
+                  if (temp.Length > 0)
+                      addrs.Add(temp.Trim().ToEmailAddress());
+                  values = values.Trim();
+              }
           }
-          if (temp.Length > 0)
-            addrs.Add(temp.Trim().ToEmailAddress());
-          values = values.Trim();
-        }
       }
-    }
 
+      public static HeaderDictionary Parse(string headers, System.Text.Encoding encoding)
+      {
+          headers = Utilities.DecodeWords(headers, encoding);
+          var temp = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+          var lines = headers.Split(new char[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+          int i;
+          string key = null, value;
+          foreach (var line in lines)
+          {
+              if (key != null && (line[0] == '\t' || line[0] == ' '))
+              {
+                  temp[key] += line.Trim();
 
-    public static HeaderDictionary Parse(string headers, System.Text.Encoding encoding) {
-      headers = Utilities.DecodeWords(headers, encoding);
-      var temp = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-      var lines = headers.Split(new char[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
-      int i;
-      string key = null, value;
-      foreach (var line in lines) {
-        if (key != null && (line[0] == '\t' || line[0] == ' ')) {
-          temp[key] += line.Trim();
-
-        } else {
-          i = line.IndexOf(':');
-          if (i > -1) {
-            key = line.Substring(0, i).Trim();
-            value = line.Substring(i + 1).Trim();
-            temp.Set(key, value);
+              }
+              else
+              {
+                  i = line.IndexOf(':');
+                  if (i > -1)
+                  {
+                      key = line.Substring(0, i).Trim();
+                      value = line.Substring(i + 1).Trim();
+                      temp.Set(key, value);
+                  }
+              }
           }
-        }
-      }
 
-      var result = new HeaderDictionary();
-      foreach (var item in temp) {
-        result.Add(item.Key, new HeaderValue(item.Value));
+          var result = new HeaderDictionary();
+          foreach (var item in temp)
+          {
+              result.Add(item.Key, new HeaderValue(item.Value));
+          }
+          return result;
       }
-      return result;
-    }
   }
 }

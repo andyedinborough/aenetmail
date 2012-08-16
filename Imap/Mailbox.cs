@@ -6,12 +6,12 @@ namespace AE.Net.Mail.Imap {
             Name = name;
             Flags = new string[0];
         }
-        public string Name { get; internal set; }
-        public int NumNewMsg { get; internal set; }
-        public int NumMsg { get; internal set; }
-        public int NumUnSeen { get; internal set; }
-        public string[] Flags { get; internal set; }
-        public bool IsWritable { get; internal set; }
+        public virtual string Name { get; internal set; }
+        public virtual int NumNewMsg { get; internal set; }
+        public virtual int NumMsg { get; internal set; }
+        public virtual int NumUnSeen { get; internal set; }
+        public virtual string[] Flags { get; internal set; }
+        public virtual bool IsWritable { get; internal set; }
 
         internal void SetFlags(string flags) {
             Flags = flags.Split(' ');

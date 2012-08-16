@@ -2,7 +2,7 @@ using System;
 
 namespace AE.Net.Mail {
   public class Attachment : ObjectWHeaders {
-    public string Filename {
+    public virtual string Filename {
       get { return Headers["Content-Disposition"]["filename"].NotEmpty(Headers["Content-Disposition"]["name"]); }
     }
 
@@ -11,7 +11,7 @@ namespace AE.Net.Mail {
       get { return _ContentDisposition ?? (_ContentDisposition = Headers["Content-Disposition"].Value.ToLower()); }
     }
 
-    public bool OnServer { get; internal set; }
+    public virtual bool OnServer { get; internal set; }
 
     internal bool IsAttachment {
       get {
@@ -19,17 +19,17 @@ namespace AE.Net.Mail {
       }
     }
 
-    public void Save(string filename) {
+    public virtual void Save(string filename) {
       using (var file = new System.IO.FileStream(filename, System.IO.FileMode.Create))
         Save(file);
     }
 
-    public void Save(System.IO.Stream stream) {
+    public virtual void Save(System.IO.Stream stream) {
       var data = GetData();
       stream.Write(data, 0, data.Length);
     }
 
-    public byte[] GetData() {
+    public virtual byte[] GetData() {
       byte[] data;
       if (ContentTransferEncoding.Is("base64") && Utilities.IsValidBase64String(Body)) {
         try {

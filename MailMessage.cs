@@ -57,31 +57,31 @@ namespace AE.Net.Mail {
       AlternateViews = new List<Attachment>();
     }
 
-    public DateTime Date { get; set; }
-    public string[] RawFlags { get; set; }
-    public Flags Flags { get; set; }
+    public virtual DateTime Date { get; set; }
+    public virtual string[] RawFlags { get; set; }
+    public virtual Flags Flags { get; set; }
 
-    public int Size { get; internal set; }
-    public string Subject { get; set; }
-    public ICollection<MailAddress> To { get; private set; }
-    public ICollection<MailAddress> Cc { get; private set; }
-    public ICollection<MailAddress> Bcc { get; private set; }
-    public ICollection<MailAddress> ReplyTo { get; private set; }
-    public ICollection<Attachment> Attachments { get; set; }
-    public ICollection<Attachment> AlternateViews { get; set; }
-    public MailAddress From { get; set; }
-    public MailAddress Sender { get; set; }
-    public string MessageID { get; set; }
-    public string Uid { get; internal set; }
-    public MailPriority Importance { get; set; }
+    public virtual int Size { get; internal set; }
+    public virtual string Subject { get; set; }
+    public virtual ICollection<MailAddress> To { get; private set; }
+    public virtual ICollection<MailAddress> Cc { get; private set; }
+    public virtual ICollection<MailAddress> Bcc { get; private set; }
+    public virtual ICollection<MailAddress> ReplyTo { get; private set; }
+    public virtual ICollection<Attachment> Attachments { get; set; }
+    public virtual ICollection<Attachment> AlternateViews { get; set; }
+    public virtual MailAddress From { get; set; }
+    public virtual MailAddress Sender { get; set; }
+    public virtual string MessageID { get; set; }
+    public virtual string Uid { get; internal set; }
+    public virtual MailPriority Importance { get; set; }
 
-    public void Load(string message, bool headersOnly = false) {
+    public virtual void Load(string message, bool headersOnly = false) {
       using (var mem = new MemoryStream(_DefaultEncoding.GetBytes(message))) {
         Load(mem, headersOnly, 0);
       }
     }
 
-    public void Load(Stream reader, bool headersOnly = false, int maxLength = 0) {
+    public virtual void Load(Stream reader, bool headersOnly = false, int maxLength = 0) {
       _HeadersOnly = headersOnly;
       Headers = null;
       Body = null;
@@ -199,13 +199,13 @@ namespace AE.Net.Mail {
       }).Sum();
     }
 
-    public void Save(System.IO.Stream stream, Encoding encoding = null) {
+    public virtual void Save(System.IO.Stream stream, Encoding encoding = null) {
       using (var str = new System.IO.StreamWriter(stream, encoding ?? System.Text.Encoding.Default))
         Save(str);
     }
 
     private static readonly string[] SpecialHeaders = "Date,To,Cc,Reply-To,Bcc,Sender,From,Message-ID,Importance,Subject".Split(',');
-    public void Save(System.IO.TextWriter txt) {
+    public virtual void Save(System.IO.TextWriter txt) {
       txt.WriteLine("Date: {0}", Date.GetRFC2060Date());
       txt.WriteLine("To: ", string.Join("; ", To.Select(x => x.ToString())));
       txt.WriteLine("Cc: ", string.Join("; ", Cc.Select(x => x.ToString())));
