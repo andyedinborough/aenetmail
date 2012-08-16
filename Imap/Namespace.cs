@@ -12,13 +12,13 @@ namespace AE.Net.Mail.Imap {
         private Collection<Namespace> _usernamespace = new Collection<Namespace>();
         private Collection<Namespace> _sharednamespace = new Collection<Namespace>();
  
-        public Collection<Namespace> ServerNamespace {
+        public virtual Collection<Namespace> ServerNamespace {
             get { return this._servernamespace; }
         }
-        public Collection<Namespace> UserNamespace {
+        public virtual Collection<Namespace> UserNamespace {
             get { return this._usernamespace; }
         }
-        public Collection<Namespace> SharedNamespace {
+        public virtual Collection<Namespace> SharedNamespace {
             get { return this._sharednamespace; }
         }
     }
@@ -29,7 +29,7 @@ namespace AE.Net.Mail.Imap {
             Delimiter = delimiter;
         }
         public Namespace() { }
-        public string Prefix { get; internal set; }
-        public string Delimiter { get; internal set; }
+        public virtual string Prefix { get; internal set; }
+        public virtual string Delimiter { get; internal set; }
     }
 }

@@ -7,13 +7,13 @@ namespace AE.Net.Mail {
     protected TcpClient _Connection;
     protected Stream _Stream;
 
-    public string Host { get; private set; }
-    public int Port { get; set; }
-    public bool Ssl { get; set; }
-    public bool IsConnected { get; private set; }
-    public bool IsAuthenticated { get; private set; }
-    public bool IsDisposed { get; private set; }
-    public System.Text.Encoding Encoding { get; set; }
+    public virtual string Host { get; private set; }
+    public virtual int Port { get; set; }
+    public virtual bool Ssl { get; set; }
+    public virtual bool IsConnected { get; private set; }
+    public virtual bool IsAuthenticated { get; private set; }
+    public virtual bool IsDisposed { get; private set; }
+    public virtual System.Text.Encoding Encoding { get; set; }
 
     public TextClient() {
       Encoding = System.Text.Encoding.GetEncoding(1252);
@@ -29,7 +29,7 @@ namespace AE.Net.Mail {
 
     protected virtual void OnDispose() { }
 
-    public void Login(string username, string password) {
+    public virtual void Login(string username, string password) {
       if (!IsConnected) {
         throw new Exception("You must connect first!");
       }
@@ -38,20 +38,20 @@ namespace AE.Net.Mail {
       IsAuthenticated = true;
     }
 
-    public void Logout() {
+    public virtual void Logout() {
       IsAuthenticated = false;
       OnLogout();
     }
 
 
-    public void Connect(string hostname, int port, bool ssl, bool skipSslValidation) {
+    public virtual void Connect(string hostname, int port, bool ssl, bool skipSslValidation) {
       System.Net.Security.RemoteCertificateValidationCallback validateCertificate = null;
       if (skipSslValidation)
         validateCertificate = (sender, cert, chain, err) => true;
       Connect(hostname, port, ssl, validateCertificate);
     }
 
-    public void Connect(string hostname, int port, bool ssl, System.Net.Security.RemoteCertificateValidationCallback validateCertificate) {
+    public virtual void Connect(string hostname, int port, bool ssl, System.Net.Security.RemoteCertificateValidationCallback validateCertificate) {
       try {
         Host = hostname;
         Port = port;
@@ -80,7 +80,7 @@ namespace AE.Net.Mail {
       }
     }
 
-    protected void CheckConnectionStatus() {
+    protected virtual void CheckConnectionStatus() {
       if (IsDisposed)
         throw new ObjectDisposedException(this.GetType().Name);
       if (!IsConnected)
@@ -94,7 +94,7 @@ namespace AE.Net.Mail {
       _Stream.Write(bytes, 0, bytes.Length);
     }
 
-    protected string SendCommandGetResponse(string command) {
+    protected virtual string SendCommandGetResponse(string command) {
       SendCommand(command);
       return GetResponse();
     }
@@ -115,11 +115,11 @@ namespace AE.Net.Mail {
       }
     }
 
-    protected void SendCommandCheckOK(string command) {
+    protected virtual void SendCommandCheckOK(string command) {
       CheckResultOK(SendCommandGetResponse(command));
     }
 
-    public void Disconnect() {
+    public virtual void Disconnect() {
       if (IsAuthenticated)
         Logout();
 
@@ -127,7 +127,7 @@ namespace AE.Net.Mail {
       Utilities.TryDispose(ref _Connection);
     }
 
-    public void Dispose() {
+    public virtual void Dispose() {
       if (IsDisposed) return;
       lock (this) {
         if (IsDisposed) return;
