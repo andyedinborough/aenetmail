@@ -2,9 +2,9 @@
 using System;
 namespace AE.Net.Mail {
   public abstract class ObjectWHeaders {
-    public string RawHeaders { get; internal set; }
+    public virtual string RawHeaders { get; internal set; }
     private HeaderDictionary _Headers;
-    public HeaderDictionary Headers {
+    public virtual HeaderDictionary Headers {
       get {
         return _Headers ?? (_Headers = HeaderDictionary.Parse(RawHeaders, _DefaultEncoding));
       }
@@ -13,21 +13,21 @@ namespace AE.Net.Mail {
       }
     }
 
-    public string ContentTransferEncoding {
+    public virtual string ContentTransferEncoding {
       get { return Headers["Content-Transfer-Encoding"].Value ?? string.Empty; }
       internal set {
         Headers.Set("Content-Transfer-Encoding", new HeaderValue(value));
       }
     }
 
-    public string ContentType {
+    public virtual string ContentType {
       get { return Headers["Content-Type"].Value ?? string.Empty; }
       internal set {
         Headers.Set("Content-Type", new HeaderValue(value));
       }
     }
 
-    public string Charset {
+    public virtual string Charset {
       get {
         return Headers["Content-Transfer-Encoding"]["charset"].NotEmpty(
         Headers["Content-Type"]["charset"]
@@ -37,7 +37,7 @@ namespace AE.Net.Mail {
 
     protected System.Text.Encoding _DefaultEncoding = System.Text.Encoding.GetEncoding(1252);
     protected System.Text.Encoding _Encoding;
-    public System.Text.Encoding Encoding {
+    public virtual System.Text.Encoding Encoding {
       get {
         return _Encoding ?? (_Encoding = Utilities.ParseCharsetToEncoding(Charset, _DefaultEncoding));
       }
@@ -48,7 +48,7 @@ namespace AE.Net.Mail {
       }
     }
 
-    public string Body { get; set; }
+    public virtual string Body { get; set; }
 
     internal void SetBody(string value) {
       if (ContentTransferEncoding.Is("quoted-printable")) {

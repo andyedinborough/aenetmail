@@ -13,10 +13,10 @@ namespace AE.Net.Mail.Imap {
             this.used = used;
             this.max = max;
         }
-        public int Used {
+        public virtual int Used {
             get { return this.used; }
         }
-        public int Max {
+        public virtual int Max {
             get { return this.max; }
         }
     }

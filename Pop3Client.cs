@@ -27,14 +27,14 @@ namespace AE.Net.Mail {
       }
     }
 
-    public int GetMessageCount() {
+    public virtual int GetMessageCount() {
       CheckConnectionStatus();
       var result = SendCommandGetResponse("STAT");
       CheckResultOK(result);
       return int.Parse(result.Split(' ')[1]);
     }
 
-    //public string[] GetMessageIDs() {
+    //public virtual string[] GetMessageIDs() {
     //    CheckConnectionStatus();
     //    string result = SendCommandGetResponse("LIST");
     //    List<string> ids = new List<string>();
@@ -48,12 +48,12 @@ namespace AE.Net.Mail {
     //    return ids.ToArray();
     //}
 
-    public MailMessage GetMessage(int index, bool headersOnly = false) {
+    public virtual MailMessage GetMessage(int index, bool headersOnly = false) {
       return GetMessage((index + 1).ToString(), headersOnly);
     }
 
     private static Regex rxOctets = new Regex(@"(\d+)\s+octets", RegexOptions.IgnoreCase);
-    public MailMessage GetMessage(string uid, bool headersOnly = false) {
+    public virtual MailMessage GetMessage(string uid, bool headersOnly = false) {
       CheckConnectionStatus();
       var result = new StringBuilder();
       string line = SendCommandGetResponse(string.Format(headersOnly ? "TOP {0} 0" : "RETR {0}", uid));
@@ -68,16 +68,16 @@ namespace AE.Net.Mail {
       return msg;
     }
 
-    public void DeleteMessage(string uid) {
+    public virtual void DeleteMessage(string uid) {
       SendCommandCheckOK("DELE " + uid);
 
     }
 
-    public void DeleteMessage(int index) {
+    public virtual void DeleteMessage(int index) {
       DeleteMessage((index + 1).ToString());
     }
 
-    public void DeleteMessage(AE.Net.Mail.MailMessage msg) {
+    public virtual void DeleteMessage(AE.Net.Mail.MailMessage msg) {
       DeleteMessage(msg.Uid);
     }
   }
