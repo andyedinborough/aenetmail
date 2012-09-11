@@ -6,229 +6,225 @@ using System.Net.Mail;
 using System.Text;
 
 namespace AE.Net.Mail {
-  public enum MailPriority {
-    Normal = 3,
-    High = 5,
-    Low = 1
-  }
+	public enum MailPriority {
+		Normal = 3,
+		High = 5,
+		Low = 1
+	}
 
-  [System.Flags]
-  public enum Flags {
-    None = 0,
-    Seen = 1,
-    Answered = 2,
-    Flagged = 4,
-    Deleted = 8,
-    Draft = 16
-  }
+	[System.Flags]
+	public enum Flags {
+		None = 0,
+		Seen = 1,
+		Answered = 2,
+		Flagged = 4,
+		Deleted = 8,
+		Draft = 16
+	}
 
-  public class MailMessage : ObjectWHeaders {
-    public static implicit operator System.Net.Mail.MailMessage(MailMessage msg) {
-      var ret = new System.Net.Mail.MailMessage();
-      ret.Subject = msg.Subject;
-      ret.Sender = msg.Sender;
-      foreach (var a in msg.Bcc)
-        ret.Bcc.Add(a);
-      ret.Body = msg.Body;
-      ret.IsBodyHtml = msg.ContentType.Contains("html");
-      ret.From = msg.From;
-      ret.Priority = (System.Net.Mail.MailPriority)msg.Importance;
-      foreach (var a in msg.ReplyTo)
-        ret.ReplyToList.Add(a);
-      foreach (var a in msg.To)
-        ret.To.Add(a);
-      foreach (var a in msg.Attachments)
-        ret.Attachments.Add(new System.Net.Mail.Attachment(new System.IO.MemoryStream(a.GetData()), a.Filename, a.ContentType));
-      foreach (var a in msg.AlternateViews)
-        ret.AlternateViews.Add(new System.Net.Mail.AlternateView(new System.IO.MemoryStream(a.GetData()), a.ContentType));
+	public class MailMessage : ObjectWHeaders {
+		public static implicit operator System.Net.Mail.MailMessage(MailMessage msg) {
+			var ret = new System.Net.Mail.MailMessage();
+			ret.Subject = msg.Subject;
+			ret.Sender = msg.Sender;
+			foreach (var a in msg.Bcc)
+				ret.Bcc.Add(a);
+			ret.Body = msg.Body;
+			ret.IsBodyHtml = msg.ContentType.Contains("html");
+			ret.From = msg.From;
+			ret.Priority = (System.Net.Mail.MailPriority)msg.Importance;
+			foreach (var a in msg.ReplyTo)
+				ret.ReplyToList.Add(a);
+			foreach (var a in msg.To)
+				ret.To.Add(a);
+			foreach (var a in msg.Attachments)
+				ret.Attachments.Add(new System.Net.Mail.Attachment(new System.IO.MemoryStream(a.GetData()), a.Filename, a.ContentType));
+			foreach (var a in msg.AlternateViews)
+				ret.AlternateViews.Add(new System.Net.Mail.AlternateView(new System.IO.MemoryStream(a.GetData()), a.ContentType));
 
-      return ret;
-    }
+			return ret;
+		}
 
-    private bool _HeadersOnly; // set to true if only headers have been fetched. 
+		private bool _HeadersOnly; // set to true if only headers have been fetched. 
 
-    public MailMessage() {
-      RawFlags = new string[0];
-      To = new List<MailAddress>();
-      Cc = new List<MailAddress>();
-      Bcc = new List<MailAddress>();
-      ReplyTo = new List<MailAddress>();
-      Attachments = new List<Attachment>();
-      AlternateViews = new List<Attachment>();
-    }
+		public MailMessage() {
+			RawFlags = new string[0];
+			To = new List<MailAddress>();
+			Cc = new List<MailAddress>();
+			Bcc = new List<MailAddress>();
+			ReplyTo = new List<MailAddress>();
+			Attachments = new List<Attachment>();
+			AlternateViews = new List<Attachment>();
+		}
 
-    public virtual DateTime Date { get; set; }
-    public virtual string[] RawFlags { get; set; }
-    public virtual Flags Flags { get; set; }
+		public virtual DateTime Date { get; set; }
+		public virtual string[] RawFlags { get; set; }
+		public virtual Flags Flags { get; set; }
 
-    public virtual int Size { get; internal set; }
-    public virtual string Subject { get; set; }
-    public virtual ICollection<MailAddress> To { get; private set; }
-    public virtual ICollection<MailAddress> Cc { get; private set; }
-    public virtual ICollection<MailAddress> Bcc { get; private set; }
-    public virtual ICollection<MailAddress> ReplyTo { get; private set; }
-    public virtual ICollection<Attachment> Attachments { get; set; }
-    public virtual ICollection<Attachment> AlternateViews { get; set; }
-    public virtual MailAddress From { get; set; }
-    public virtual MailAddress Sender { get; set; }
-    public virtual string MessageID { get; set; }
-    public virtual string Uid { get; internal set; }
-    public virtual MailPriority Importance { get; set; }
+		public virtual int Size { get; internal set; }
+		public virtual string Subject { get; set; }
+		public virtual ICollection<MailAddress> To { get; private set; }
+		public virtual ICollection<MailAddress> Cc { get; private set; }
+		public virtual ICollection<MailAddress> Bcc { get; private set; }
+		public virtual ICollection<MailAddress> ReplyTo { get; private set; }
+		public virtual ICollection<Attachment> Attachments { get; set; }
+		public virtual ICollection<Attachment> AlternateViews { get; set; }
+		public virtual MailAddress From { get; set; }
+		public virtual MailAddress Sender { get; set; }
+		public virtual string MessageID { get; set; }
+		public virtual string Uid { get; internal set; }
+		public virtual MailPriority Importance { get; set; }
 
-    public virtual void Load(string message, bool headersOnly = false) {
-      using (var mem = new MemoryStream(_DefaultEncoding.GetBytes(message))) {
-        Load(mem, headersOnly, 0);
-      }
-    }
+		public virtual void Load(string message, bool headersOnly = false) {
+			using (var mem = new MemoryStream(_DefaultEncoding.GetBytes(message))) {
+				Load(mem, headersOnly, 0);
+			}
+		}
 
-    public virtual void Load(Stream reader, bool headersOnly = false, int maxLength = 0) {
-      _HeadersOnly = headersOnly;
-      Headers = null;
-      Body = null;
+		public virtual void Load(Stream reader, bool headersOnly = false, int maxLength = 0, char? termChar = null) {
+			_HeadersOnly = headersOnly;
+			Headers = null;
+			Body = null;
 
-      if (headersOnly) {
-        RawHeaders = reader.ReadToEnd(maxLength, _DefaultEncoding);
-      } else {
-        var headers = new StringBuilder();
-        string line;
-        while ((line = reader.ReadLine(ref maxLength, _DefaultEncoding)) != null) {
-          if (line.Trim().Length == 0)
-            if (headers.Length == 0)
-              continue;
-            else
-              break;
-          headers.AppendLine(line);
-        }
-        RawHeaders = headers.ToString();
+			if (headersOnly) {
+				RawHeaders = reader.ReadToEnd(maxLength, _DefaultEncoding);
+			} else {
+				var headers = new StringBuilder();
+				string line;
+				while ((line = reader.ReadLine(ref maxLength, _DefaultEncoding, termChar)) != null) {
+					if (line.Trim().Length == 0)
+						if (headers.Length == 0)
+							continue;
+						else
+							break;
+					headers.AppendLine(line);
+				}
+				RawHeaders = headers.ToString();
 
-        string boundary = Headers.GetBoundary();
-        if (!string.IsNullOrEmpty(boundary)) {
-          //else this is a multipart Mime Message
-          //using (var subreader = new StringReader(line + Environment.NewLine + reader.ReadToEnd()))
-          ParseMime(reader, boundary, maxLength);
-        } else {
-          SetBody(reader.ReadToEnd(maxLength, Encoding).Trim());
-        }
-      }
+				string boundary = Headers.GetBoundary();
+				if (!string.IsNullOrEmpty(boundary)) {
+					//else this is a multipart Mime Message
+					//using (var subreader = new StringReader(line + Environment.NewLine + reader.ReadToEnd()))
+					var atts = new List<Attachment>();
+					ParseMime(reader, boundary, ref maxLength, atts, Encoding, termChar);
+					foreach (var att in atts)
+						(att.IsAttachment ? Attachments : AlternateViews).Add(att);
 
-      if (string.IsNullOrWhiteSpace(Body) && AlternateViews.Count > 0) {
-        var att = AlternateViews.FirstOrDefault(x => x.ContentType.Is("text/plain"));
-        if (att == null) {
-          att = AlternateViews.FirstOrDefault(x => x.ContentType.Contains("html"));
-        }
+					if (maxLength > 0)
+						reader.ReadToEnd(maxLength, Encoding);
+				} else {
+					SetBody(reader.ReadToEnd(maxLength, Encoding).Trim());
+				}
+			}
 
-        if (att != null) {
-          Body = att.Body;
-          ContentTransferEncoding = att.Headers["Content-Transfer-Encoding"].RawValue;
-          ContentType = att.Headers["Content-Type"].RawValue;
-        }
-      }
+			if (string.IsNullOrWhiteSpace(Body) && AlternateViews.Count > 0) {
+				var att = AlternateViews.FirstOrDefault(x => x.ContentType.Is("text/plain"));
+				if (att == null) {
+					att = AlternateViews.FirstOrDefault(x => x.ContentType.Contains("html"));
+				}
 
-      Date = Headers.GetDate();
-      To = Headers.GetAddresses("To").ToList();
-      Cc = Headers.GetAddresses("Cc").ToList();
-      Bcc = Headers.GetAddresses("Bcc").ToList();
-      Sender = Headers.GetAddresses("Sender").FirstOrDefault();
-      ReplyTo = Headers.GetAddresses("Reply-To").ToList();
-      From = Headers.GetAddresses("From").FirstOrDefault();
-      MessageID = Headers["Message-ID"].RawValue;
+				if (att != null) {
+					Body = att.Body;
+					ContentTransferEncoding = att.Headers["Content-Transfer-Encoding"].RawValue;
+					ContentType = att.Headers["Content-Type"].RawValue;
+				}
+			}
 
-      Importance = Headers.GetEnum<MailPriority>("Importance");
-      Subject = Headers["Subject"].RawValue;
-    }
+			Date = Headers.GetDate();
+			To = Headers.GetAddresses("To").ToList();
+			Cc = Headers.GetAddresses("Cc").ToList();
+			Bcc = Headers.GetAddresses("Bcc").ToList();
+			Sender = Headers.GetAddresses("Sender").FirstOrDefault();
+			ReplyTo = Headers.GetAddresses("Reply-To").ToList();
+			From = Headers.GetAddresses("From").FirstOrDefault();
+			MessageID = Headers["Message-ID"].RawValue;
 
-    private void ParseMime(string body, string boundary) {
-      using (var mem = new MemoryStream(Encoding.GetBytes(body))) {
-        ParseMime(mem, boundary, 0);
-      }
-    }
+			Importance = Headers.GetEnum<MailPriority>("Importance");
+			Subject = Headers["Subject"].RawValue;
+		}
 
-    private void ParseMime(Stream reader, string boundary, int maxLength) {
-      var maxLengthSpecified = maxLength > 0;
-      string data,
-        bounderInner = "--" + boundary,
-        bounderOuter = bounderInner + "--";
+		private static void ParseMime(Stream reader, string boundary, ref int maxLength, ICollection<Attachment> attachments, Encoding encoding, char? termChar) {
+			var maxLengthSpecified = maxLength > 0;
+			string data,
+				bounderInner = "--" + boundary,
+				bounderOuter = bounderInner + "--";
 
-      do {
-        data = reader.ReadLine(ref maxLength, Encoding);
-      } while (data != null && !data.StartsWith(bounderInner));
+			do {
+				data = reader.ReadLine(ref maxLength, encoding, termChar);
+			} while (data != null && !data.StartsWith(bounderInner));
 
-      while (data != null && !data.StartsWith(bounderOuter) && (maxLength > 0 || !maxLengthSpecified)) {
-        data = reader.ReadLine(ref maxLength, Encoding);
-        var a = new Attachment { Encoding = Encoding };
+			while (data != null && !data.StartsWith(bounderOuter) && !(maxLengthSpecified && maxLength == 0)) {
+				data = reader.ReadLine(ref maxLength, encoding, termChar);
+				var a = new Attachment { Encoding = encoding };
 
-        var part = new StringBuilder();
-        // read part header
-        while (!data.StartsWith(bounderInner) && data != string.Empty) {
-          part.AppendLine(data);
-          data = reader.ReadLine(ref maxLength, Encoding);
-        }
-        a.RawHeaders = part.ToString();
-        // header body
+				var part = new StringBuilder();
+				// read part header
+				while (!data.StartsWith(bounderInner) && data != string.Empty && !(maxLengthSpecified && maxLength == 0)) {
+					part.AppendLine(data);
+					data = reader.ReadLine(ref maxLength, encoding, termChar);
+				}
+				a.RawHeaders = part.ToString();
+				// header body
 
-        data = reader.ReadLine(ref maxLength, Encoding);
-        var body = new StringBuilder();
-        while (data != string.Empty && !data.StartsWith(bounderInner)) {
-          body.AppendLine(data);
-          data = reader.ReadLine(ref maxLength, Encoding);
-        }
-        // check for nested part
-        string nestedboundary = a.Headers.GetBoundary();
-        if (!string.IsNullOrEmpty(nestedboundary)) {
-          ParseMime(body.ToString(), nestedboundary);
+				// check for nested part
+				var nestedboundary = a.Headers.GetBoundary();
+				if (!string.IsNullOrEmpty(nestedboundary)) {
+					ParseMime(reader, nestedboundary, ref maxLength, attachments, encoding, termChar);
+				} else {
+					data = reader.ReadLine(ref maxLength, a.Encoding, termChar);
+					var body = new StringBuilder();
+					while (!data.StartsWith(bounderInner) && !(maxLengthSpecified && maxLength == 0)) {
+						body.AppendLine(data);
+						data = reader.ReadLine(ref maxLength, a.Encoding, termChar);
+					}
+					a.SetBody(body.ToString());
+					attachments.Add(a);
+				}
+			}
+		}
 
-        } else { // nested
-          a.SetBody(body.ToString());
-          (a.IsAttachment ? Attachments : AlternateViews).Add(a);
-        }
-      }
+		private static Dictionary<string, int> _FlagCache = System.Enum.GetValues(typeof(Flags)).Cast<Flags>().ToDictionary(x => x.ToString(), x => (int)x, StringComparer.OrdinalIgnoreCase);
+		internal void SetFlags(string flags) {
+			RawFlags = flags.Split(' ').Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
+			Flags = (Flags)RawFlags.Select(x => {
+				int flag = 0;
+				if (_FlagCache.TryGetValue(x.TrimStart('\\'), out flag))
+					return flag;
+				else
+					return 0;
+			}).Sum();
+		}
 
-      if (maxLength > 0)
-        data = reader.ReadToEnd(maxLength, Encoding);
-    }
+		public virtual void Save(System.IO.Stream stream, Encoding encoding = null) {
+			using (var str = new System.IO.StreamWriter(stream, encoding ?? System.Text.Encoding.Default))
+				Save(str);
+		}
 
-    private static Dictionary<string, int> _FlagCache = System.Enum.GetValues(typeof(Flags)).Cast<Flags>().ToDictionary(x => x.ToString(), x => (int)x, StringComparer.OrdinalIgnoreCase);
-    internal void SetFlags(string flags) {
-      RawFlags = flags.Split(' ').Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
-      Flags = (Flags)RawFlags.Select(x => {
-        int flag = 0;
-        if (_FlagCache.TryGetValue(x.TrimStart('\\'), out flag))
-          return flag;
-        else
-          return 0;
-      }).Sum();
-    }
+		private static readonly string[] SpecialHeaders = "Date,To,Cc,Reply-To,Bcc,Sender,From,Message-ID,Importance,Subject".Split(',');
+		public virtual void Save(System.IO.TextWriter txt) {
+			txt.WriteLine("Date: {0}", Date.GetRFC2060Date());
+			txt.WriteLine("To: ", string.Join("; ", To.Select(x => x.ToString())));
+			txt.WriteLine("Cc: ", string.Join("; ", Cc.Select(x => x.ToString())));
+			txt.WriteLine("Reply-To: ", string.Join("; ", ReplyTo.Select(x => x.ToString())));
+			txt.WriteLine("Bcc: ", string.Join("; ", Bcc.Select(x => x.ToString())));
+			if (Sender != null)
+				txt.WriteLine("Sender: ", Sender);
+			if (From != null)
+				txt.WriteLine("From: ", Sender);
+			if (!string.IsNullOrEmpty(MessageID))
+				txt.WriteLine("Message-ID: ", MessageID);
 
-    public virtual void Save(System.IO.Stream stream, Encoding encoding = null) {
-      using (var str = new System.IO.StreamWriter(stream, encoding ?? System.Text.Encoding.Default))
-        Save(str);
-    }
+			var otherHeaders = Headers.Where(x => !SpecialHeaders.Contains(x.Key, StringComparer.InvariantCultureIgnoreCase));
+			foreach (var header in otherHeaders) {
+				txt.WriteLine("{0}: {1}", header.Key, header.Value);
+			}
+			if (Importance != MailPriority.Normal)
+				txt.WriteLine("Importance: {0}", (int)Importance);
+			txt.WriteLine("Subject: {0}", Subject);
+			txt.WriteLine();
 
-    private static readonly string[] SpecialHeaders = "Date,To,Cc,Reply-To,Bcc,Sender,From,Message-ID,Importance,Subject".Split(',');
-    public virtual void Save(System.IO.TextWriter txt) {
-      txt.WriteLine("Date: {0}", Date.GetRFC2060Date());
-      txt.WriteLine("To: ", string.Join("; ", To.Select(x => x.ToString())));
-      txt.WriteLine("Cc: ", string.Join("; ", Cc.Select(x => x.ToString())));
-      txt.WriteLine("Reply-To: ", string.Join("; ", ReplyTo.Select(x => x.ToString())));
-      txt.WriteLine("Bcc: ", string.Join("; ", Bcc.Select(x => x.ToString())));
-      if (Sender != null)
-        txt.WriteLine("Sender: ", Sender);
-      if (From != null)
-        txt.WriteLine("From: ", Sender);
-      if (!string.IsNullOrEmpty(MessageID))
-        txt.WriteLine("Message-ID: ", MessageID);
-
-      var otherHeaders = Headers.Where(x => !SpecialHeaders.Contains(x.Key, StringComparer.InvariantCultureIgnoreCase));
-      foreach (var header in otherHeaders) {
-        txt.WriteLine("{0}: {1}", header.Key, header.Value);
-      }
-      if (Importance != MailPriority.Normal)
-        txt.WriteLine("Importance: {0}", (int)Importance);
-      txt.WriteLine("Subject: {0}", Subject);
-      txt.WriteLine();
-
-      //todo: attachments
-      txt.Write(Body);
-    }
-  }
+			//todo: attachments
+			txt.Write(Body);
+		}
+	}
 }
