@@ -77,7 +77,7 @@ namespace AE.Net.Mail {
 
 		public virtual void Load(string message, bool headersOnly = false) {
 			using (var mem = new MemoryStream(_DefaultEncoding.GetBytes(message))) {
-				Load(mem, headersOnly, 0);
+				Load(mem, headersOnly, message.Length);
 			}
 		}
 

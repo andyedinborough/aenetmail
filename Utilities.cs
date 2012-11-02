@@ -25,11 +25,14 @@ namespace AE.Net.Mail {
 				stream.ReadTimeout = 10000;
 
 			var maxLengthSpecified = maxLength > 0;
+			int i;
 			byte b = 0, b0;
 			using (var mem = new MemoryStream()) {
 				while (true) {
 					b0 = b;
-					b = (byte)stream.ReadByte();
+					i = stream.ReadByte();
+					if (i == -1) break;
+					b = (byte)i;
 					if (maxLengthSpecified) maxLength--;
 
 					if (maxLengthSpecified && mem.Length == 1 && b == termChar && b0 == termChar) {

@@ -1,20 +1,20 @@
-﻿using System;
-using System.Linq;
-using AE.Net.Mail;
+﻿using AE.Net.Mail;
 using AE.Net.Mail.Imap;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Should.Fluent;
+using System;
+using System.Linq;
 
 namespace Tests {
-  /// <summary>
-  /// Summary description for UnitTest1
-  /// </summary>
-  [TestClass]
-  public class Parsing {
-    public TestContext TestContext { get; set; }
+	/// <summary>
+	/// Summary description for UnitTest1
+	/// </summary>
+	[TestClass]
+	public class Parsing {
+		public TestContext TestContext { get; set; }
 
-    #region messages
-    string bodyNotHeader = @"Delivered-To: yyy@gmail.com
+		#region messages
+		string bodyNotHeader = @"Delivered-To: yyy@gmail.com
 Received: by 10.142.174.3 with SMTP id w3cs50740wfe;
         Mon, 14 Nov 2011 18:10:08 -0800 (PST)
 Return-Path: <zzz@gmail.com>
@@ -42,7 +42,7 @@ Content-Type: text/plain; charset=UTF-8
 
 Test message body";
 
-    string anotherMessage = @"+OK 2536 octets
+		string anotherMessage = @"+OK 2536 octets
 Received: from ([216.32.180.11]) for <edinboroughs@trac.ky> with MailEnable Catch-All Filter; Tue, 25 Oct 2011 00:19:25 -0700
 Received: from VA3EHSOBE008.bigfish.com ([216.32.180.11]) by mail.vortaloptics.com with MailEnable ESMTP; Tue, 25 Oct 2011 00:19:25 -0700
 Received: from mail181-va3-R.bigfish.com (10.7.14.244) by
@@ -92,7 +92,7 @@ MTYxOSBOLiBCbGFjayBDYXQgUmQuLCBKb3BsaW4sIE1PIDY0ODAxDQoNCg0K
 
 ";
 
-    string iphoneMessage = @"+OK 159354 octets
+		string iphoneMessage = @"+OK 159354 octets
 Received: from ([99.34.8.150]) for <edinboroughs@trac.ky> with MailEnable Catch-All Filter; Wed, 13 Jul 2011 09:25:50 -0700
 Received: from main.edinborough.org ([99.34.8.150]) by mail.vortaloptics.com with MailEnable ESMTP; Wed, 13 Jul 2011 09:25:49 -0700
 Received: from [192.168.1.140] ([192.168.1.140])
@@ -163,7 +163,7 @@ NVrlZWmk8pwGXLbmXlwD39OPTmrTx7oXVixLkrlsjeBz6euKy598aIfMUGXChiwBz34Pt/OvPnTi
 bRwkdyS1mliZkl2oi5L/ACkbQenWr7y70KlIDEehKY5H09vrWYnlTXCvGLh5GPIyfmPcfhQJFAc5
 i3A4XONx55x7CuaaXU0jg77l8+VJbNAdgCjPXkDP/wCuqc1z5CFw0cjRdgpbjsMe";
 
-    private static string quotedPrintable = @"Delivered-To: em-ca-bruceg@em.ca
+		private static string quotedPrintable = @"Delivered-To: em-ca-bruceg@em.ca
 Received: (qmail 3001 invoked from network); 1 Oct 2011 20:25:25 -0000
 Received: from [213.144.209.223] (174-144-63-255.pools.spcsdns.net [174.144.63.255])
   by churchill.factcomp.com ([24.89.90.248])
@@ -213,49 +213,49 @@ Sincerely,
 E-mail Deployment Division
 1 (800) 281-8610
 ";
-    #endregion
+		#endregion
 
-    [TestMethod]
-    public void TestQuotedPrintable() {
-      var test = "=0D=0A=0D=0A=0D=0A=0D=0A=0D=0A";
-      test = Utilities.DecodeQuotedPrintable(test);
-      test.Should().Equal("\r\n\r\n\r\n\r\n\r\n");
+		[TestMethod]
+		public void Quoted_Printable() {
+			var test = "=0D=0A=0D=0A=0D=0A=0D=0A=0D=0A";
+			test = Utilities.DecodeQuotedPrintable(test);
+			test.Should().Equal("\r\n\r\n\r\n\r\n\r\n");
 
-      test = "H=C3=BAsv=C3=A9ti=20=C3=9Cnnepeket!";
-      test = Utilities.DecodeQuotedPrintable(test);
-      test.Should().Equal("Húsvéti Ünnepeket!");
+			test = "H=C3=BAsv=C3=A9ti=20=C3=9Cnnepeket!";
+			test = Utilities.DecodeQuotedPrintable(test);
+			test.Should().Equal("Húsvéti Ünnepeket!");
 
-      test = Utilities.DecodeWords("coucou =?ISO-8859-1?Q?=E0_tous?=");
-      test.Should().Equal("coucou à tous");
-      test = Utilities.DecodeWords("=?iso-8859-1?Q?h=E9llo=5Fthere?=");
-      test.Should().Equal("héllo_there");
+			test = Utilities.DecodeWords("coucou =?ISO-8859-1?Q?=E0_tous?=");
+			test.Should().Equal("coucou à tous");
+			test = Utilities.DecodeWords("=?iso-8859-1?Q?h=E9llo=5Fthere?=");
+			test.Should().Equal("héllo_there");
 
-      var msg = GetMessage(quotedPrintable);
-      msg.Body.Should().Contain("E-mail Deployment Division");
-    }
+			var msg = GetMessage(quotedPrintable);
+			msg.Body.Should().Contain("E-mail Deployment Division");
+		}
 
 
-    void imap_NewMessage(object sender, MessageEventArgs e) {
-      var imap = (sender as ImapClient);
-      var msg = imap.GetMessage(e.MessageCount - 1);
-      Console.WriteLine(msg.Subject);
-    }
+		void imap_NewMessage(object sender, MessageEventArgs e) {
+			var imap = (sender as ImapClient);
+			var msg = imap.GetMessage(e.MessageCount - 1);
+			Console.WriteLine(msg.Subject);
+		}
 
-    [TestMethod]
-    public void TestParseMessageFromIPhone() {
-      var msg = GetMessage(iphoneMessage);
-      msg.Attachments.Count.Should().Equal(2);
-      msg.Attachments.All(a => a.GetData().Any().Should().Be.True());
-      msg.Subject.Should().Equal("Frånvaro: Örebro Golfklubb - Scorecard");
-      msg.Body.Should().Contain("Due");
+		[TestMethod]
+		public void Parse_Message_From_iPhone() {
+			var msg = GetMessage(iphoneMessage);
+			msg.Attachments.Count.Should().Equal(2);
+			msg.Attachments.All(a => a.GetData().Any().Should().Be.True());
+			msg.Subject.Should().Equal("Frånvaro: Örebro Golfklubb - Scorecard");
+			msg.Body.Should().Contain("Due");
 
-      msg = GetMessage(anotherMessage);
-      msg.Body.Should().Contain("Joplin");
-    }
+			msg = GetMessage(anotherMessage);
+			msg.Body.Should().Contain("Joplin");
+		}
 
-    [TestMethod]
-    public void TestBasicMessage() {
-      var msg = GetMessage(@"From: test@localhost
+		[TestMethod]
+		public void Basic_Message() {
+			var msg = GetMessage(@"From: test@localhost
 To: root@localhost
 Subject: DEAR FRIEND
 
@@ -272,18 +272,18 @@ MAY I AT THIS POINT EMPHASIZE THE HIGH LEVEL OF CONFIDENTIALLITY WHICH THIS
 BUSINESS DEMANDS AND HOPE YOU WILL NOT BETRAY THE TRUST AND CONFIDENCE WHICH
 WE REPOSE IN YOU.");
 
-      msg.From.Should().Not.Be.Null();
-      msg.To.Should().Not.Be.Null();
-      msg.Subject.Should().Equal("DEAR FRIEND");
+			msg.From.Should().Not.Be.Null();
+			msg.To.Should().Not.Be.Null();
+			msg.Subject.Should().Equal("DEAR FRIEND");
 
 
-      msg = GetMessage(bodyNotHeader);
-      msg.Body.Should().Not.Be.NullOrEmpty();
-    }
+			msg = GetMessage(bodyNotHeader);
+			msg.Body.Should().Not.Be.NullOrEmpty();
+		}
 
-    [TestMethod]
-    public void TestBasicMimeMessage() {
-      var msg = GetMessage(@"From: John Doe <example@example.com>
+		[TestMethod]
+		public void Basic_Mime_Message() {
+			var msg = GetMessage(@"From: John Doe <example@example.com>
 MIME-Version: 1.0
 Content-Type: multipart/mixed;
         boundary=""XXXXboundary text""
@@ -304,16 +304,21 @@ this is the attachment text
 
 --XXXXboundary text--");
 
-      msg.From.Should().Not.Be.Null();
-      msg.Attachments.Count.Should().Equal(2);
-      msg.Attachments.All(a => a.GetData().Any().Should().Be.True());
-    }
+			msg.From.Should().Not.Be.Null();
+			msg.Attachments.Count.Should().Equal(2);
+			msg.Attachments.All(a => a.GetData().Any().Should().Be.True());
+		}
 
-    private AE.Net.Mail.MailMessage GetMessage(string raw) {
-      var msg = new AE.Net.Mail.MailMessage();
-      msg.Load(raw, false);
+		private AE.Net.Mail.MailMessage GetMessage(string raw) {
+			var msg = new AE.Net.Mail.MailMessage();
+			msg.Load(raw, false);
 
-      return msg;
-    }
-  }
+			return msg;
+		}
+
+		[TestMethod]
+		public void Dont_Die_On_A_Completely_Invalid_Message() {
+			GetMessage("x");
+		}
+	}
 }
