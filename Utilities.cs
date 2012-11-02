@@ -27,11 +27,14 @@ namespace AE.Net.Mail {
 			var maxLengthSpecified = maxLength > 0;
 			int i;
 			byte b = 0, b0;
+			var read = false;
 			using (var mem = new MemoryStream()) {
 				while (true) {
 					b0 = b;
 					i = stream.ReadByte();
 					if (i == -1) break;
+					else read = true;
+
 					b = (byte)i;
 					if (maxLengthSpecified) maxLength--;
 
@@ -50,6 +53,8 @@ namespace AE.Net.Mail {
 					if (maxLengthSpecified && maxLength == 0)
 						break;
 				}
+
+				if (mem.Length == 0 && !read) return null;
 				return encoding.GetString(mem.ToArray());
 			}
 		}
@@ -67,6 +72,7 @@ namespace AE.Net.Mail {
 					mem.Write(buffer, 0, read);
 					if (maxLength > 0 && mem.Length == maxLength) break;
 				} while (read > 0);
+
 				return encoding.GetString(mem.ToArray());
 			}
 		}

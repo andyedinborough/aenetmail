@@ -113,7 +113,7 @@ namespace AE.Net.Mail {
 					if (maxLength > 0)
 						reader.ReadToEnd(maxLength, Encoding);
 				} else {
-					SetBody(reader.ReadToEnd(maxLength, Encoding).Trim());
+					SetBody(reader.ReadToEnd(maxLength, Encoding));
 				}
 			}
 
@@ -155,6 +155,7 @@ namespace AE.Net.Mail {
 
 			while (data != null && !data.StartsWith(bounderOuter) && !(maxLengthSpecified && maxLength == 0)) {
 				data = reader.ReadLine(ref maxLength, encoding, termChar);
+				if (data == null) break;
 				var a = new Attachment { Encoding = encoding };
 
 				var part = new StringBuilder();
@@ -162,6 +163,7 @@ namespace AE.Net.Mail {
 				while (!data.StartsWith(bounderInner) && data != string.Empty && !(maxLengthSpecified && maxLength == 0)) {
 					part.AppendLine(data);
 					data = reader.ReadLine(ref maxLength, encoding, termChar);
+					if (data == null) break;
 				}
 				a.RawHeaders = part.ToString();
 				// header body
@@ -172,6 +174,7 @@ namespace AE.Net.Mail {
 					ParseMime(reader, nestedboundary, ref maxLength, attachments, encoding, termChar);
 				} else {
 					data = reader.ReadLine(ref maxLength, a.Encoding, termChar);
+					if (data == null) break;
 					var body = new StringBuilder();
 					while (!data.StartsWith(bounderInner) && !(maxLengthSpecified && maxLength == 0)) {
 						body.AppendLine(data);

@@ -317,8 +317,20 @@ this is the attachment text
 		}
 
 		[TestMethod]
-		public void Dont_Die_On_A_Completely_Invalid_Message() {
+		public void Dont_Die_On_A_Completely_Invalid_Messages() {
 			GetMessage("x");
+
+			GetMessage("\rX\nY");
+			GetMessage("\r\rX");
+			GetMessage("\n\rX");
+			GetMessage("\r\nX");
+			GetMessage("\r\n");
+			GetMessage("\r\n");
+			GetMessage("x\r\ny");
+			GetMessage("x");
+			GetMessage("");
+
 		}
+
 	}
 }
