@@ -29,6 +29,10 @@ namespace AE.Net.Mail {
 			byte b = 0, b0;
 			using (var mem = new MemoryStream()) {
 				while (true) {
+
+		                        if (stream.Position == stream.Length)
+   			                        break;
+
 					b0 = b;
 					i = stream.ReadByte();
 					if (i == -1) break;
