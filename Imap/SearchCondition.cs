@@ -34,8 +34,8 @@ namespace AE.Net.Mail {
     public static SearchCondition Unflagged() { return new SearchCondition { Field = Fields.Unflagged }; }
     public static SearchCondition Unseen() { return new SearchCondition { Field = Fields.Unseen }; }
 
-    public object Value { get; set; }
-    public Fields? Field { get; set; }
+    public virtual object Value { get; set; }
+    public virtual Fields? Field { get; set; }
 
     public enum Fields {
       BCC, Before, Body, Cc, From, Header, Keyword,
@@ -57,15 +57,15 @@ namespace AE.Net.Mail {
       return left;
     }
 
-    public SearchCondition And(params SearchCondition[] other) {
+    public virtual SearchCondition And(params SearchCondition[] other) {
       return Join(string.Empty, this, other);
     }
 
-    public SearchCondition Not(params SearchCondition[] other) {
+    public virtual SearchCondition Not(params SearchCondition[] other) {
       return Join("NOT", this, other);
     }
 
-    public SearchCondition Or(params SearchCondition[] other) {
+    public virtual SearchCondition Or(params SearchCondition[] other) {
       return Join("OR", this, other);
     }
 
