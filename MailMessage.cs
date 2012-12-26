@@ -213,7 +213,7 @@ namespace AE.Net.Mail {
 			if (Sender != null)
 				txt.WriteLine("Sender: {0}", Sender);
 			if (From != null)
-				txt.WriteLine("From: {0}", Sender);
+				txt.WriteLine("From: {0}", From);
 			if (!string.IsNullOrEmpty(MessageID))
 				txt.WriteLine("Message-ID: {0}", MessageID);
 
