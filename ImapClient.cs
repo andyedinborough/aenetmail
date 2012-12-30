@@ -422,10 +422,10 @@ namespace AE.Net.Mail {
 					mail.SetFlags(imapHeaders["Flags"]);
 
 
-				foreach (var key in imapHeaders.AllKeys.Except(new[] { "UID", "Flags", "BODY[]", "BODY[HEADER]" }, StringComparer.OrdinalIgnoreCase))
-					mail.Headers.Add(key, new HeaderValue(imapHeaders[key]));
-
 				mail.Load(_Stream, headersonly, mail.Size);
+
+                foreach (var key in imapHeaders.AllKeys.Except(new[] { "UID", "Flags", "BODY[]", "BODY[HEADER]" }, StringComparer.OrdinalIgnoreCase))
+                    mail.Headers.Add(key, new HeaderValue(imapHeaders[key]));
 
 				var n = Convert.ToChar(_Stream.ReadByte());
 				System.Diagnostics.Debug.Assert(n == ')');
