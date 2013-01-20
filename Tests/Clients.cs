@@ -1,6 +1,6 @@
 ﻿using AE.Net.Mail;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Should.Fluent;
+using Shouldly;
 using System;
 using System.Linq;
 
@@ -21,7 +21,7 @@ namespace Tests {
 				};
 
 				var count = imap.GetMessageCount();
-				count.Should().Be.InRange(1, int.MaxValue); //interupt the idle thread
+				count.ShouldBeInRange(1, int.MaxValue); //interupt the idle thread
 
 				System.Threading.ThreadPool.QueueUserWorkItem(_ => {
 					Delete_Message();
@@ -30,7 +30,7 @@ namespace Tests {
 
 				mre1.Wait();
 				mre2.Wait(TimeSpan.FromSeconds(15));//give the other thread a moment
-				fired.Should().Be.True();
+				fired.ShouldBe();
 			}
 		}
 
@@ -39,7 +39,7 @@ namespace Tests {
 			using (var imap = GetClient<ImapClient>()) {
 				var msg = imap.SearchMessages(SearchCondition.Larger(100 * 1000)).FirstOrDefault().Value;
 
-				msg.Attachments.Count.Should().Be.InRange(1, int.MaxValue);
+				msg.Attachments.Count.ShouldBeInRange(1, int.MaxValue);
 
 			}
 		}
@@ -48,7 +48,7 @@ namespace Tests {
 		public void Select_Folder() {
 			using (var imap = GetClient<ImapClient>()) {
 				imap.SelectMailbox("Notes");
-				imap.GetMessageCount().Should().Be.InRange(1, int.MaxValue);
+				imap.GetMessageCount().ShouldBeInRange(1, int.MaxValue);
 			}
 		}
 
@@ -56,9 +56,9 @@ namespace Tests {
 		public void Polish_Characters() {
 			using (var imap = GetClient<ImapClient>()) {
 				var msg = imap.SearchMessages(SearchCondition.Subject("POLISH LANGUAGE TEST")).FirstOrDefault();
-				msg.Value.Should().Not.Be.Null();
+				msg.Value.ShouldBe();
 
-				msg.Value.Body.Should().Contain("Cię e-mailem, kiedy Kupują");
+				msg.Value.Body.ShouldContain("Cię e-mailem, kiedy Kupują");
 
 			}
 		}
@@ -79,17 +79,17 @@ namespace Tests {
 					.Where(x => x.Length == 6)
 					.ToArray();
 
-			lines.Any(x => x[0] == "imap").Should().Be.True();
-			lines.Any(x => x[0] == "pop3").Should().Be.True();
+			lines.Any(x => x[0] == "imap").ShouldBe();
+			lines.Any(x => x[0] == "pop3").ShouldBe();
 
 			foreach (var line in lines)
 				using (var mail = GetClient(line[0], line[1], int.Parse(line[2]), bool.Parse(line[3]), line[4], line[5])) {
-					mail.GetMessageCount().Should().Be.InRange(1, int.MaxValue);
+					mail.GetMessageCount().ShouldBeInRange(1, int.MaxValue);
 
 					var msg = mail.GetMessage(0, true);
-					msg.Subject.Should().Not.Be.NullOrEmpty();
+					msg.Subject.ShouldNotBeNullOrEmpty();
 					msg = mail.GetMessage(0, false);
-					msg.Body.Should().Not.Be.NullOrEmpty();
+					msg.Body.ShouldNotBeNullOrEmpty();
 
 					mail.Disconnect();
 					mail.Disconnect();
@@ -102,9 +102,9 @@ namespace Tests {
 			var seen = SearchCondition.Seen();
 			var text = SearchCondition.Text("andy");
 
-			deleted.ToString().Should().Equal("DELETED");
-			deleted.Or(seen).ToString().Should().Equal("OR (DELETED) (SEEN)");
-			seen.And(text).ToString().Should().Equal("(SEEN) (TEXT \"andy\")");
+			deleted.ToString().ShouldBe("DELETED");
+			deleted.Or(seen).ToString().ShouldBe("OR (DELETED) (SEEN)");
+			seen.And(text).ToString().ShouldBe("(SEEN) (TEXT \"andy\")");
 
 			var since = new DateTime(2000, 1, 1);
 			SearchCondition.Undeleted().And(
@@ -112,7 +112,7 @@ namespace Tests {
 									SearchCondition.SentSince(since)
 							).Or(SearchCondition.To("andy"))
 					.ToString()
-					.Should().Equal("OR ((UNDELETED) (FROM \"david\") (SENTSINCE \"" + Utilities.GetRFC2060Date(since) + "\")) (TO \"andy\")");
+					.ShouldBe("OR ((UNDELETED) (FROM \"david\") (SENTSINCE \"" + Utilities.GetRFC2060Date(since) + "\")) (TO \"andy\")");
 		}
 
 		[TestMethod]
@@ -122,11 +122,11 @@ namespace Tests {
 					//"OR ((UNDELETED) (FROM \"david\") (SENTSINCE \"01-Jan-2000 00:00:00\")) (TO \"andy\")"
 						SearchCondition.Undeleted().And(SearchCondition.From("david"), SearchCondition.SentSince(new DateTime(2000, 1, 1))).Or(SearchCondition.To("andy"))
 						);
-				result.Length.Should().Be.InRange(1, int.MaxValue);
-				result.First().Value.Subject.Should().Not.Be.NullOrEmpty();
+				result.Length.ShouldBeInRange(1, int.MaxValue);
+				result.First().Value.Subject.ShouldNotBeNullOrEmpty();
 
 				result = imap.SearchMessages(new SearchCondition { Field = SearchCondition.Fields.Text, Value = "asdflkjhdlki2uhiluha829hgas" });
-				result.Length.Should().Equal(0);
+				result.Length.ShouldBe(0);
 			}
 		}
 
@@ -134,8 +134,8 @@ namespace Tests {
 		public void Issue_49() {
 			using (var client = GetClient<ImapClient>()) {
 				var msg = client.SearchMessages(SearchCondition.Subject("aenetmail").And(SearchCondition.Subject("#49"))).Select(x => x.Value).FirstOrDefault();
-				msg.Should().Not.Be.Null();
-				msg.AlternateViews.FirstOrDefault(x => x.ContentType.Contains("html")).Body.Should().Not.Be.Null();
+				msg.ShouldBe();
+				msg.AlternateViews.FirstOrDefault(x => x.ContentType.Contains("html")).Body.ShouldBe();
 			}
 		}
 
@@ -157,11 +157,11 @@ namespace Tests {
 			var header = @"X-GM-THRID 1320777376118077475 X-GM-MSGID 1320777376118077475 X-GM-LABELS () UID 8286 RFC822.SIZE 9369 FLAGS (\Seen) BODY[] {9369}";
 
 			var values = ImapClient.ParseImapHeader(header);
-			values["FLAGS"].Should().Equal(@"\Seen");
-			values["UID"].Should().Equal("8286");
-			values["X-GM-MSGID"].Should().Equal("1320777376118077475");
-			values["X-GM-LABELS"].Should().Be.NullOrEmpty();
-			values["RFC822.SIZE"].Should().Equal("9369");
+			values["FLAGS"].ShouldBe(@"\Seen");
+			values["UID"].ShouldBe("8286");
+			values["X-GM-MSGID"].ShouldBe("1320777376118077475");
+			values["X-GM-LABELS"].ShouldBeNullOrEmpty();
+			values["RFC822.SIZE"].ShouldBe("9369");
 		}
 
 		[TestMethod]
@@ -169,13 +169,13 @@ namespace Tests {
 			int numMessages = 1000;
 			using (var imap = GetClient<ImapClient>()) {
 				var msgs = imap.GetMessages(0, numMessages - 1, true);
-				msgs.Length.Should().Equal(numMessages);
-				msgs.Count(x => string.IsNullOrEmpty(x.Subject)).Should().Equal(0);
+				msgs.Length.ShouldBe(numMessages);
+				msgs.Count(x => string.IsNullOrEmpty(x.Subject)).ShouldBe(0);
 			}
 			using (var imap = GetClient<ImapClient>()) {
 				var msgs = imap.GetMessages(0, numMessages - 1, false);
-				msgs.Length.Should().Equal(numMessages);
-				msgs.Count(x => string.IsNullOrEmpty(x.Subject)).Should().Equal(0);
+				msgs.Length.ShouldBe(numMessages);
+				msgs.Count(x => string.IsNullOrEmpty(x.Subject)).ShouldBe(0);
 			}
 		}
 
@@ -184,7 +184,7 @@ namespace Tests {
 			using (var client = GetClient<ImapClient>()) {
 				var lazymsg = client.SearchMessages(SearchCondition.From("DRAGONEXT")).FirstOrDefault();
 				var msg = lazymsg == null ? null : lazymsg.Value;
-				msg.Should().Not.Be.Null();
+				msg.ShouldBe();
 
 				var uid = msg.Uid;
 				client.DeleteMessage(msg);

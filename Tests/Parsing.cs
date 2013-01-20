@@ -1,7 +1,7 @@
 ﻿using AE.Net.Mail;
 using AE.Net.Mail.Imap;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Should.Fluent;
+using Shouldly;
 using System;
 using System.Linq;
 
@@ -16,20 +16,20 @@ namespace Tests {
 		#region messages
 		string bodyNotHeader = @"Delivered-To: yyy@gmail.com
 Received: by 10.142.174.3 with SMTP id w3cs50740wfe;
-        Mon, 14 Nov 2011 18:10:08 -0800 (PST)
+				Mon, 14 Nov 2011 18:10:08 -0800 (PST)
 Return-Path: <zzz@gmail.com>
 Received-SPF: pass (google.com: domain of zzz@gmail.com designates 10.227.208.71 as permitted sender) client-ip=10.227.208.71;
 Authentication-Results: mr.google.com; spf=pass (google.com: domain of zzz@gmail.com designates 10.227.208.71 as permitted sender) smtp.mail=zzz@gmail.com; dkim=pass header.i=zzz@gmail.com
 Received: from mr.google.com ([10.227.208.71])
-        by 10.227.208.71 with SMTP id gb7mr16473303wbb.7.1321323006082 (num_hops = 1);
-        Mon, 14 Nov 2011 18:10:06 -0800 (PST)
+				by 10.227.208.71 with SMTP id gb7mr16473303wbb.7.1321323006082 (num_hops = 1);
+				Mon, 14 Nov 2011 18:10:06 -0800 (PST)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=gmail.com; s=gamma;
-        h=mime-version:from:date:message-id:subject:to:content-type;
-        bh=3ajdGhBv88zJknw0EVGu6lJhm0zz+4eRVot/EGmYTOs=;
-        b=nxqtHAr0o4/76BCnJVbxXCL0NWiABD9o1ijDXpJaNIJ19+ParWNzEtbTf9xiFMtoDI
-        kufMoypwCxokbNJRXxmiuXnWSBvQ2UhNqwnIYvr2YxXpj+nOIEZOXmoj2S3DF0PM7Qif
-        MuSMSi3f4Jmcscmi6KNeP4wCcmqF564fccGhw=
+				d=gmail.com; s=gamma;
+				h=mime-version:from:date:message-id:subject:to:content-type;
+				bh=3ajdGhBv88zJknw0EVGu6lJhm0zz+4eRVot/EGmYTOs=;
+				b=nxqtHAr0o4/76BCnJVbxXCL0NWiABD9o1ijDXpJaNIJ19+ParWNzEtbTf9xiFMtoDI
+				kufMoypwCxokbNJRXxmiuXnWSBvQ2UhNqwnIYvr2YxXpj+nOIEZOXmoj2S3DF0PM7Qif
+				MuSMSi3f4Jmcscmi6KNeP4wCcmqF564fccGhw=
 Received: by 10.227.208.71 with SMTP id gb7mr16473303wbb.7.1321323006076; Mon, 14 Nov 2011 18:10:06 -0800 (PST)
 MIME-Version: 1.0
 Received: by 10.227.200.65 with HTTP; Mon, 14 Nov 2011 18:09:45 -0800 (PST)
@@ -166,10 +166,10 @@ i3A4XONx55x7CuaaXU0jg77l8+VJbNAdgCjPXkDP/wCuqc1z5CFw0cjRdgpbjsMe";
 		private static string quotedPrintable = @"Delivered-To: em-ca-bruceg@em.ca
 Received: (qmail 3001 invoked from network); 1 Oct 2011 20:25:25 -0000
 Received: from [213.144.209.223] (174-144-63-255.pools.spcsdns.net [174.144.63.255])
-  by churchill.factcomp.com ([24.89.90.248])
-  with SMTP via TCP; 01 Oct 2011 20:25:25 -0000
+	by churchill.factcomp.com ([24.89.90.248])
+	with SMTP via TCP; 01 Oct 2011 20:25:25 -0000
 Received: from [213.144.209.223][127.0.0.1] by [213.144.209.223][127.0.0.1]
-  (SMTPD32); Sat, 1 Oct 2011 13:28:09 -0700
+	(SMTPD32); Sat, 1 Oct 2011 13:28:09 -0700
 Message-ID: <cce9e468d7a9d0b0dd1047da001effd7@email.com>
 From: ""Business Division"" <BusinessDivision84@email.com>
 To: <bruceg@em.ca>
@@ -217,21 +217,23 @@ E-mail Deployment Division
 
 		[TestMethod]
 		public void Quoted_Printable() {
+			Utilities.DecodeQuotedPrintable("=1");
+
 			var test = "=0D=0A=0D=0A=0D=0A=0D=0A=0D=0A";
 			test = Utilities.DecodeQuotedPrintable(test);
-			test.Should().Equal("\r\n\r\n\r\n\r\n\r\n");
+			test.ShouldBe("\r\n\r\n\r\n\r\n\r\n");
 
 			test = "H=C3=BAsv=C3=A9ti=20=C3=9Cnnepeket!";
 			test = Utilities.DecodeQuotedPrintable(test);
-			test.Should().Equal("Húsvéti Ünnepeket!");
+			test.ShouldBe("Húsvéti Ünnepeket!");
 
 			test = Utilities.DecodeWords("coucou =?ISO-8859-1?Q?=E0_tous?=");
-			test.Should().Equal("coucou à tous");
+			test.ShouldBe("coucou à tous");
 			test = Utilities.DecodeWords("=?iso-8859-1?Q?h=E9llo=5Fthere?=");
-			test.Should().Equal("héllo_there");
+			test.ShouldBe("héllo_there");
 
 			var msg = GetMessage(quotedPrintable);
-			msg.Body.Should().Contain("E-mail Deployment Division");
+			msg.Body.ShouldContain("E-mail Deployment Division");
 		}
 
 
@@ -244,13 +246,13 @@ E-mail Deployment Division
 		[TestMethod]
 		public void Parse_Message_From_iPhone() {
 			var msg = GetMessage(iphoneMessage);
-			msg.Attachments.Count.Should().Equal(2);
-			msg.Attachments.All(a => a.GetData().Any().Should().Be.True());
-			msg.Subject.Should().Equal("Frånvaro: Örebro Golfklubb - Scorecard");
-			msg.Body.Should().Contain("Due");
+			msg.Attachments.Count.ShouldBe(2);
+			msg.Attachments.All(a => a.GetData().Any().ShouldBe());
+			msg.Subject.ShouldBe("Frånvaro: Örebro Golfklubb - Scorecard");
+			msg.Body.ShouldContain("Due");
 
 			msg = GetMessage(anotherMessage);
-			msg.Body.Should().Contain("Joplin");
+			msg.Body.ShouldContain("Joplin");
 		}
 
 		[TestMethod]
@@ -272,13 +274,13 @@ MAY I AT THIS POINT EMPHASIZE THE HIGH LEVEL OF CONFIDENTIALLITY WHICH THIS
 BUSINESS DEMANDS AND HOPE YOU WILL NOT BETRAY THE TRUST AND CONFIDENCE WHICH
 WE REPOSE IN YOU.");
 
-			msg.From.Should().Not.Be.Null();
-			msg.To.Should().Not.Be.Null();
-			msg.Subject.Should().Equal("DEAR FRIEND");
+			msg.From.ShouldBe();
+			msg.To.ShouldBe();
+			msg.Subject.ShouldBe("DEAR FRIEND");
 
 
 			msg = GetMessage(bodyNotHeader);
-			msg.Body.Should().Not.Be.NullOrEmpty();
+			msg.Body.ShouldNotBeNullOrEmpty();
 		}
 
 		[TestMethod]
@@ -286,7 +288,7 @@ WE REPOSE IN YOU.");
 			var msg = GetMessage(@"From: John Doe <example@example.com>
 MIME-Version: 1.0
 Content-Type: multipart/mixed;
-        boundary=""XXXXboundary text""
+				boundary=""XXXXboundary text""
 
 This is a multipart message in MIME format.
 
@@ -298,15 +300,15 @@ this is the body text
 --XXXXboundary text 
 Content-Type: text/plain;
 Content-Disposition: attachment;
-        filename=""test.txt""
+				filename=""test.txt""
 
 this is the attachment text
 
 --XXXXboundary text--");
 
-			msg.From.Should().Not.Be.Null();
-			msg.Attachments.Count.Should().Equal(2);
-			msg.Attachments.All(a => a.GetData().Any().Should().Be.True());
+			msg.From.ShouldBe();
+			msg.Attachments.Count.ShouldBe(2);
+			msg.Attachments.All(a => a.GetData().Any().ShouldBe());
 		}
 
 		private AE.Net.Mail.MailMessage GetMessage(string raw) {
