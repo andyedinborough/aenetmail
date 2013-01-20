@@ -224,7 +224,7 @@ E-mail Deployment Division
 			test.ShouldBe("\r\n\r\n\r\n\r\n\r\n");
 
 			test = "H=C3=BAsv=C3=A9ti=20=C3=9Cnnepeket!";
-			test = Utilities.DecodeQuotedPrintable(test);
+			test = Utilities.DecodeQuotedPrintable(test, System.Text.Encoding.UTF8);
 			test.ShouldBe("Húsvéti Ünnepeket!");
 
 			test = Utilities.DecodeWords("coucou =?ISO-8859-1?Q?=E0_tous?=");

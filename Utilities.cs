@@ -270,6 +270,7 @@ namespace AE.Net.Mail {
 		/// Parse a character set into an encoding.
 		/// </summary>
 		/// <param name="characterSet">The character set to parse</param>
+		/// <param name="@default">The character set to default to if it can't be parsed</param>
 		/// <returns>An encoding which corresponds to the character set</returns>
 		/// <exception cref="ArgumentNullException">If <paramref name="characterSet"/> is <see langword="null"/></exception>
 		public static Encoding ParseCharsetToEncoding(string characterSet, Encoding @default) {
