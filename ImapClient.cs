@@ -183,6 +183,7 @@ namespace AE.Net.Mail {
 		public virtual void AppendMail(MailMessage email, string mailbox = null) {
 			IdlePause();
 
+		    mailbox = ModifiedUtf7Encoding.Encode(mailbox);
 			string flags = String.Empty;
 			var body = new StringBuilder();
 			using (var txt = new System.IO.StringWriter(body))
@@ -253,14 +254,14 @@ namespace AE.Net.Mail {
 
 		public virtual void CreateMailbox(string mailbox) {
 			IdlePause();
-			string command = GetTag() + "CREATE " + mailbox.QuoteString();
+			string command = GetTag() + "CREATE " + ModifiedUtf7Encoding.Encode(mailbox).QuoteString();
 			SendCommandCheckOK(command);
 			IdleResume();
 		}
 
 		public virtual void DeleteMailbox(string mailbox) {
 			IdlePause();
-			string command = GetTag() + "DELETE " + mailbox.QuoteString();
+            string command = GetTag() + "DELETE " + ModifiedUtf7Encoding.Encode(mailbox).QuoteString();
 			SendCommandCheckOK(command);
 			IdleResume();
 		}
@@ -270,7 +271,7 @@ namespace AE.Net.Mail {
 
 			Mailbox x = null;
 			string tag = GetTag();
-			string command = tag + "EXAMINE " + mailbox.QuoteString();
+            string command = tag + "EXAMINE " + ModifiedUtf7Encoding.Encode(mailbox).QuoteString();
 			string response = SendCommandGetResponse(command);
 			if (response.StartsWith("*")) {
 				x = new Mailbox(mailbox);
@@ -443,7 +444,7 @@ namespace AE.Net.Mail {
 			IdlePause();
 
 			Quota quota = null;
-			string command = GetTag() + "GETQUOTAROOT " + mailbox.QuoteString();
+            string command = GetTag() + "GETQUOTAROOT " + ModifiedUtf7Encoding.Encode(mailbox).QuoteString();
 			string response = SendCommandGetResponse(command);
 			string reg = "\\* QUOTA (.*?) \\((.*?) (.*?) (.*?)\\)";
 			while (response.StartsWith("*")) {
@@ -608,7 +609,7 @@ namespace AE.Net.Mail {
 		public virtual int GetMessageCount(string mailbox) {
 			IdlePause();
 
-			string command = GetTag() + "STATUS " + Utilities.QuoteString(mailbox ?? _SelectedMailbox) + " (MESSAGES)";
+			string command = GetTag() + "STATUS " + Utilities.QuoteString(ModifiedUtf7Encoding.Encode(mailbox) ?? _SelectedMailbox) + " (MESSAGES)";
 			string response = SendCommandGetResponse(command);
 			string reg = @"\* STATUS.*MESSAGES (\d+)";
 			int result = 0;
@@ -665,9 +666,10 @@ namespace AE.Net.Mail {
 		public virtual Mailbox SelectMailbox(string mailbox) {
 			IdlePause();
 
+		    mailbox = ModifiedUtf7Encoding.Encode(mailbox);
 			Mailbox x = null;
 			string tag = GetTag();
-			string command = tag + "SELECT " + mailbox.QuoteString();
+            string command = tag + "SELECT " + mailbox.QuoteString();
 			string response = SendCommandGetResponse(command);
 			if (response.StartsWith("*")) {
 				x = new Mailbox(mailbox);
@@ -745,7 +747,7 @@ namespace AE.Net.Mail {
 		public virtual void SuscribeMailbox(string mailbox) {
 			IdlePause();
 
-			string command = GetTag() + "SUBSCRIBE " + mailbox.QuoteString();
+            string command = GetTag() + "SUBSCRIBE " + ModifiedUtf7Encoding.Encode(mailbox).QuoteString();
 			SendCommandCheckOK(command);
 			IdleResume();
 		}
@@ -753,7 +755,7 @@ namespace AE.Net.Mail {
 		public virtual void UnSuscribeMailbox(string mailbox) {
 			IdlePause();
 
-			string command = GetTag() + "UNSUBSCRIBE " + mailbox.QuoteString();
+            string command = GetTag() + "UNSUBSCRIBE " + ModifiedUtf7Encoding.Encode(mailbox).QuoteString();
 			SendCommandCheckOK(command);
 			IdleResume();
 		}
