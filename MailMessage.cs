@@ -92,6 +92,12 @@ namespace AE.Net.Mail {
 				var headers = new StringBuilder();
 				string line;
 				while ((line = reader.ReadLine(ref maxLength, _DefaultEncoding, termChar)) != null) {
+			               if (reader.Position == reader.Length)
+			               {
+			                   headers.AppendLine(line);
+			                   break;
+			               }
+
 					if (line.Trim().Length == 0)
 						if (headers.Length == 0)
 							continue;
