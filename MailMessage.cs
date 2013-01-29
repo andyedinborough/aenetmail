@@ -76,7 +76,7 @@ namespace AE.Net.Mail {
 		public virtual MailPriority Importance { get; set; }
 
 		public virtual void Load(string message, bool headersOnly = false) {
-			using (var mem = new MemoryStream(_DefaultEncoding.GetBytes(message))) {
+			using (var mem = new MemoryStream(_DefaultEncoding.GetBytes(message ?? string.Empty))) {
 				Load(mem, headersOnly, message.Length);
 			}
 		}

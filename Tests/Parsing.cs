@@ -331,7 +331,7 @@ this is the attachment text
 			GetMessage("x\r\ny");
 			GetMessage("x");
 			GetMessage("");
-
+			GetMessage(null);
 		}
 
 	}
