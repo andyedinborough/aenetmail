@@ -397,7 +397,7 @@ namespace AE.Net.Mail {
 			string command = tag + (uid ? "UID " : null)
 				+ "FETCH " + start + ":" + end + " ("
 				+ _FetchHeaders + "UID FLAGS BODY"
-				+ (setseen ? ".PEEK" : null)
+				+ (setseen ? null : ".PEEK")
 				+ "[" + (headersonly ? "HEADER" : null) + "])";
 
 			string response;
