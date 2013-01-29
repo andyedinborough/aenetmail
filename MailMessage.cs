@@ -86,27 +86,29 @@ namespace AE.Net.Mail {
 			Headers = null;
 			Body = null;
 
-			if (headersOnly) {
-				RawHeaders = reader.ReadToEnd(maxLength, _DefaultEncoding);
-			} else {
-				var headers = new StringBuilder();
-				string line;
-				while ((line = reader.ReadLine(ref maxLength, _DefaultEncoding, termChar)) != null) {
-					if (line.Trim().Length == 0)
-						if (headers.Length == 0)
-							continue;
-						else
-							break;
-					headers.AppendLine(line);
-				}
-				RawHeaders = headers.ToString();
 
+			var headers = new StringBuilder();
+			string line;
+			while ((line = reader.ReadLine(ref maxLength, _DefaultEncoding, termChar)) != null) {
+				if (line.Trim().Length == 0)
+					if (headers.Length == 0)
+						continue;
+					else
+						break;
+				headers.AppendLine(line);
+			}
+			RawHeaders = headers.ToString();
+
+			if (!headersOnly) {
 				string boundary = Headers.GetBoundary();
 				if (!string.IsNullOrEmpty(boundary)) {
 					//else this is a multipart Mime Message
 					//using (var subreader = new StringReader(line + Environment.NewLine + reader.ReadToEnd()))
 					var atts = new List<Attachment>();
-					ParseMime(reader, boundary, ref maxLength, atts, Encoding, termChar);
+					var body = ParseMime(reader, boundary, ref maxLength, atts, Encoding, termChar);
+					if (!string.IsNullOrEmpty(body))
+						SetBody(body);
+
 					foreach (var att in atts)
 						(att.IsAttachment ? Attachments : AlternateViews).Add(att);
 
@@ -143,14 +145,21 @@ namespace AE.Net.Mail {
 			Subject = Headers["Subject"].RawValue;
 		}
 
-		private static void ParseMime(Stream reader, string boundary, ref int maxLength, ICollection<Attachment> attachments, Encoding encoding, char? termChar) {
+		private static string ParseMime(Stream reader, string boundary, ref int maxLength, ICollection<Attachment> attachments, Encoding encoding, char? termChar) {
 			var maxLengthSpecified = maxLength > 0;
-			string data,
+			string data = null,
 				bounderInner = "--" + boundary,
 				bounderOuter = bounderInner + "--";
-
+			var n = 0;
+			var body = new System.Text.StringBuilder();
 			do {
+				if (maxLengthSpecified && maxLength <= 0)
+					return body.ToString();
+				if (data != null) {
+					body.Append(data);
+				}
 				data = reader.ReadLine(ref maxLength, encoding, termChar);
+				n++;
 			} while (data != null && !data.StartsWith(bounderInner));
 
 			while (data != null && !data.StartsWith(bounderOuter) && !(maxLengthSpecified && maxLength == 0)) {
@@ -175,15 +184,16 @@ namespace AE.Net.Mail {
 				} else {
 					data = reader.ReadLine(ref maxLength, a.Encoding, termChar);
 					if (data == null) break;
-					var body = new StringBuilder();
+					var nestedBody = new StringBuilder();
 					while (!data.StartsWith(bounderInner) && !(maxLengthSpecified && maxLength == 0)) {
-						body.AppendLine(data);
+						nestedBody.AppendLine(data);
 						data = reader.ReadLine(ref maxLength, a.Encoding, termChar);
 					}
-					a.SetBody(body.ToString());
+					a.SetBody(nestedBody.ToString());
 					attachments.Add(a);
 				}
 			}
+			return body.ToString();
 		}
 
 		private static Dictionary<string, int> _FlagCache = System.Enum.GetValues(typeof(Flags)).Cast<Flags>().ToDictionary(x => x.ToString(), x => (int)x, StringComparer.OrdinalIgnoreCase);

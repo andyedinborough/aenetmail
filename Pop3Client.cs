@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Text;
 using System.Text.RegularExpressions;
 
 namespace AE.Net.Mail {
@@ -55,8 +54,7 @@ namespace AE.Net.Mail {
 		private static Regex rxOctets = new Regex(@"(\d+)\s+octets", RegexOptions.IgnoreCase);
 		public virtual MailMessage GetMessage(string uid, bool headersOnly = false) {
 			CheckConnectionStatus();
-			var result = new StringBuilder();
-			string line = SendCommandGetResponse(string.Format(headersOnly ? "TOP {0} 0" : "RETR {0}", uid));
+			var line = SendCommandGetResponse(string.Format(headersOnly ? "TOP {0} 0" : "RETR {0}", uid));
 			var size = rxOctets.Match(line).Groups[1].Value.ToInt();
 			CheckResultOK(line);
 			var msg = new MailMessage();
