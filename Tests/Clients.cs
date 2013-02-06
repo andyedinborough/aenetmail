@@ -156,7 +156,7 @@ namespace Tests {
 		public void Parse_Imap_Header() {
 			var header = @"X-GM-THRID 1320777376118077475 X-GM-MSGID 1320777376118077475 X-GM-LABELS () UID 8286 RFC822.SIZE 9369 FLAGS (\Seen) BODY[] {9369}";
 
-			var values = ImapClient.ParseImapHeader(header);
+			var values = Utilities.ParseImapHeader(header);
 			values["FLAGS"].ShouldBe(@"\Seen");
 			values["UID"].ShouldBe("8286");
 			values["X-GM-MSGID"].ShouldBe("1320777376118077475");
@@ -168,14 +168,35 @@ namespace Tests {
 		public void Get_Several_Messages() {
 			int numMessages = 1000;
 			using (var imap = GetClient<ImapClient>()) {
-				var msgs = imap.GetMessages(0, numMessages - 1, true);
+				var msgs = imap.GetMessages(0, numMessages - 1, false);
 				msgs.Length.ShouldBe(numMessages);
 				msgs.Count(x => string.IsNullOrEmpty(x.Subject)).ShouldBe(0);
 			}
 			using (var imap = GetClient<ImapClient>()) {
-				var msgs = imap.GetMessages(0, numMessages - 1, false);
+				var msgs = imap.GetMessages(0, numMessages - 1, true);
 				msgs.Length.ShouldBe(numMessages);
 				msgs.Count(x => string.IsNullOrEmpty(x.Subject)).ShouldBe(0);
+			}
+		}
+
+		[TestMethod]
+		public void Download_Message() {
+			var filename = System.IO.Path.GetTempFileName();
+
+			try {
+				using (var imap = GetClient<ImapClient>())
+				using (var file = new System.IO.FileStream(filename, System.IO.FileMode.Create)) {
+					imap.DownloadMessage(file, 0, false);
+				}
+
+				using (var file = new System.IO.FileStream(filename, System.IO.FileMode.Open)) {
+					var msg = new AE.Net.Mail.MailMessage();
+					msg.Load(file);
+					msg.Subject.ShouldNotBeNullOrEmpty();
+				}
+
+			} finally {
+				System.IO.File.Delete(filename);
 			}
 		}
 

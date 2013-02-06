@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -10,6 +11,54 @@ using System.Text.RegularExpressions;
 namespace AE.Net.Mail {
 	internal static class Utilities {
 		private static CultureInfo _enUsCulture = CultureInfo.GetCultureInfo("en-US");
+
+		internal static void CopyStream(Stream a, Stream b, int maxLength, int bufferSize = 8192) {
+			int read;
+			var buffer = new byte[bufferSize];
+			while (maxLength > 0) {
+				read = Math.Min(bufferSize, maxLength);
+				read = a.Read(buffer, 0, read);
+				if (read == 0) return;
+				maxLength -= read;
+				b.Write(buffer, 0, read);
+			}
+		}
+
+		public static NameValueCollection ParseImapHeader(string data) {
+			var values = new NameValueCollection();
+			string name = null;
+			int nump = 0;
+			var temp = new StringBuilder();
+			if (data != null)
+				foreach (var c in data) {
+					if (c == ' ') {
+						if (name == null) {
+							name = temp.ToString();
+							temp.Clear();
+
+						} else if (nump == 0) {
+							values[name] = temp.ToString();
+							name = null;
+							temp.Clear();
+						} else
+							temp.Append(c);
+					} else if (c == '(') {
+						if (nump > 0)
+							temp.Append(c);
+						nump++;
+					} else if (c == ')') {
+						nump--;
+						if (nump > 0)
+							temp.Append(c);
+					} else
+						temp.Append(c);
+				}
+
+			if (name != null)
+				values[name] = temp.ToString();
+
+			return values;
+		}
 
 		internal static byte[] Read(this Stream stream, int len) {
 			var data = new byte[len];
@@ -120,7 +169,7 @@ namespace AE.Net.Mail {
 		private static Regex rxTimeZoneMinutes = new Regex(@"([\+\-]?\d{1,2})(\d{2})$", RegexOptions.Compiled); //search can be strict because the format has already been normalized
 		private static Regex rxNegativeHours = new Regex(@"(?<=\s)\-(?=\d{1,2}\:)", RegexOptions.Compiled);
 
-		internal static string NormalizeDate(string value) {
+		public static string NormalizeDate(string value) {
 			value = rxTimeZoneName.Replace(value, string.Empty);
 			value = rxTimeZoneColon.Replace(value, match => " " + match.Groups[1].Value + match.Groups[2].Value.PadLeft(2, '0') + match.Groups[3].Value);
 			value = rxNegativeHours.Replace(value, string.Empty);
@@ -150,7 +199,7 @@ namespace AE.Net.Mail {
 			return chr == ' ' || chr == '\t' || chr == '\n' || chr == '\r';
 		}
 
-		internal static string DecodeQuotedPrintable(string value, Encoding encoding = null) {
+		public static string DecodeQuotedPrintable(string value, Encoding encoding = null) {
 			if (encoding == null) {
 				encoding = System.Text.Encoding.Default;
 			}
