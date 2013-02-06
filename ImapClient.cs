@@ -415,7 +415,8 @@ namespace AE.Net.Mail {
 				var size = (imapHeaders["BODY[HEADER]"] ?? imapHeaders["BODY[]"]).Trim('{', '}').ToInt();
 				action(_Stream, size, imapHeaders);
 
-				var n = Convert.ToChar(_Stream.ReadByte());
+				response = GetResponse();
+				var n = response.Trim().LastOrDefault();
 				System.Diagnostics.Debug.Assert(n == ')');
 			}
 
