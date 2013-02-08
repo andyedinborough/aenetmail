@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Net.Mail;
@@ -49,12 +50,12 @@ namespace AE.Net.Mail {
 
 		public MailMessage() {
 			RawFlags = new string[0];
-			To = new List<MailAddress>();
-			Cc = new List<MailAddress>();
-			Bcc = new List<MailAddress>();
-			ReplyTo = new List<MailAddress>();
-			Attachments = new List<Attachment>();
-			AlternateViews = new List<Attachment>();
+			To = new Collection<MailAddress>();
+			Cc = new Collection<MailAddress>();
+			Bcc = new Collection<MailAddress>();
+			ReplyTo = new Collection<MailAddress>();
+			Attachments = new Collection<Attachment>();
+			AlternateViews = new AlternateViewCollection();
 		}
 
 		public virtual DateTime Date { get; set; }
@@ -68,7 +69,7 @@ namespace AE.Net.Mail {
 		public virtual ICollection<MailAddress> Bcc { get; private set; }
 		public virtual ICollection<MailAddress> ReplyTo { get; private set; }
 		public virtual ICollection<Attachment> Attachments { get; set; }
-		public virtual ICollection<Attachment> AlternateViews { get; set; }
+		public virtual AlternateViewCollection AlternateViews { get; set; }
 		public virtual MailAddress From { get; set; }
 		public virtual MailAddress Sender { get; set; }
 		public virtual string MessageID { get; set; }
@@ -103,8 +104,6 @@ namespace AE.Net.Mail {
 			if (!headersOnly) {
 				string boundary = Headers.GetBoundary();
 				if (!string.IsNullOrEmpty(boundary)) {
-					//else this is a multipart Mime Message
-					//using (var subreader = new StringReader(line + Environment.NewLine + reader.ReadToEnd()))
 					var atts = new List<Attachment>();
 					var body = ParseMime(reader, boundary, ref maxLength, atts, Encoding, termChar);
 					if (!string.IsNullOrEmpty(body))
@@ -115,17 +114,14 @@ namespace AE.Net.Mail {
 
 					if (maxLength > 0)
 						reader.ReadToEnd(maxLength, Encoding);
+
 				} else {
 					SetBody(reader.ReadToEnd(maxLength, Encoding));
 				}
 			}
 
-			if (string.IsNullOrWhiteSpace(Body) && AlternateViews.Count > 0) {
-				var att = AlternateViews.FirstOrDefault(x => x.ContentType.Is("text/plain"));
-				if (att == null) {
-					att = AlternateViews.FirstOrDefault(x => x.ContentType.Contains("html"));
-				}
-
+			if ((string.IsNullOrWhiteSpace(Body) || ContentType.StartsWith("multipart/")) && AlternateViews.Count > 0) {
+				var att = AlternateViews.GetTextView() ?? AlternateViews.GetHtmlView();
 				if (att != null) {
 					Body = att.Body;
 					ContentTransferEncoding = att.Headers["Content-Transfer-Encoding"].RawValue;

@@ -166,14 +166,19 @@ namespace Tests {
 
 		[TestMethod]
 		public void Get_Several_Messages() {
-			int numMessages = 1000;
+			int numMessages = 10;
 			using (var imap = GetClient<ImapClient>()) {
 				var msgs = imap.GetMessages(0, numMessages - 1, false);
 				msgs.Length.ShouldBe(numMessages);
-				msgs.Count(x => string.IsNullOrEmpty(x.Subject)).ShouldBe(0);
-			}
-			using (var imap = GetClient<ImapClient>()) {
-				var msgs = imap.GetMessages(0, numMessages - 1, true);
+
+				for (var i = 0; i < 1000; i++) {
+					var msg = imap.GetMessage(i);
+					msg.Subject.ShouldNotBeNullOrEmpty();
+					msg.Body.ShouldNotBeNullOrEmpty();
+					msg.ContentType.ShouldStartWith("text/");
+				}
+
+				msgs = imap.GetMessages(0, numMessages - 1, true);
 				msgs.Length.ShouldBe(numMessages);
 				msgs.Count(x => string.IsNullOrEmpty(x.Subject)).ShouldBe(0);
 			}

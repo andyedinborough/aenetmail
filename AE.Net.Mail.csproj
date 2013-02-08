@@ -55,6 +55,7 @@
     <Reference Include="System.Core" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AlternateViewCollection.cs" />
     <Compile Include="Attachment.cs" />
     <Compile Include="Imap\ModifiedUtf7Encoding.cs" />
     <Compile Include="Imap\SearchCondition.cs" />
