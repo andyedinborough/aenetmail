@@ -299,8 +299,7 @@ this is the body text
 
 --XXXXboundary text 
 Content-Type: text/plain;
-Content-Disposition: attachment;
-				filename=""test.txt""
+Content-Disposition: attachment; filename=""test.txt""
 
 this is the attachment text
 
@@ -308,6 +307,82 @@ this is the attachment text
 
 			msg.From.ShouldBe();
 			msg.Attachments.Count.ShouldBe(2);
+			msg.Attachments.All(a => a.GetData().Any().ShouldBe());
+		}
+
+		[TestMethod]
+		public void Nested_Mime_Message() {
+			var msg = GetMessage(@"From: John Doe <example@example.com>
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary=""boundary1""
+
+This is a multipart message in MIME format.
+
+--boundary1 
+Content-Type: multipart/mixed; boundary=""boundary2""
+
+This is a multipart message in MIME format.
+
+--boundary2
+Content-Type: text/plain
+
+this is the body text
+
+--boundary2
+Content-Type: text/html
+
+<strong>this is the body text</strong>
+--boundary2--
+
+--boundary1
+Content-Type: text/html
+Content-Disposition: attachment; filename=""test.html""
+
+<strong>this is the body text</strong>
+
+--boundary1--");
+
+			msg.From.ShouldBe();
+			msg.Attachments.Count.ShouldBe(1);
+			msg.AlternateViews.Count.ShouldBe(2);
+			msg.Attachments.All(a => a.GetData().Any().ShouldBe());
+		}
+
+		[TestMethod]
+		public void Nested_Mime_Message_2() {
+			var msg = GetMessage(@"From: John Doe <example@example.com>
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary=""boundary1""
+
+This is a multipart message in MIME format.
+
+--boundary1
+Content-Type: text/html
+Content-Disposition: attachment; filename=""test.html""
+
+<strong>this is the body text</strong>
+
+--boundary1 
+Content-Type: multipart/mixed; boundary=""boundary2""
+
+This is a multipart message in MIME format.
+
+--boundary2
+Content-Type: text/plain
+
+this is the body text
+
+--boundary2
+Content-Type: text/html
+
+<strong>this is the body text</strong>
+--boundary2--
+
+--boundary1--");
+
+			msg.From.ShouldBe();
+			msg.Attachments.Count.ShouldBe(1);
+			msg.AlternateViews.Count.ShouldBe(2);
 			msg.Attachments.All(a => a.GetData().Any().ShouldBe());
 		}
 
