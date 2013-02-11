@@ -642,9 +642,9 @@ namespace AE.Net.Mail {
 			return m.Groups[1].Value.Trim().Split(' ').Where(x => !string.IsNullOrEmpty(x)).ToArray();
 		}
 
-		public virtual Lazy<MailMessage>[] SearchMessages(SearchCondition criteria, bool headersonly = false) {
+		public virtual Lazy<MailMessage>[] SearchMessages(SearchCondition criteria, bool headersonly = false, bool setseen = true) {
 			return Search(criteria, true)
-					.Select(x => new Lazy<MailMessage>(() => GetMessage(x, headersonly)))
+					.Select(x => new Lazy<MailMessage>(() => GetMessage(x, headersonly, setseen)))
 					.ToArray();
 		}
 
