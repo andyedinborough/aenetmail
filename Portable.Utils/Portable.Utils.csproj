@@ -36,6 +36,7 @@
     <!-- A reference to the entire .NET Framework is automatically included -->
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Extensions.cs" />
     <Compile Include="Lazy.cs" />
     <Compile Include="Mail\Globals.cs" />
     <Compile Include="Mail\MailAddress.cs" />

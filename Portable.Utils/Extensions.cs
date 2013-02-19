@@ -5,13 +5,11 @@ using System.Text;
 
 namespace Portable.Utils
 {
-    public class Lazy<T>
+    public static class Extensions
     {
-        private Func<T> _foo;
- 
-        public Lazy(Func<T> foo)
+        public static Array GetValues(Type type)
         {
-            _foo = foo;
+            throw new NotImplementedException();
         }
     }
 }

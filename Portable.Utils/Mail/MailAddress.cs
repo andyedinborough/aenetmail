@@ -7,5 +7,7 @@ namespace Portable.Utils.Mail
 {
     public class MailAddress
     {
+        public MailAddress(string address)
+        {}
     }
 }

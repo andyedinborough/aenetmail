@@ -5,7 +5,11 @@ using System.Text;
 
 namespace Portable.Utils
 {
-    public class NameValueCollection
+    public class NameValueCollection : Dictionary<string, string>
     {
+        public IEnumerable<string> AllKeys
+        {
+            get { return Keys; }
+        }
     }
 }

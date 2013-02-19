@@ -207,7 +207,13 @@ namespace AE.Net.Mail {
 			return body.ToString();
 		}
 
-		private static Dictionary<string, int> _FlagCache = System.Enum.GetValues(typeof(Flags)).Cast<Flags>().ToDictionary(x => x.ToString(), x => (int)x, StringComparer.OrdinalIgnoreCase);
+		private static Dictionary<string, int> _FlagCache = 
+#if WINDOWS_PHONE 
+            Portable.Utils.Extensions.GetValues(typeof(Flags))
+#else
+            System.Enum.GetValues(typeof(Flags))
+#endif
+.Cast<Flags>().ToDictionary(x => x.ToString(), x => (int)x, StringComparer.OrdinalIgnoreCase);
 		internal void SetFlags(string flags) {
 			RawFlags = flags.Split(' ').Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
 			Flags = (Flags)RawFlags.Select(x => {

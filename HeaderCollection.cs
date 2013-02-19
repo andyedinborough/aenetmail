@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text.RegularExpressions;
 
 #if WINDOWS_PHONE
+using Portable.Utils;
 using Portable.Utils.Mail;
 #else
 using System.Net.Mail;
@@ -124,7 +125,11 @@ namespace AE.Net.Mail {
       {
           var value = this[name].RawValue;
           if (string.IsNullOrEmpty(value)) return default(T);
+#if WINDOWS_PHONE
+          var values = Extensions.GetValues(typeof(T)).Cast<T>().ToArray();
+#else
           var values = System.Enum.GetValues(typeof(T)).Cast<T>().ToArray();
+#endif
           return values.FirstOrDefault(x => x.ToString().Equals(value, StringComparison.OrdinalIgnoreCase));
       }
 

@@ -133,15 +133,23 @@ namespace AE.Net.Mail {
 		}
 
 		public virtual bool TryGetResponse(out string response, int millisecondsTimeout) {
+#if WINDOWS_PHONE
+            var mre = new System.Threading.ManualResetEvent(false);
+#else
 			var mre = new System.Threading.ManualResetEventSlim(false);
+#endif
 			string resp = response = null;
-			ThreadPool.QueueUserWorkItem(_ => {
+			ThreadPool.QueueUserWorkItem((WaitCallback) => {
 				resp = GetResponse();
 				mre.Set();
 			});
 
+#if WINDOWS_PHONE
+			if (mre.WaitOne(millisecondsTimeout)) {
+#else
 			if (mre.Wait(millisecondsTimeout)) {
-				response = resp;
+#endif
+                                                   response = resp;
 				return true;
 			} else
 				return false;
