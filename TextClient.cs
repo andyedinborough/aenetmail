@@ -1,6 +1,12 @@
 ﻿using System;
 using System.IO;
+#if WINDOWS_PHONE
+using SocketEx;
+using NetSecurity = Portable.Utils.Security;
+#else
 using System.Net.Sockets;
+using NetSecurity = System.Net.Security;
+#endif
 
 namespace AE.Net.Mail {
 	public abstract class TextClient : IDisposable {
@@ -16,7 +22,11 @@ namespace AE.Net.Mail {
 		public virtual System.Text.Encoding Encoding { get; set; }
 
 		public TextClient() {
-			Encoding = System.Text.Encoding.GetEncoding(1252);
+#if WINDOWS_PHONE
+            Encoding = System.Text.Encoding.GetEncoding("windows-1252");
+#else
+            Encoding = System.Text.Encoding.GetEncoding(1252);
+#endif
 		}
 
 		internal abstract void OnLogin(string username, string password);
@@ -45,13 +55,17 @@ namespace AE.Net.Mail {
 
 
 		public virtual void Connect(string hostname, int port, bool ssl, bool skipSslValidation) {
-			System.Net.Security.RemoteCertificateValidationCallback validateCertificate = null;
+			NetSecurity.RemoteCertificateValidationCallback validateCertificate = null;
 			if (skipSslValidation)
-				validateCertificate = (sender, cert, chain, err) => true;
+#if WINDOWS_PHONE
+                validateCertificate = (sender, err) => true;
+#else
+                validateCertificate = (sender, cert, chain, err) => true;
+#endif
 			Connect(hostname, port, ssl, validateCertificate);
 		}
 
-		public virtual void Connect(string hostname, int port, bool ssl, System.Net.Security.RemoteCertificateValidationCallback validateCertificate) {
+		public virtual void Connect(string hostname, int port, bool ssl, NetSecurity.RemoteCertificateValidationCallback validateCertificate) {
 			try {
 				Host = hostname;
 				Port = port;
@@ -60,11 +74,11 @@ namespace AE.Net.Mail {
 				_Connection = new TcpClient(hostname, port);
 				_Stream = _Connection.GetStream();
 				if (ssl) {
-					System.Net.Security.SslStream sslStream;
+					NetSecurity.SslStream sslStream;
 					if (validateCertificate != null)
-						sslStream = new System.Net.Security.SslStream(_Stream, false, validateCertificate);
+						sslStream = new NetSecurity.SslStream(_Stream, false, validateCertificate);
 					else
-						sslStream = new System.Net.Security.SslStream(_Stream, false);
+						sslStream = new NetSecurity.SslStream(_Stream, false);
 					_Stream = sslStream;
 					sslStream.AuthenticateAsClient(hostname);
 				}

@@ -1,0 +1,125 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProductVersion>10.0.20506</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{2740770A-B69C-4651-967A-B203FCE1603B}</ProjectGuid>
+    <ProjectTypeGuids>{C089C8C0-30E0-4E22-80C0-CE093F111A43};{fae04ec0-301f-11d3-bf4b-00c04f79efbc}</ProjectTypeGuids>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>AE.Net.Mail.WP7</RootNamespace>
+    <AssemblyName>AE.Net.Mail.WP7</AssemblyName>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+    <SilverlightVersion>$(TargetFrameworkVersion)</SilverlightVersion>
+    <TargetFrameworkProfile>WindowsPhone71</TargetFrameworkProfile>
+    <TargetFrameworkIdentifier>Silverlight</TargetFrameworkIdentifier>
+    <SilverlightApplication>false</SilverlightApplication>
+    <ValidateXaml>true</ValidateXaml>
+    <ThrowErrorsInValidation>true</ThrowErrorsInValidation>
+    <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\</SolutionDir>
+    <RestorePackages>true</RestorePackages>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>Bin\Debug</OutputPath>
+    <DefineConstants>DEBUG;TRACE;SILVERLIGHT;WINDOWS_PHONE</DefineConstants>
+    <NoStdLib>true</NoStdLib>
+    <NoConfig>true</NoConfig>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>Bin\Release</OutputPath>
+    <DefineConstants>TRACE;SILVERLIGHT;WINDOWS_PHONE</DefineConstants>
+    <NoStdLib>true</NoStdLib>
+    <NoConfig>true</NoConfig>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="socketex.tcpclient">
+      <HintPath>..\packages\SocketEx.2.0.0\lib\sl4-wp71\socketex.tcpclient.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Windows" />
+    <Reference Include="system" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Xml" />
+    <Reference Include="System.Net" />
+    <Reference Include="mscorlib.extensions" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\Attachment.cs">
+      <Link>Attachment.cs</Link>
+    </Compile>
+    <Compile Include="..\HeaderCollection.cs">
+      <Link>HeaderCollection.cs</Link>
+    </Compile>
+    <Compile Include="..\HeaderObject.cs">
+      <Link>HeaderObject.cs</Link>
+    </Compile>
+    <Compile Include="..\IMailClient.cs">
+      <Link>IMailClient.cs</Link>
+    </Compile>
+    <Compile Include="..\ImapClient.cs">
+      <Link>ImapClient.cs</Link>
+    </Compile>
+    <Compile Include="..\Imap\Mailbox.cs">
+      <Link>Imap\Mailbox.cs</Link>
+    </Compile>
+    <Compile Include="..\Imap\MessageEventArgs.cs">
+      <Link>Imap\MessageEventArgs.cs</Link>
+    </Compile>
+    <Compile Include="..\Imap\ModifiedUtf7Encoding.cs">
+      <Link>Imap\ModifiedUtf7Encoding.cs</Link>
+    </Compile>
+    <Compile Include="..\Imap\Namespace.cs">
+      <Link>Imap\Namespace.cs</Link>
+    </Compile>
+    <Compile Include="..\Imap\Quota.cs">
+      <Link>Imap\Quota.cs</Link>
+    </Compile>
+    <Compile Include="..\Imap\SearchCondition.cs">
+      <Link>Imap\SearchCondition.cs</Link>
+    </Compile>
+    <Compile Include="..\MailMessage.cs">
+      <Link>MailMessage.cs</Link>
+    </Compile>
+    <Compile Include="..\Pop3Client.cs">
+      <Link>Pop3Client.cs</Link>
+    </Compile>
+    <Compile Include="..\TextClient.cs">
+      <Link>TextClient.cs</Link>
+    </Compile>
+    <Compile Include="..\Utilities.cs">
+      <Link>Utilities.cs</Link>
+    </Compile>
+    <Compile Include="HashSet.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Portable.Utils\Portable.Utils.csproj">
+      <Project>{38728EB5-A47B-4FAE-BF54-446528162067}</Project>
+      <Name>Portable.Utils</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(MSBuildExtensionsPath)\Microsoft\Silverlight for Phone\$(TargetFrameworkVersion)\Microsoft.Silverlight.$(TargetFrameworkProfile).Overrides.targets" />
+  <Import Project="$(MSBuildExtensionsPath)\Microsoft\Silverlight for Phone\$(TargetFrameworkVersion)\Microsoft.Silverlight.CSharp.targets" />
+  <ProjectExtensions />
+  <Import Project="$(SolutionDir)\.nuget\nuget.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>

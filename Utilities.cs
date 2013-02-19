@@ -3,15 +3,25 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Net.Mail;
 using System.Text;
 using System.Text.RegularExpressions;
 
+#if WINDOWS_PHONE
+using WP7Helpers.Common;
+using Portable.Utils.Mail;
+#else
+using System.Net.Mail;
+#endif
+
 namespace AE.Net.Mail {
 	internal static class Utilities {
+#if WINDOWS_PHONE
+	    private static CultureInfo _enUsCulture = CultureInfo.InvariantCulture;
+#else
 		private static CultureInfo _enUsCulture = CultureInfo.GetCultureInfo("en-US");
+#endif
 
-		internal static byte[] Read(this Stream stream, int len) {
+                                        internal static byte[] Read(this Stream stream, int len) {
 			var data = new byte[len];
 			int read, pos = 0;
 			while (pos < len && (read = stream.Read(data, pos, len - pos)) > 0) {

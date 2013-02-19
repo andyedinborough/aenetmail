@@ -48,6 +48,7 @@ error-*.xml
 TestResults\*
 *.vsp
 */Spam/*
+*/packages/*
 packages/*
 bin.*
 *.lorien

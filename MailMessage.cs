@@ -2,7 +2,13 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+#if WINDOWS_PHONE
+using Portable.Utils.Mail;
+using NetMail = Portable.Utils.Mail;
+#else
 using System.Net.Mail;
+using NetMail=System.Net.Mail;
+#endif
 using System.Text;
 
 namespace AE.Net.Mail {
@@ -23,8 +29,8 @@ namespace AE.Net.Mail {
 	}
 
 	public class MailMessage : ObjectWHeaders {
-		public static implicit operator System.Net.Mail.MailMessage(MailMessage msg) {
-			var ret = new System.Net.Mail.MailMessage();
+		public static implicit operator NetMail.MailMessage(MailMessage msg) {
+			var ret = new NetMail.MailMessage();
 			ret.Subject = msg.Subject;
 			ret.Sender = msg.Sender;
 			foreach (var a in msg.Bcc)
@@ -32,15 +38,19 @@ namespace AE.Net.Mail {
 			ret.Body = msg.Body;
 			ret.IsBodyHtml = msg.ContentType.Contains("html");
 			ret.From = msg.From;
-			ret.Priority = (System.Net.Mail.MailPriority)msg.Importance;
+			ret.Priority = (NetMail.MailPriority)msg.Importance;
 			foreach (var a in msg.ReplyTo)
 				ret.ReplyToList.Add(a);
 			foreach (var a in msg.To)
 				ret.To.Add(a);
+#if WINDOWS_PHONE
+            // TODO: Add support for attachments
+#else
 			foreach (var a in msg.Attachments)
-				ret.Attachments.Add(new System.Net.Mail.Attachment(new System.IO.MemoryStream(a.GetData()), a.Filename, a.ContentType));
+				ret.Attachments.Add(new NetMail.Attachment(new System.IO.MemoryStream(a.GetData()), a.Filename, a.ContentType));
 			foreach (var a in msg.AlternateViews)
-				ret.AlternateViews.Add(new System.Net.Mail.AlternateView(new System.IO.MemoryStream(a.GetData()), a.ContentType));
+				ret.AlternateViews.Add(new NetMail.AlternateView(new System.IO.MemoryStream(a.GetData()), a.ContentType));
+#endif
 
 			return ret;
 		}
@@ -63,7 +73,7 @@ namespace AE.Net.Mail {
 
 		public virtual int Size { get; internal set; }
 		public virtual string Subject { get; set; }
-		public virtual ICollection<MailAddress> To { get; private set; }
+		public virtual ICollection<NetMail.MailAddress> To { get; private set; }
 		public virtual ICollection<MailAddress> Cc { get; private set; }
 		public virtual ICollection<MailAddress> Bcc { get; private set; }
 		public virtual ICollection<MailAddress> ReplyTo { get; private set; }

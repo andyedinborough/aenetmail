@@ -8,6 +8,10 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 
+#if WINDOWS_PHONE
+using Portable.Utils;
+#endif
+
 namespace AE.Net.Mail {
 
 	public class ImapClient : TextClient, IMailClient {

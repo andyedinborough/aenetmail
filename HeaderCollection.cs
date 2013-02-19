@@ -1,8 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net.Mail;
 using System.Text.RegularExpressions;
+
+#if WINDOWS_PHONE
+using Portable.Utils.Mail;
+#else
+using System.Net.Mail;
+#endif
 
 namespace AE.Net.Mail {
   public class SafeDictionary<KT, VT> : Dictionary<KT, VT> {
