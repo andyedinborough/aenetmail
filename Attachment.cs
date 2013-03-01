@@ -3,7 +3,13 @@ using System;
 namespace AE.Net.Mail {
 	public class Attachment : ObjectWHeaders {
 		public virtual string Filename {
-			get { return Headers["Content-Disposition"]["filename"].NotEmpty(Headers["Content-Disposition"]["name"]); }
+			get
+			{
+			    return Headers["Content-Disposition"]["filename"].NotEmpty(
+                            Headers["Content-Disposition"]["name"],
+                            Headers["Content-Type"]["filename"],
+                            Headers["Content-Type"]["name"]);
+			}
 		}
 
 		private string _ContentDisposition;

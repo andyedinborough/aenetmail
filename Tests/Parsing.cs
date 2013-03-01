@@ -246,7 +246,7 @@ E-mail Deployment Division
 		[TestMethod]
 		public void Parse_Message_From_iPhone() {
 			var msg = GetMessage(iphoneMessage);
-			msg.Attachments.Count.ShouldBe(2);
+			msg.Attachments.Count.ShouldBe(1);
 			msg.Attachments.All(a => a.GetData().Any().ShouldBe());
 			msg.Subject.ShouldBe("Frånvaro: Örebro Golfklubb - Scorecard");
 			msg.Body.ShouldContain("Due");
@@ -306,7 +306,7 @@ this is the attachment text
 --XXXXboundary text--");
 
 			msg.From.ShouldBe();
-			msg.Attachments.Count.ShouldBe(2);
+			msg.Attachments.Count.ShouldBe(1);
 			msg.Attachments.All(a => a.GetData().Any().ShouldBe());
 		}
 
@@ -385,6 +385,84 @@ Content-Type: text/html
 			msg.AlternateViews.Count.ShouldBe(2);
 			msg.Attachments.All(a => a.GetData().Any().ShouldBe());
 		}
+
+        [TestMethod]
+        public void Attachment_NameInContentType_ReturnsCorrectFileName()
+        {
+            var msg = GetMessage(@"Return-Path: test@domain.com
+Delivered-To: test@domain.com
+Received: from mail.mailer.domain.com ([194.0.194.158])
+	by mail.com
+	; Wed, 27 Feb 2013 16:34:12 +0000
+Message-ID: <D9CD6D0B-0F5F-42E8-859F-53315F761E49@domain.com>
+Received: from TEST11 ([10.2.1.1]) by mailer.domain.com with MailEnable ESMTP; Wed, 27 Feb 2013 16:34:11 +0000
+MIME-Version: 1.0
+From: ""Digital mail""
+ <mail@domain.com>
+To: test@test.com,
+ test@test.com
+Reply-To: test@test.com
+Date: 27 Feb 2013 16:34:11 +0000
+Subject: Test sbuject
+Content-Type: multipart/mixed; boundary=--boundary_0_f0e8cefb-e5b4-4f31-90b9-9d85b3774fc7
+
+
+----boundary_0_f0e8cefb-e5b4-4f31-90b9-9d85b3774fc7
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: quoted-printable
+
+<text>
+----boundary_0_f0e8cefb-e5b4-4f31-90b9-9d85b3774fc7
+Content-Type: application/octet-stream; name=""Filename.pdf""
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment
+
+<attachment>
+----boundary_0_f0e8cefb-e5b4-4f31-90b9-9d85b3774fc7--
+");
+
+            msg.Attachments.Count.ShouldBe(1);
+            msg.Attachments.First().Filename.ShouldBe("Filename.pdf");
+        }
+
+        [TestMethod]
+        public void Attachment_FilenameInContentType_ReturnsCorrectFileName()
+        {
+            var msg = GetMessage(@"Return-Path: test@domain.com
+Delivered-To: test@domain.com
+Received: from mail.mailer.domain.com ([194.0.194.158])
+	by mail.com
+	; Wed, 27 Feb 2013 16:34:12 +0000
+Message-ID: <D9CD6D0B-0F5F-42E8-859F-53315F761E49@domain.com>
+Received: from TEST11 ([10.2.1.1]) by mailer.domain.com with MailEnable ESMTP; Wed, 27 Feb 2013 16:34:11 +0000
+MIME-Version: 1.0
+From: ""Digital mail""
+ <mail@domain.com>
+To: test@test.com,
+ test@test.com
+Reply-To: test@test.com
+Date: 27 Feb 2013 16:34:11 +0000
+Subject: Test sbuject
+Content-Type: multipart/mixed; boundary=--boundary_0_f0e8cefb-e5b4-4f31-90b9-9d85b3774fc7
+
+
+----boundary_0_f0e8cefb-e5b4-4f31-90b9-9d85b3774fc7
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: quoted-printable
+
+<text>
+----boundary_0_f0e8cefb-e5b4-4f31-90b9-9d85b3774fc7
+Content-Type: application/octet-stream; filename=""Filename.pdf""
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment
+
+<attachment>
+----boundary_0_f0e8cefb-e5b4-4f31-90b9-9d85b3774fc7--
+");
+
+            msg.Attachments.Count.ShouldBe(1);
+            msg.Attachments.First().Filename.ShouldBe("Filename.pdf");
+        }
 
 		private AE.Net.Mail.MailMessage GetMessage(string raw) {
 			var msg = new AE.Net.Mail.MailMessage();
