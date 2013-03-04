@@ -43,6 +43,9 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="crypto.wp7">
+      <HintPath>..\Libs\crypto.wp7.dll</HintPath>
+    </Reference>
     <Reference Include="socketex.tcpclient">
       <HintPath>..\packages\SocketEx.2.0.0\lib\sl4-wp71\socketex.tcpclient.dll</HintPath>
     </Reference>

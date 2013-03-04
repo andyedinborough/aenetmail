@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 #if WINDOWS_PHONE
+using Portable.Utils;
 using Portable.Utils.Mail;
 using NetMail = Portable.Utils.Mail;
 #else
@@ -209,7 +210,7 @@ namespace AE.Net.Mail {
 
 		private static Dictionary<string, int> _FlagCache = 
 #if WINDOWS_PHONE 
-            Portable.Utils.Extensions.GetValues(typeof(Flags))
+            Portable.Utils.Extensions.GetValues<Flags>()
 #else
             System.Enum.GetValues(typeof(Flags))
 #endif
@@ -226,7 +227,7 @@ namespace AE.Net.Mail {
 		}
 
 		public virtual void Save(System.IO.Stream stream, Encoding encoding = null) {
-			using (var str = new System.IO.StreamWriter(stream, encoding ?? System.Text.Encoding.Default))
+			using (var str = new System.IO.StreamWriter(stream, encoding ?? EncodingHelper.GetDefault()))
 				Save(str);
 		}
 

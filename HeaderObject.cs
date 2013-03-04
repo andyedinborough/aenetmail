@@ -36,7 +36,8 @@ namespace AE.Net.Mail {
     }
 
 #if WINDOWS_PHONE
-    protected System.Text.Encoding _DefaultEncoding = System.Text.Encoding.GetEncoding("windows-1252");
+    //protected System.Text.Encoding _DefaultEncoding = System.Text.Encoding.GetEncoding("windows-1252");
+    protected System.Text.Encoding _DefaultEncoding = System.Text.Encoding.UTF8;
 #else
     protected System.Text.Encoding _DefaultEncoding = System.Text.Encoding.GetEncoding(1252);
 #endif

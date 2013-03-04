@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 
 namespace Portable.Utils
 {
@@ -10,6 +8,24 @@ namespace Portable.Utils
         public IEnumerable<string> AllKeys
         {
             get { return Keys; }
+        }
+
+        public new string this[String key]
+        {
+            get
+            {
+                string value;
+                if (TryGetValue(key, out value))
+                    return value;
+                return null;
+            }
+            set
+            {
+                if (ContainsKey(key))
+                    base[key] = value;
+                else
+                    Add(key, value);
+            }
         }
     }
 }

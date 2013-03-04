@@ -1,13 +1,17 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-
-namespace Portable.Utils.Mail
+﻿namespace Portable.Utils.Mail
 {
     public class MailAddress
     {
+        private readonly string _address;
+
         public MailAddress(string address)
-        {}
+        {
+            _address = address;
+        }
+
+        public override string ToString()
+        {
+            return _address;
+        }
     }
 }

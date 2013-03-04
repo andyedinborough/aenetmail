@@ -36,15 +36,18 @@
     <!-- A reference to the entire .NET Framework is automatically included -->
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="EncodingHelper.cs" />
     <Compile Include="Extensions.cs" />
     <Compile Include="Lazy.cs" />
     <Compile Include="Mail\Globals.cs" />
     <Compile Include="Mail\MailAddress.cs" />
     <Compile Include="Mail\MailMessage.cs" />
+    <Compile Include="MD5.cs" />
     <Compile Include="NameValueCollection.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Security\Globals.cs" />
-    <Compile Include="Security\SslStream.cs" />
+    <Compile Include="Text\ASCIIIEncoding.cs" />
+    <Compile Include="Text\Iso88591Encoding.cs" />
+    <Compile Include="Text\Iso88592Encoding.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\Portable\$(TargetFrameworkVersion)\Microsoft.Portable.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

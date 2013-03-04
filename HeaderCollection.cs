@@ -126,7 +126,7 @@ namespace AE.Net.Mail {
           var value = this[name].RawValue;
           if (string.IsNullOrEmpty(value)) return default(T);
 #if WINDOWS_PHONE
-          var values = Extensions.GetValues(typeof(T)).Cast<T>().ToArray();
+          var values = Extensions.GetValues<T>().Cast<T>().ToArray();
 #else
           var values = System.Enum.GetValues(typeof(T)).Cast<T>().ToArray();
 #endif
