@@ -130,12 +130,12 @@ namespace AE.Net.Mail {
 			}
 
 			Date = Headers.GetDate();
-			To = Headers.GetAddresses("To").ToList();
-			Cc = Headers.GetAddresses("Cc").ToList();
-			Bcc = Headers.GetAddresses("Bcc").ToList();
-			Sender = Headers.GetAddresses("Sender").FirstOrDefault();
-			ReplyTo = Headers.GetAddresses("Reply-To").ToList();
-			From = Headers.GetAddresses("From").FirstOrDefault();
+			To = Headers.GetMailAddresses("To").ToList();
+			Cc = Headers.GetMailAddresses("Cc").ToList();
+			Bcc = Headers.GetMailAddresses("Bcc").ToList();
+			Sender = Headers.GetMailAddresses("Sender").FirstOrDefault();
+			ReplyTo = Headers.GetMailAddresses("Reply-To").ToList();
+			From = Headers.GetMailAddresses("From").FirstOrDefault();
 			MessageID = Headers["Message-ID"].RawValue;
 
 			Importance = Headers.GetEnum<MailPriority>("Importance");
