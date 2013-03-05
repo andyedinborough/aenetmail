@@ -386,10 +386,9 @@ Content-Type: text/html
 			msg.Attachments.All(a => a.GetData().Any().ShouldBe());
 		}
 
-        [TestMethod]
-        public void Attachment_NameInContentType_ReturnsCorrectFileName()
-        {
-            var msg = GetMessage(@"Return-Path: test@domain.com
+		[TestMethod]
+		public void Attachment_NameInContentType_ReturnsCorrectFileName() {
+			var msg = GetMessage(@"Return-Path: test@domain.com
 Delivered-To: test@domain.com
 Received: from mail.mailer.domain.com ([194.0.194.158])
 	by mail.com
@@ -421,14 +420,13 @@ Content-Disposition: attachment
 ----boundary_0_f0e8cefb-e5b4-4f31-90b9-9d85b3774fc7--
 ");
 
-            msg.Attachments.Count.ShouldBe(1);
-            msg.Attachments.First().Filename.ShouldBe("Filename.pdf");
-        }
+			msg.Attachments.Count.ShouldBe(1);
+			msg.Attachments.First().Filename.ShouldBe("Filename.pdf");
+		}
 
-        [TestMethod]
-        public void Attachment_FilenameInContentType_ReturnsCorrectFileName()
-        {
-            var msg = GetMessage(@"Return-Path: test@domain.com
+		[TestMethod]
+		public void Attachment_FilenameInContentType_ReturnsCorrectFileName() {
+			var msg = GetMessage(@"Return-Path: test@domain.com
 Delivered-To: test@domain.com
 Received: from mail.mailer.domain.com ([194.0.194.158])
 	by mail.com
@@ -460,9 +458,9 @@ Content-Disposition: attachment
 ----boundary_0_f0e8cefb-e5b4-4f31-90b9-9d85b3774fc7--
 ");
 
-            msg.Attachments.Count.ShouldBe(1);
-            msg.Attachments.First().Filename.ShouldBe("Filename.pdf");
-        }
+			msg.Attachments.Count.ShouldBe(1);
+			msg.Attachments.First().Filename.ShouldBe("Filename.pdf");
+		}
 
 		private AE.Net.Mail.MailMessage GetMessage(string raw) {
 			var msg = new AE.Net.Mail.MailMessage();
@@ -485,6 +483,13 @@ Content-Disposition: attachment
 			GetMessage("x");
 			GetMessage("");
 			GetMessage(null);
+		}
+
+		[TestMethod]
+		public void Loose_Base64_Encoding() {
+			var b64 = "SSBkb24ndCB3YW5uYSB3b3JrLCBJIGp1c3Qgd2Fu\nbmEgYmFuZyBvbiBteSBkcnVtcyBhbGwgZGF5IQ";
+			var text = Utilities.DecodeBase64(b64);
+			text.ShouldBe("I don't wanna work, I just wanna bang on my drums all day!");
 		}
 
 	}

@@ -3,12 +3,11 @@ using System;
 namespace AE.Net.Mail {
 	public class Attachment : ObjectWHeaders {
 		public virtual string Filename {
-			get
-			{
-			    return Headers["Content-Disposition"]["filename"].NotEmpty(
-                            Headers["Content-Disposition"]["name"],
-                            Headers["Content-Type"]["filename"],
-                            Headers["Content-Type"]["name"]);
+			get {
+				return Headers["Content-Disposition"]["filename"].NotEmpty(
+													Headers["Content-Disposition"]["name"],
+													Headers["Content-Type"]["filename"],
+													Headers["Content-Type"]["name"]);
 			}
 		}
 
@@ -37,14 +36,15 @@ namespace AE.Net.Mail {
 
 		public virtual byte[] GetData() {
 			byte[] data;
-			if (ContentTransferEncoding.Is("base64") && Utilities.IsValidBase64String(Body)) {
+			var body = Body;
+			if (ContentTransferEncoding.Is("base64") && Utilities.IsValidBase64String(ref body)) {
 				try {
-					data = Convert.FromBase64String(Body);
+					data = Convert.FromBase64String(body);
 				} catch (Exception) {
-					data = Encoding.GetBytes(Body);
+					data = Encoding.GetBytes(body);
 				}
 			} else {
-				data = Encoding.GetBytes(Body);
+				data = Encoding.GetBytes(body);
 			}
 			return data;
 		}

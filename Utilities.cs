@@ -238,7 +238,7 @@ namespace AE.Net.Mail {
 		}
 
 		internal static string DecodeBase64(string data, Encoding encoding = null) {
-			if (!IsValidBase64String(data)) {
+			if (!IsValidBase64String(ref data)) {
 				return data;
 			}
 			var bytes = Convert.FromBase64String(data);
@@ -358,7 +358,7 @@ namespace AE.Net.Mail {
 						'w', 'x', 'y', 'z', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '+', '/'
 				};
 
-		internal static bool IsValidBase64String(string param) {
+		internal static bool IsValidBase64String(ref string param, bool strictPadding = false) {
 			if (param == null) {
 				// null string is not Base64 
 				return false;
@@ -367,25 +367,38 @@ namespace AE.Net.Mail {
 			// replace optional CR and LF characters
 			param = param.Replace("\r", String.Empty).Replace("\n", String.Empty);
 
-			int lengthWPadding = param.Length;
-			if (lengthWPadding == 0 || (lengthWPadding % 4) != 0) {
-				// Base64 string should not be empty
+
+			var lengthWPadding = param.Length;
+			var missingPaddingLength = lengthWPadding % 4;
+			if (missingPaddingLength != 0) {
 				// Base64 string length should be multiple of 4
+				if (strictPadding) {
+					return false;
+				} else {
+					//add the minimum necessary padding
+					if (missingPaddingLength > 2)
+						missingPaddingLength = missingPaddingLength % 2;
+					param += new string(Base64Padding, missingPaddingLength);
+					lengthWPadding += missingPaddingLength;
+					System.Diagnostics.Debug.Assert(lengthWPadding % 4 == 0);
+				}
+			}
+
+			if (lengthWPadding == 0) {
+				// Base64 string should not be empty
 				return false;
 			}
 
 			// replace pad chacters
-			int lengthWOPadding;
-
-			param = param.TrimEnd(Base64Padding);
-			lengthWOPadding = param.Length;
+			var paramWOPadding = param.TrimEnd(Base64Padding);
+			var lengthWOPadding = paramWOPadding.Length;
 
 			if ((lengthWPadding - lengthWOPadding) > 2) {
 				// there should be no more than 2 pad characters
 				return false;
 			}
 
-			foreach (char c in param) {
+			foreach (char c in paramWOPadding) {
 				if (!Base64Characters.Contains(c)) {
 					// string contains non-Base64 character
 					return false;
