@@ -1,4 +1,5 @@
 $name = "AE.Net.Mail";
+
 function create-nuspec() {    
 		$spec = get-text "$name.nuspec"
 		$spec = $spec.Replace("#version#", (get-version("bin\release\$name.dll")))
@@ -17,8 +18,32 @@ function get-version($file) {
 		return [System.Diagnostics.FileVersionInfo]::GetVersionInfo($file).FileVersion
 }
 
+function build($ver) {
+	del "bin\Release" -recurse
+	$flag = "NET" + $ver.Replace(".", "")
+
+	$msbuild_ver = "v4.0.30319"
+	if($ver -eq "3.5") { $msbuild_ver = "v3.5" }
+
+	$msbuild = "C:\Windows\Microsoft.NET\Framework\$msbuild_ver\msbuild.exe"
+	$temp = get-text "$name.csproj"
+	$temp = $temp.Replace("<TargetFrameworkVersion>v4.0</TargetFrameworkVersion>", "<TargetFrameworkVersion>v$ver</TargetFrameworkVersion>")
+	set-content "$name-$ver.csproj" $temp
+	cmd /c "$msbuild $name-$ver.csproj /p:Configuration=Release /p:DefineConstants=""RELEASE;$flag"""
+	rm "$name-$ver.csproj"
+}
+
+function deploy($ver) {
+	$dir = "net" + $ver.Replace(".", "")
+	md "bin\Package\lib\$dir\"
+	build $ver
+	copy "bin\Release\*.*" "bin\Package\lib\$dir\"
+}
+
 del "bin\Package" -recurse
-md "bin\Package\lib\net40" 
-copy "bin\Release\*.*" "bin\Package\lib\net40"
+#deploy "3.5"
+deploy "4.0"
+deploy "4.5"
+
 create-nuspec
 .nuget\NuGet.exe pack "bin\Package\$name.nuspec" /o "bin\Package"
