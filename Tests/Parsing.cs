@@ -232,6 +232,10 @@ E-mail Deployment Division
 			test = Utilities.DecodeWords("=?iso-8859-1?Q?h=E9llo=5Fthere?=");
 			test.ShouldBe("héllo_there");
 
+			var invalid = @"=\c";
+			test = Utilities.DecodeQuotedPrintable(invalid);
+			test.ShouldBe(invalid);
+
 			var msg = GetMessage(quotedPrintable);
 			msg.Body.ShouldContain("E-mail Deployment Division");
 		}
@@ -491,6 +495,5 @@ Content-Disposition: attachment
 			var text = Utilities.DecodeBase64(b64);
 			text.ShouldBe("I don't wanna work, I just wanna bang on my drums all day!");
 		}
-
 	}
 }

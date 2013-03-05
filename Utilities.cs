@@ -210,6 +210,7 @@ namespace AE.Net.Mail {
 			var data = System.Text.Encoding.ASCII.GetBytes(value);
 			var eq = Convert.ToByte('=');
 			var n = 0;
+
 			for (int i = 0; i < data.Length; i++) {
 				var b = data[i];
 
@@ -223,9 +224,14 @@ namespace AE.Net.Mail {
 						continue;
 					}
 
-					data[n] = (byte)int.Parse(value.Substring(i + 1, 2), NumberStyles.HexNumber);
-					n++;
-					i += 2;
+					if (byte.TryParse(value.Substring(i + 1, 2), NumberStyles.HexNumber, null, out b)) {
+						data[n] = (byte)b;
+						n++;
+						i += 2;
+					} else {
+						data[i] = eq;
+						n++;
+					}
 
 				} else {
 					data[n] = b;
