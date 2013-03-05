@@ -123,40 +123,45 @@ namespace AE.Net.Mail {
           return values.FirstOrDefault(x => x.ToString().Equals(value, StringComparison.OrdinalIgnoreCase));
       }
 
-      public virtual MailAddress[] GetAddresses(string header)
+      public virtual MailAddress[] GetMailAddresses(string header)
       {
-          string values = this[header].RawValue.Trim();
-          List<MailAddress> addrs = new List<MailAddress>();
-          while (true)
-          {
-              int semicolon = values.IndexOf(';');
-              int comma = values.IndexOf(',');
-              if (comma < semicolon || semicolon == -1) semicolon = comma;
+          const int notFound = -1;
 
-              int bracket = values.IndexOf('>');
-              string temp = null;
-              if (semicolon == -1 && bracket == -1)
+          var mailAddresses = new List<MailAddress>();
+
+          var headerValue = this[header].RawValue.Trim();
+
+          var mailAddressStartIndex = 0;
+          var mailAddressEndIndex = 0;
+
+          while (mailAddressEndIndex < headerValue.Length)
+          {
+              // Start searching for the next comma by skipping the previous mailAddressEndIndex
+              mailAddressEndIndex = headerValue.IndexOf(',', mailAddressEndIndex);
+
+              if (mailAddressEndIndex == notFound)
               {
-                  if (values.Length > 0) addrs.Add(values.ToEmailAddress());
-                  return addrs.Where(x => x != null).ToArray();
+                  mailAddressEndIndex = headerValue.Length;
+              }
+
+              var possibleMailAddress = headerValue.Substring(mailAddressStartIndex, mailAddressEndIndex - mailAddressStartIndex);
+
+              var mailAddress = possibleMailAddress.Trim().ToEmailAddress();
+
+              if (mailAddress != null)
+              {
+                  mailAddresses.Add(mailAddress);
+                  mailAddressStartIndex = mailAddressEndIndex + 1;
+                  mailAddressEndIndex = mailAddressStartIndex;
               }
               else
               {
-                  if (bracket > -1 && (semicolon == -1 || bracket < semicolon))
-                  {
-                      temp = values.Substring(0, bracket + 1);
-                      values = values.Substring(temp.Length);
-                  }
-                  else if (semicolon > -1 && (bracket == -1 || semicolon < bracket))
-                  {
-                      temp = values.Substring(0, semicolon);
-                      values = values.Substring(semicolon + 1);
-                  }
-                  if (temp.Length > 0)
-                      addrs.Add(temp.Trim().ToEmailAddress());
-                  values = values.Trim();
+                  // Inscrease the end index by one so the search for the next comma skips beyond the previous found comma
+                  mailAddressEndIndex++;
               }
           }
+
+          return mailAddresses.ToArray();
       }
 
       public static HeaderDictionary Parse(string headers, System.Text.Encoding encoding)
