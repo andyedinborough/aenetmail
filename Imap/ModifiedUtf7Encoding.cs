@@ -27,7 +27,12 @@ namespace AE.Net.Mail.Imap
                 if (indexOfMinus > 0) {
                     string substring = result.Substring(indexOfAmpersand + 1, indexOfMinus - indexOfAmpersand - 1);
                     string modifiedBase64 = "+" + substring.Replace(',', '/');
-                    result = result.Replace("&" + substring + "-", EncodingHelper.GetUTF7().GetString(Encoding.UTF8.GetBytes(modifiedBase64)));
+                    result = result.Replace("&" + substring + "-", 
+#if WINDOWS_PHONE
+                        EncodingHelper.DecodeUTF7(Encoding.UTF8.GetBytes(modifiedBase64)));
+#else
+                        EncodingHelper.GetUTF7().GetString(Encoding.UTF8.GetBytes(modifiedBase64)));
+#endif
                 }
             }
 
@@ -77,7 +82,13 @@ namespace AE.Net.Mail.Imap
         }
 
         private static string EncodeNonPrintableAsciiString(string nonAsciiString) {
-            return Encoding.UTF8.GetString(EncodingHelper.GetUTF7().GetBytes(nonAsciiString)).Replace('/', ',').Replace('+', '&');
+            return Encoding.UTF8.GetString(
+#if WINDOWS_PHONE
+                EncodingHelper.EncodeUTF7(nonAsciiString))
+#else
+                EncodingHelper.GetUTF7().GetBytes(nonAsciiString))
+#endif
+                    .Replace('/', ',').Replace('+', '&');
         }
 
         private static bool IsPrintableAscii(char c) {

@@ -290,7 +290,7 @@ namespace AE.Net.Mail {
                 return EncodingHelper.GetIso88591();
 		    if (characterSet.Equals("iso-8859-2", StringComparison.InvariantCultureIgnoreCase))
 		        return EncodingHelper.GetIso88592();
-		    if (characterSet.Equals("UTF-8"))
+            if (characterSet.Equals("UTF-8", StringComparison.InvariantCultureIgnoreCase))
 		        return Encoding.UTF8;
 
 		    throw new NotSupportedException();

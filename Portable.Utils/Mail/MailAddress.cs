@@ -13,5 +13,13 @@
         {
             return _address;
         }
+
+        public string DisplayName
+        {
+            get
+            {
+                return _address.Contains("<") ? _address.Split('<')[0].Trim() : _address;
+            }
+        }
     }
 }

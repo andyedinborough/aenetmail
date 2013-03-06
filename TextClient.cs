@@ -82,7 +82,7 @@ namespace AE.Net.Mail {
 #if WINDOWS_PHONE
                 if (ssl)
                 {
-                    TlsProtocolHandler handler = new TlsProtocolHandler(_Stream);
+                    var handler = new TlsProtocolHandler(_Stream);
                     handler.Connect(new AlwaysValidVerifyer());
                     _Stream = handler.Stream;
                 }

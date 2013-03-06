@@ -1,4 +1,7 @@
-﻿using System.Text;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
 using Portable.Utils.Text;
 
 namespace Portable.Utils
@@ -24,11 +27,6 @@ namespace Portable.Utils
             return encoding.GetString(array, 0, array.Length);
         }
 
-        public static Encoding GetUTF7()
-        {
-            throw new System.NotImplementedException();
-        }
-
         public static Encoding GetIso88591()
         {
             return _iso88591 ?? (_iso88591 = new Iso88591Encoding());
@@ -37,6 +35,16 @@ namespace Portable.Utils
         public static Encoding GetIso88592()
         {
             return _iso88592 ?? (_iso88592 = new Iso88592Encoding());
+        }
+
+        public static byte[] EncodeUTF7(string nonAsciiString)
+        {
+            throw new NotImplementedException();
+        }
+
+        public static string DecodeUTF7(byte[] bytes)
+        {
+            throw new NotImplementedException();
         }
     }
 }

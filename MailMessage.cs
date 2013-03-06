@@ -257,5 +257,13 @@ namespace AE.Net.Mail {
 			//todo: attachments
 			txt.Write(Body);
 		}
-	}
+
+#if WINDOWS_PHONE
+        public string GmailLabels { get; set; }
+
+        public string GmailThreadId { get; set; }
+
+        public string GmailMessageId { get; set; }
+#endif
+    }
 }

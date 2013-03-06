@@ -433,9 +433,13 @@ namespace AE.Net.Mail {
 
 				if (imapHeaders["Flags"] != null)
 					mail.SetFlags(imapHeaders["Flags"]);
+#if WINDOWS_PHONE
+				mail.GmailLabels = imapHeaders["X-GM-LABELS"];
+				mail.GmailThreadId = imapHeaders["X-GM-THRID"];
+				mail.GmailMessageId = imapHeaders["X-GM-MSGID"];
+#endif
 
-
-				mail.Load(_Stream, headersonly, mail.Size);
+                mail.Load(_Stream, headersonly, mail.Size);
 
                 foreach (var key in imapHeaders.AllKeys.Except(new[] { "UID", "Flags", "BODY[]", "BODY[HEADER]" }, StringComparer.OrdinalIgnoreCase))
                     mail.Headers.Add(key, new HeaderValue(imapHeaders[key]));
