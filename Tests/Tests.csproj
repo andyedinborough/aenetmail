@@ -57,6 +57,7 @@
     <Compile Include="Clients.cs" />
     <Compile Include="Shouldly.cs" />
     <Compile Include="HeaderDictionary.cs" />
+    <Compile Include="Attachment.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\AE.Net.Mail.csproj">
