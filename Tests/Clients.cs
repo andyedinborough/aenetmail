@@ -135,7 +135,7 @@ namespace Tests {
 			using (var client = GetClient<ImapClient>()) {
 				var msg = client.SearchMessages(SearchCondition.Subject("aenetmail").And(SearchCondition.Subject("#49"))).Select(x => x.Value).FirstOrDefault();
 				msg.ShouldBe();
-				msg.AlternateViews.FirstOrDefault(x => x.ContentType.Contains("html")).Body.ShouldBe();
+				msg.AlternateViews.FirstOrDefault(x => x.ContentType.MediaType.Contains("html")).Body.ShouldBe();
 			}
 		}
 
@@ -175,7 +175,7 @@ namespace Tests {
 					var msg = imap.GetMessage(i);
 					msg.Subject.ShouldNotBeNullOrEmpty();
 					msg.Body.ShouldNotBeNullOrEmpty();
-					msg.ContentType.ShouldStartWith("text/");
+					msg.ContentType.MediaType.ShouldStartWith("text/");
 				}
 
 				msgs = imap.GetMessages(0, numMessages - 1, true);
