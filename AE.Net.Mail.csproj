@@ -74,6 +74,7 @@
     <Compile Include="Imap\Quota.cs" />
     <Compile Include="Pop3Client.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="WarningEventArgs.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="AE.Net.Mail.nuspec">

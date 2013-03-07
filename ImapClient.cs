@@ -356,12 +356,14 @@ namespace AE.Net.Mail {
 		public virtual void DownloadMessage(System.IO.Stream stream, int index, bool setseen) {
 			GetMessages((index + 1).ToString(), (index + 1).ToString(), false, false, setseen, (message, size, headers) => {
 				Utilities.CopyStream(message, stream, size);
+				return null;
 			});
 		}
 
 		public virtual void DownloadMessage(System.IO.Stream stream, string uid, bool setseen) {
 			GetMessages(uid, uid, true, false, setseen, (message, size, headers) => {
 				Utilities.CopyStream(message, stream, size);
+				return null;
 			});
 		}
 
@@ -384,12 +386,14 @@ namespace AE.Net.Mail {
 					mail.Headers.Add(key, new HeaderValue(imapHeaders[key]));
 
 				x.Add(mail);
+
+				return mail;
 			});
 
 			return x.ToArray();
 		}
 
-		public virtual void GetMessages(string start, string end, bool uid, bool headersonly, bool setseen, Action<System.IO.Stream, int, NameValueCollection> action) {
+		public virtual void GetMessages(string start, string end, bool uid, bool headersonly, bool setseen, Func<System.IO.Stream, int, NameValueCollection, MailMessage> action) {
 			CheckMailboxSelected();
 			IdlePause();
 
@@ -413,11 +417,14 @@ namespace AE.Net.Mail {
 
 				var imapHeaders = Utilities.ParseImapHeader(response.Substring(response.IndexOf('(') + 1));
 				var size = (imapHeaders["BODY[HEADER]"] ?? imapHeaders["BODY[]"]).Trim('{', '}').ToInt();
-				action(_Stream, size, imapHeaders);
+				var msg = action(_Stream, size, imapHeaders);
 
 				response = GetResponse();
 				var n = response.Trim().LastOrDefault();
-				System.Diagnostics.Debug.Assert(n == ')');
+				if (n != ')') {
+					System.Diagnostics.Debugger.Break();
+					RaiseWarning(null, "Expected \")\" in stream, but received \"" + response + "\"");
+				}
 			}
 
 			IdleResume();

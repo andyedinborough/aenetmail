@@ -15,6 +15,15 @@ namespace AE.Net.Mail {
 		public virtual bool IsDisposed { get; private set; }
 		public virtual System.Text.Encoding Encoding { get; set; }
 
+		public event EventHandler<WarningEventArgs> Warning;
+
+		protected virtual void RaiseWarning(MailMessage mailMessage, string message) {
+			var warning = Warning;
+			if (warning != null) {
+				warning(this, new WarningEventArgs { MailMessage = mailMessage, Message = message });
+			}
+		}
+
 		public TextClient() {
 			Encoding = System.Text.Encoding.GetEncoding(1252);
 		}
