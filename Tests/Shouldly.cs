@@ -13,7 +13,7 @@ namespace Shouldly {
 		}
 
 		public static bool ShouldNotBe(this bool input) {
-			input.ShouldNotBe(false);
+			input.ShouldNotBe(true);
 			return input;
 		}
 

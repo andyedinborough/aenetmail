@@ -50,6 +50,7 @@
     </CodeAnalysisDependentAssemblyPaths>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AttachmentTests.cs" />
     <Compile Include="ModifiedUtf7EncodingTest.cs" />
     <Compile Include="Parsing.cs" />
     <Compile Include="ParseSpam.cs" />
