@@ -232,6 +232,10 @@ E-mail Deployment Division
 			test = Utilities.DecodeWords("=?iso-8859-1?Q?h=E9llo=5Fthere?=");
 			test.ShouldBe("héllo_there");
 
+			var invalid = @"=\c";
+			test = Utilities.DecodeQuotedPrintable(invalid);
+			test.ShouldBe(invalid);
+
 			var msg = GetMessage(quotedPrintable);
 			msg.Body.ShouldContain("E-mail Deployment Division");
 		}
@@ -246,7 +250,7 @@ E-mail Deployment Division
 		[TestMethod]
 		public void Parse_Message_From_iPhone() {
 			var msg = GetMessage(iphoneMessage);
-			msg.Attachments.Count.ShouldBe(2);
+			msg.Attachments.Count.ShouldBe(1);
 			msg.Attachments.All(a => a.GetData().Any().ShouldBe());
 			msg.Subject.ShouldBe("Frånvaro: Örebro Golfklubb - Scorecard");
 			msg.Body.ShouldContain("Due");
@@ -299,16 +303,167 @@ this is the body text
 
 --XXXXboundary text 
 Content-Type: text/plain;
-Content-Disposition: attachment;
-				filename=""test.txt""
+Content-Disposition: attachment; filename=""test.txt""
 
 this is the attachment text
 
 --XXXXboundary text--");
 
 			msg.From.ShouldBe();
-			msg.Attachments.Count.ShouldBe(2);
+			msg.Attachments.Count.ShouldBe(1);
 			msg.Attachments.All(a => a.GetData().Any().ShouldBe());
+		}
+
+		[TestMethod]
+		public void Nested_Mime_Message() {
+			var msg = GetMessage(@"From: John Doe <example@example.com>
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary=""boundary1""
+
+This is a multipart message in MIME format.
+
+--boundary1 
+Content-Type: multipart/mixed; boundary=""boundary2""
+
+This is a multipart message in MIME format.
+
+--boundary2
+Content-Type: text/plain
+
+this is the body text
+
+--boundary2
+Content-Type: text/html
+
+<strong>this is the body text</strong>
+--boundary2--
+
+--boundary1
+Content-Type: text/html
+Content-Disposition: attachment; filename=""test.html""
+
+<strong>this is the body text</strong>
+
+--boundary1--");
+
+			msg.From.ShouldBe();
+			msg.Attachments.Count.ShouldBe(1);
+			msg.AlternateViews.Count.ShouldBe(2);
+			msg.Attachments.All(a => a.GetData().Any().ShouldBe());
+		}
+
+		[TestMethod]
+		public void Nested_Mime_Message_2() {
+			var msg = GetMessage(@"From: John Doe <example@example.com>
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary=""boundary1""
+
+This is a multipart message in MIME format.
+
+--boundary1
+Content-Type: text/html
+Content-Disposition: attachment; filename=""test.html""
+
+<strong>this is the body text</strong>
+
+--boundary1 
+Content-Type: multipart/mixed; boundary=""boundary2""
+
+This is a multipart message in MIME format.
+
+--boundary2
+Content-Type: text/plain
+
+this is the body text
+
+--boundary2
+Content-Type: text/html
+
+<strong>this is the body text</strong>
+--boundary2--
+
+--boundary1--");
+
+			msg.From.ShouldBe();
+			msg.Attachments.Count.ShouldBe(1);
+			msg.AlternateViews.Count.ShouldBe(2);
+			msg.Attachments.All(a => a.GetData().Any().ShouldBe());
+		}
+
+		[TestMethod]
+		public void Attachment_NameInContentType_ReturnsCorrectFileName() {
+			var msg = GetMessage(@"Return-Path: test@domain.com
+Delivered-To: test@domain.com
+Received: from mail.mailer.domain.com ([194.0.194.158])
+	by mail.com
+	; Wed, 27 Feb 2013 16:34:12 +0000
+Message-ID: <D9CD6D0B-0F5F-42E8-859F-53315F761E49@domain.com>
+Received: from TEST11 ([10.2.1.1]) by mailer.domain.com with MailEnable ESMTP; Wed, 27 Feb 2013 16:34:11 +0000
+MIME-Version: 1.0
+From: ""Digital mail""
+ <mail@domain.com>
+To: test@test.com,
+ test@test.com
+Reply-To: test@test.com
+Date: 27 Feb 2013 16:34:11 +0000
+Subject: Test sbuject
+Content-Type: multipart/mixed; boundary=--boundary_0_f0e8cefb-e5b4-4f31-90b9-9d85b3774fc7
+
+
+----boundary_0_f0e8cefb-e5b4-4f31-90b9-9d85b3774fc7
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: quoted-printable
+
+<text>
+----boundary_0_f0e8cefb-e5b4-4f31-90b9-9d85b3774fc7
+Content-Type: application/octet-stream; name=""Filename.pdf""
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment
+
+<attachment>
+----boundary_0_f0e8cefb-e5b4-4f31-90b9-9d85b3774fc7--
+");
+
+			msg.Attachments.Count.ShouldBe(1);
+			msg.Attachments.First().Filename.ShouldBe("Filename.pdf");
+		}
+
+		[TestMethod]
+		public void Attachment_FilenameInContentType_ReturnsCorrectFileName() {
+			var msg = GetMessage(@"Return-Path: test@domain.com
+Delivered-To: test@domain.com
+Received: from mail.mailer.domain.com ([194.0.194.158])
+	by mail.com
+	; Wed, 27 Feb 2013 16:34:12 +0000
+Message-ID: <D9CD6D0B-0F5F-42E8-859F-53315F761E49@domain.com>
+Received: from TEST11 ([10.2.1.1]) by mailer.domain.com with MailEnable ESMTP; Wed, 27 Feb 2013 16:34:11 +0000
+MIME-Version: 1.0
+From: ""Digital mail""
+ <mail@domain.com>
+To: test@test.com,
+ test@test.com
+Reply-To: test@test.com
+Date: 27 Feb 2013 16:34:11 +0000
+Subject: Test sbuject
+Content-Type: multipart/mixed; boundary=--boundary_0_f0e8cefb-e5b4-4f31-90b9-9d85b3774fc7
+
+
+----boundary_0_f0e8cefb-e5b4-4f31-90b9-9d85b3774fc7
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: quoted-printable
+
+<text>
+----boundary_0_f0e8cefb-e5b4-4f31-90b9-9d85b3774fc7
+Content-Type: application/octet-stream; filename=""Filename.pdf""
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment
+
+<attachment>
+----boundary_0_f0e8cefb-e5b4-4f31-90b9-9d85b3774fc7--
+");
+
+			msg.Attachments.Count.ShouldBe(1);
+			msg.Attachments.First().Filename.ShouldBe("Filename.pdf");
 		}
 
 		private AE.Net.Mail.MailMessage GetMessage(string raw) {
@@ -334,5 +489,11 @@ this is the attachment text
 			GetMessage(null);
 		}
 
+		[TestMethod]
+		public void Loose_Base64_Encoding() {
+			var b64 = "SSBkb24ndCB3YW5uYSB3b3JrLCBJIGp1c3Qgd2Fu\nbmEgYmFuZyBvbiBteSBkcnVtcyBhbGwgZGF5IQ";
+			var text = Utilities.DecodeBase64(b64);
+			text.ShouldBe("I don't wanna work, I just wanna bang on my drums all day!");
+		}
 	}
 }

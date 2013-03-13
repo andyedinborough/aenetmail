@@ -74,7 +74,7 @@ namespace AE.Net.Mail {
 			}
 		}
 
-		private void IdleStart() {
+		protected virtual void IdleStart() {
 			if (string.IsNullOrEmpty(_SelectedMailbox)) {
 				SelectMailbox("Inbox");
 			}
@@ -86,7 +86,7 @@ namespace AE.Net.Mail {
 			IdleResume();
 		}
 
-		private void IdlePause() {
+		protected virtual void IdlePause() {
 			if (_IdleEvents == null || !_Idling)
 				return;
 
@@ -97,7 +97,7 @@ namespace AE.Net.Mail {
 			_IdleEvents = null;
 		}
 
-		private void IdleResume() {
+		protected virtual void IdleResume() {
 			if (!_Idling)
 				return;
 
@@ -121,7 +121,7 @@ namespace AE.Net.Mail {
 			}
 		}
 
-		private void IdleStop() {
+		protected virtual void IdleStop() {
 			_Idling = false;
 			IdlePause();
 			if (_IdleEvents != null) {
@@ -195,7 +195,7 @@ namespace AE.Net.Mail {
 		public virtual void AppendMail(MailMessage email, string mailbox = null) {
 			IdlePause();
 
-		    mailbox = ModifiedUtf7Encoding.Encode(mailbox);
+			mailbox = ModifiedUtf7Encoding.Encode(mailbox);
 			string flags = String.Empty;
 			var body = new StringBuilder();
 			using (var txt = new System.IO.StringWriter(body))
@@ -273,7 +273,7 @@ namespace AE.Net.Mail {
 
 		public virtual void DeleteMailbox(string mailbox) {
 			IdlePause();
-            string command = GetTag() + "DELETE " + ModifiedUtf7Encoding.Encode(mailbox).QuoteString();
+			string command = GetTag() + "DELETE " + ModifiedUtf7Encoding.Encode(mailbox).QuoteString();
 			SendCommandCheckOK(command);
 			IdleResume();
 		}
@@ -283,7 +283,7 @@ namespace AE.Net.Mail {
 
 			Mailbox x = null;
 			string tag = GetTag();
-            string command = tag + "EXAMINE " + ModifiedUtf7Encoding.Encode(mailbox).QuoteString();
+			string command = tag + "EXAMINE " + ModifiedUtf7Encoding.Encode(mailbox).QuoteString();
 			string response = SendCommandGetResponse(command);
 			if (response.StartsWith("*")) {
 				x = new Mailbox(mailbox);
@@ -336,7 +336,7 @@ namespace AE.Net.Mail {
 			DeleteMessage(uid);
 		}
 
-		private void CheckMailboxSelected() {
+		protected virtual void CheckMailboxSelected() {
 			if (string.IsNullOrEmpty(_SelectedMailbox))
 				SelectMailbox("INBOX");
 		}
@@ -365,43 +365,47 @@ namespace AE.Net.Mail {
 			return GetMessages((startIndex + 1).ToString(), (endIndex + 1).ToString(), false, headersonly, setseen);
 		}
 
-		internal static NameValueCollection ParseImapHeader(string data) {
-			var values = new NameValueCollection();
-			string name = null;
-			int nump = 0;
-			var temp = new StringBuilder();
-			if (data != null)
-				foreach (var c in data) {
-					if (c == ' ') {
-						if (name == null) {
-							name = temp.ToString();
-							temp.Clear();
+		public virtual void DownloadMessage(System.IO.Stream stream, int index, bool setseen) {
+			GetMessages((index + 1).ToString(), (index + 1).ToString(), false, false, setseen, (message, size, headers) => {
+				Utilities.CopyStream(message, stream, size);
+				return null;
+			});
+		}
 
-						} else if (nump == 0) {
-							values[name] = temp.ToString();
-							name = null;
-							temp.Clear();
-						} else
-							temp.Append(c);
-					} else if (c == '(') {
-						if (nump > 0)
-							temp.Append(c);
-						nump++;
-					} else if (c == ')') {
-						nump--;
-						if (nump > 0)
-							temp.Append(c);
-					} else
-						temp.Append(c);
-				}
-
-			if (name != null)
-				values[name] = temp.ToString();
-
-			return values;
+		public virtual void DownloadMessage(System.IO.Stream stream, string uid, bool setseen) {
+			GetMessages(uid, uid, true, false, setseen, (message, size, headers) => {
+				Utilities.CopyStream(message, stream, size);
+				return null;
+			});
 		}
 
 		public virtual MailMessage[] GetMessages(string start, string end, bool uid, bool headersonly, bool setseen) {
+			var x = new List<MailMessage>();
+
+			GetMessages(start, end, uid, headersonly, setseen, (stream, size, imapHeaders) => {
+				var mail = new MailMessage { Encoding = Encoding };
+				mail.Size = size;
+
+				if (imapHeaders["UID"] != null)
+					mail.Uid = imapHeaders["UID"];
+
+				if (imapHeaders["Flags"] != null)
+					mail.SetFlags(imapHeaders["Flags"]);
+
+				mail.Load(_Stream, headersonly, mail.Size);
+
+				foreach (var key in imapHeaders.AllKeys.Except(new[] { "UID", "Flags", "BODY[]", "BODY[HEADER]" }, StringComparer.OrdinalIgnoreCase))
+					mail.Headers.Add(key, new HeaderValue(imapHeaders[key]));
+
+				x.Add(mail);
+
+				return mail;
+			});
+
+			return x.ToArray();
+		}
+
+		public virtual void GetMessages(string start, string end, bool uid, bool headersonly, bool setseen, Func<System.IO.Stream, int, NameValueCollection, MailMessage> action) {
 			CheckMailboxSelected();
 			IdlePause();
 
@@ -413,7 +417,6 @@ namespace AE.Net.Mail {
 				+ "[" + (headersonly ? "HEADER" : null) + "])";
 
 			string response;
-			var x = new List<MailMessage>();
 
 			SendCommand(command);
 			while (true) {
@@ -424,34 +427,19 @@ namespace AE.Net.Mail {
 				if (response[0] != '*' || !response.Contains("FETCH ("))
 					continue;
 
-				var mail = new MailMessage { Encoding = Encoding };
-				var imapHeaders = ParseImapHeader(response.Substring(response.IndexOf('(') + 1));
-				mail.Size = (imapHeaders["BODY[HEADER]"] ?? imapHeaders["BODY[]"]).Trim('{', '}').ToInt();
+				var imapHeaders = Utilities.ParseImapHeader(response.Substring(response.IndexOf('(') + 1));
+				var size = (imapHeaders["BODY[HEADER]"] ?? imapHeaders["BODY[]"]).Trim('{', '}').ToInt();
+				var msg = action(_Stream, size, imapHeaders);
 
-				if (imapHeaders["UID"] != null)
-					mail.Uid = imapHeaders["UID"];
-
-				if (imapHeaders["Flags"] != null)
-					mail.SetFlags(imapHeaders["Flags"]);
-#if WINDOWS_PHONE
-				mail.GmailLabels = imapHeaders["X-GM-LABELS"];
-				mail.GmailThreadId = imapHeaders["X-GM-THRID"];
-				mail.GmailMessageId = imapHeaders["X-GM-MSGID"];
-#endif
-
-                mail.Load(_Stream, headersonly, mail.Size);
-
-                foreach (var key in imapHeaders.AllKeys.Except(new[] { "UID", "Flags", "BODY[]", "BODY[HEADER]" }, StringComparer.OrdinalIgnoreCase))
-                    mail.Headers.Add(key, new HeaderValue(imapHeaders[key]));
-
-				var n = Convert.ToChar(_Stream.ReadByte());
-				System.Diagnostics.Debug.Assert(n == ')');
-
-				x.Add(mail);
+				response = GetResponse();
+				var n = response.Trim().LastOrDefault();
+				if (n != ')') {
+					System.Diagnostics.Debugger.Break();
+					RaiseWarning(null, "Expected \")\" in stream, but received \"" + response + "\"");
+				}
 			}
 
 			IdleResume();
-			return x.ToArray();
 		}
 
 		public virtual Quota GetQuota(string mailbox) {
@@ -460,7 +448,7 @@ namespace AE.Net.Mail {
 			IdlePause();
 
 			Quota quota = null;
-            string command = GetTag() + "GETQUOTAROOT " + ModifiedUtf7Encoding.Encode(mailbox).QuoteString();
+			string command = GetTag() + "GETQUOTAROOT " + ModifiedUtf7Encoding.Encode(mailbox).QuoteString();
 			string response = SendCommandGetResponse(command);
 			string reg = "\\* QUOTA (.*?) \\((.*?) (.*?) (.*?)\\)";
 			while (response.StartsWith("*")) {
@@ -680,19 +668,19 @@ namespace AE.Net.Mail {
 			return m.Groups[1].Value.Trim().Split(' ').Where(x => !string.IsNullOrEmpty(x)).ToArray();
 		}
 
-		public virtual Lazy<MailMessage>[] SearchMessages(SearchCondition criteria, bool headersonly = false) {
+		public virtual Lazy<MailMessage>[] SearchMessages(SearchCondition criteria, bool headersonly = false, bool setseen = false) {
 			return Search(criteria, true)
-					.Select(x => new Lazy<MailMessage>(() => GetMessage(x, headersonly)))
+					.Select(x => new Lazy<MailMessage>(() => GetMessage(x, headersonly, setseen)))
 					.ToArray();
 		}
 
 		public virtual Mailbox SelectMailbox(string mailbox) {
 			IdlePause();
 
-		    mailbox = ModifiedUtf7Encoding.Encode(mailbox);
+			mailbox = ModifiedUtf7Encoding.Encode(mailbox);
 			Mailbox x = null;
 			string tag = GetTag();
-            string command = tag + "SELECT " + mailbox.QuoteString();
+			string command = tag + "SELECT " + mailbox.QuoteString();
 			string response = SendCommandGetResponse(command);
 			if (response.StartsWith("*")) {
 				x = new Mailbox(mailbox);
@@ -770,7 +758,7 @@ namespace AE.Net.Mail {
 		public virtual void SuscribeMailbox(string mailbox) {
 			IdlePause();
 
-            string command = GetTag() + "SUBSCRIBE " + ModifiedUtf7Encoding.Encode(mailbox).QuoteString();
+			string command = GetTag() + "SUBSCRIBE " + ModifiedUtf7Encoding.Encode(mailbox).QuoteString();
 			SendCommandCheckOK(command);
 			IdleResume();
 		}
@@ -778,7 +766,7 @@ namespace AE.Net.Mail {
 		public virtual void UnSuscribeMailbox(string mailbox) {
 			IdlePause();
 
-            string command = GetTag() + "UNSUBSCRIBE " + ModifiedUtf7Encoding.Encode(mailbox).QuoteString();
+			string command = GetTag() + "UNSUBSCRIBE " + ModifiedUtf7Encoding.Encode(mailbox).QuoteString();
 			SendCommandCheckOK(command);
 			IdleResume();
 		}

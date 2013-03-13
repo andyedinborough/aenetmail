@@ -22,7 +22,17 @@ namespace AE.Net.Mail {
 		public virtual bool IsDisposed { get; private set; }
 		public virtual System.Text.Encoding Encoding { get; set; }
 
+		public event EventHandler<WarningEventArgs> Warning;
+
+		protected virtual void RaiseWarning(MailMessage mailMessage, string message) {
+			var warning = Warning;
+			if (warning != null) {
+				warning(this, new WarningEventArgs { MailMessage = mailMessage, Message = message });
+			}
+		}
+
 		public TextClient() {
+
 #if WINDOWS_PHONE
             //Encoding = System.Text.Encoding.GetEncoding("windows-1252");
             Encoding = System.Text.Encoding.UTF8;

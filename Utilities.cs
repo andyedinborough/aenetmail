@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -22,7 +23,55 @@ namespace AE.Net.Mail {
 		private static CultureInfo _enUsCulture = CultureInfo.GetCultureInfo("en-US");
 #endif
 
-                                        internal static byte[] Read(this Stream stream, int len) {
+		internal static void CopyStream(Stream a, Stream b, int maxLength, int bufferSize = 8192) {
+			int read;
+			var buffer = new byte[bufferSize];
+			while (maxLength > 0) {
+				read = Math.Min(bufferSize, maxLength);
+				read = a.Read(buffer, 0, read);
+				if (read == 0) return;
+				maxLength -= read;
+				b.Write(buffer, 0, read);
+			}
+		}
+
+		public static NameValueCollection ParseImapHeader(string data) {
+			var values = new NameValueCollection();
+			string name = null;
+			int nump = 0;
+			var temp = new StringBuilder();
+			if (data != null)
+				foreach (var c in data) {
+					if (c == ' ') {
+						if (name == null) {
+							name = temp.ToString();
+							temp.Clear();
+
+						} else if (nump == 0) {
+							values[name] = temp.ToString();
+							name = null;
+							temp.Clear();
+						} else
+							temp.Append(c);
+					} else if (c == '(') {
+						if (nump > 0)
+							temp.Append(c);
+						nump++;
+					} else if (c == ')') {
+						nump--;
+						if (nump > 0)
+							temp.Append(c);
+					} else
+						temp.Append(c);
+				}
+
+			if (name != null)
+				values[name] = temp.ToString();
+
+			return values;
+		}
+
+		internal static byte[] Read(this Stream stream, int len) {
 			var data = new byte[len];
 			int read, pos = 0;
 			while (pos < len && (read = stream.Read(data, pos, len - pos)) > 0) {
@@ -131,7 +180,7 @@ namespace AE.Net.Mail {
 		private static Regex rxTimeZoneMinutes = new Regex(@"([\+\-]?\d{1,2})(\d{2})$", RegexOptions.Compiled); //search can be strict because the format has already been normalized
 		private static Regex rxNegativeHours = new Regex(@"(?<=\s)\-(?=\d{1,2}\:)", RegexOptions.Compiled);
 
-		internal static string NormalizeDate(string value) {
+		public static string NormalizeDate(string value) {
 			value = rxTimeZoneName.Replace(value, string.Empty);
 			value = rxTimeZoneColon.Replace(value, match => " " + match.Groups[1].Value + match.Groups[2].Value.PadLeft(2, '0') + match.Groups[3].Value);
 			value = rxNegativeHours.Replace(value, string.Empty);
@@ -161,7 +210,7 @@ namespace AE.Net.Mail {
 			return chr == ' ' || chr == '\t' || chr == '\n' || chr == '\r';
 		}
 
-		internal static string DecodeQuotedPrintable(string value, Encoding encoding = null) {
+		public static string DecodeQuotedPrintable(string value, Encoding encoding = null) {
 			if (encoding == null) {
 				encoding = EncodingHelper.GetDefault();
 			}
@@ -172,6 +221,7 @@ namespace AE.Net.Mail {
 			var data = EncodingHelper.GetASCII().GetBytes(value);
 			var eq = Convert.ToByte('=');
 			var n = 0;
+
 			for (int i = 0; i < data.Length; i++) {
 				var b = data[i];
 
@@ -185,9 +235,14 @@ namespace AE.Net.Mail {
 						continue;
 					}
 
-					data[n] = (byte)int.Parse(value.Substring(i + 1, 2), NumberStyles.HexNumber);
-					n++;
-					i += 2;
+					if (byte.TryParse(value.Substring(i + 1, 2), NumberStyles.HexNumber, null, out b)) {
+						data[n] = (byte)b;
+						n++;
+						i += 2;
+					} else {
+						data[i] = eq;
+						n++;
+					}
 
 				} else {
 					data[n] = b;
@@ -200,7 +255,7 @@ namespace AE.Net.Mail {
 		}
 
 		internal static string DecodeBase64(string data, Encoding encoding = null) {
-			if (!IsValidBase64String(data)) {
+			if (!IsValidBase64String(ref data)) {
 				return data;
 			}
 			var bytes = Convert.FromBase64String(data);
@@ -331,7 +386,7 @@ namespace AE.Net.Mail {
 						'w', 'x', 'y', 'z', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '+', '/'
 				};
 
-		internal static bool IsValidBase64String(string param) {
+		internal static bool IsValidBase64String(ref string param, bool strictPadding = false) {
 			if (param == null) {
 				// null string is not Base64 
 				return false;
@@ -340,25 +395,38 @@ namespace AE.Net.Mail {
 			// replace optional CR and LF characters
 			param = param.Replace("\r", String.Empty).Replace("\n", String.Empty);
 
-			int lengthWPadding = param.Length;
-			if (lengthWPadding == 0 || (lengthWPadding % 4) != 0) {
-				// Base64 string should not be empty
+
+			var lengthWPadding = param.Length;
+			var missingPaddingLength = lengthWPadding % 4;
+			if (missingPaddingLength != 0) {
 				// Base64 string length should be multiple of 4
+				if (strictPadding) {
+					return false;
+				} else {
+					//add the minimum necessary padding
+					if (missingPaddingLength > 2)
+						missingPaddingLength = missingPaddingLength % 2;
+					param += new string(Base64Padding, missingPaddingLength);
+					lengthWPadding += missingPaddingLength;
+					System.Diagnostics.Debug.Assert(lengthWPadding % 4 == 0);
+				}
+			}
+
+			if (lengthWPadding == 0) {
+				// Base64 string should not be empty
 				return false;
 			}
 
 			// replace pad chacters
-			int lengthWOPadding;
-
-			param = param.TrimEnd(Base64Padding);
-			lengthWOPadding = param.Length;
+			var paramWOPadding = param.TrimEnd(Base64Padding);
+			var lengthWOPadding = paramWOPadding.Length;
 
 			if ((lengthWPadding - lengthWOPadding) > 2) {
 				// there should be no more than 2 pad characters
 				return false;
 			}
 
-			foreach (char c in param) {
+			foreach (char c in paramWOPadding) {
 				if (!Base64Characters.Contains(c)) {
 					// string contains non-Base64 character
 					return false;

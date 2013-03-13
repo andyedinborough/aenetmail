@@ -33,20 +33,6 @@ namespace AE.Net.Mail {
 			return int.Parse(result.Split(' ')[1]);
 		}
 
-		//public virtual string[] GetMessageIDs() {
-		//    CheckConnectionStatus();
-		//    string result = SendCommandGetResponse("LIST");
-		//    List<string> ids = new List<string>();
-		//    while (result != ".") {
-		//        result = _Reader.ReadLine();
-		//        int i = result.IndexOf(' ');
-		//        if (i > -1)
-		//            ids.Add(result.Substring(0, i + 1));
-		//    }
-
-		//    return ids.ToArray();
-		//}
-
 		public virtual MailMessage GetMessage(int index, bool headersOnly = false) {
 			return GetMessage((index + 1).ToString(), headersOnly);
 		}
@@ -64,7 +50,12 @@ namespace AE.Net.Mail {
 			var last = GetResponse();
 			if (string.IsNullOrEmpty(last))
 				last = GetResponse();
-			System.Diagnostics.Debug.Assert(last == ".");
+
+			if (last != ".") {
+				System.Diagnostics.Debugger.Break();
+				RaiseWarning(msg, "Expected \".\" in stream, but received \"" + last + "\"");
+			}
+
 			return msg;
 		}
 
