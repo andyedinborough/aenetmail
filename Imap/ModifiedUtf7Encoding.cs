@@ -29,7 +29,7 @@ namespace AE.Net.Mail.Imap
                     string modifiedBase64 = "+" + substring.Replace(',', '/');
                     result = result.Replace("&" + substring + "-", 
 #if WINDOWS_PHONE
-                        EncodingHelper.DecodeUTF7(Encoding.UTF8.GetBytes(modifiedBase64)));
+                        EncodingHelper.DecodeUTF7(modifiedBase64));
 #else
                         EncodingHelper.GetUTF7().GetString(Encoding.UTF8.GetBytes(modifiedBase64)));
 #endif

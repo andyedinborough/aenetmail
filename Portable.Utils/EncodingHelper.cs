@@ -42,9 +42,38 @@ namespace Portable.Utils
             throw new NotImplementedException();
         }
 
-        public static string DecodeUTF7(byte[] bytes)
+        public static string DecodeUTF7(string modifiedBase64)
         {
-            throw new NotImplementedException();
+            if (modifiedBase64.StartsWith("+"))
+                modifiedBase64 = modifiedBase64.Substring(1);
+
+            Int16 curr = 0, overflow = 0;
+            short bits = 0;
+            string result = string.Empty;
+
+            for (int i = 0; i < modifiedBase64.Length; ++i)
+            {
+                var index = (Int16)ModifiedBase64.IndexOf(modifiedBase64[i]);
+                if (bits + 6 < 16)
+                {
+                    curr = (Int16)(curr << 6 | index);
+                    bits += 6;
+                }
+                else
+                {
+                    var remaining = (16 - bits);
+                    var leftover = (6 - remaining);
+
+                    curr = (Int16)(curr << remaining | (index >> leftover));
+                    result += Convert.ToChar(curr);
+                    bits = (Int16)(index & (powers[leftover]));
+                }
+            }
+
+            return result;
         }
+
+        private static Int16[] powers = new Int16[] { 1, 3, 7, 15, 31, 63 };
+        private const string ModifiedBase64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
     }
 }
