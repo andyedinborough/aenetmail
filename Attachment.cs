@@ -12,16 +12,16 @@ namespace AE.Net.Mail {
 			}
 		}
 
-		private ContentDisposition _ContentDisposition;
+		private ContentDisposition _contentDisposition;
 		public ContentDisposition ContentDisposition {
 			get {
-				if (_ContentDisposition == null) {
+				if (_contentDisposition == null) {
 					var value = Headers["Content-Disposition"].ToString();
-					_ContentDisposition = string.IsNullOrEmpty(value)
-						? new ContentDisposition { Inline = true }
+					_contentDisposition = string.IsNullOrEmpty(value)
+						? new ContentDisposition { Inline = false }
 						: new ContentDisposition(value);
 				}
-				return _ContentDisposition;
+				return _contentDisposition;
 			}
 		}
 
