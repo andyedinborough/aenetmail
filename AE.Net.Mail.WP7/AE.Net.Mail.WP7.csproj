@@ -57,6 +57,9 @@
     <Reference Include="mscorlib.extensions" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="..\AlternateViewCollection.cs">
+      <Link>AlternateViewCollection.cs</Link>
+    </Compile>
     <Compile Include="..\Attachment.cs">
       <Link>Attachment.cs</Link>
     </Compile>
@@ -101,6 +104,9 @@
     </Compile>
     <Compile Include="..\Utilities.cs">
       <Link>Utilities.cs</Link>
+    </Compile>
+    <Compile Include="..\WarningEventArgs.cs">
+      <Link>WarningEventArgs.cs</Link>
     </Compile>
     <Compile Include="HashSet.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
