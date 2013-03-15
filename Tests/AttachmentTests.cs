@@ -50,11 +50,11 @@ namespace Tests
         }
 
         [TestMethod]
-        public void Inline_NoContentDisposition_False()
+        public void Inline_NoContentDisposition_True()
         {
             var attachment = new Attachment { Headers = new HeaderDictionary() };
 
-            attachment.ContentDisposition.Inline.ShouldNotBe();
+            attachment.ContentDisposition.Inline.ShouldBe();
         }
     }
 }

@@ -32,7 +32,7 @@ namespace AE.Net.Mail {
 			var semicolon = value.IndexOf(';');
 			if (semicolon > 0) {
 				_Values[string.Empty] = value.Substring(0, semicolon).Trim();
-				value = value.Substring(semicolon).Trim();
+				value = value.Substring(semicolon + 1).Trim();
 				ParseValues(_Values, value);
 			}
 		}
@@ -51,15 +51,23 @@ namespace AE.Net.Mail {
 
 				var value = header = header.Substring(Math.Min(header.Length, eq + 1)).Trim();
 
-				if (value.StartsWith("\"")) {
-					ProcessValue(1, ref header, ref value, '"');
-				} else if (value.StartsWith("'")) {
-					ProcessValue(1, ref header, ref value, '\'');
-				} else {
-					ProcessValue(0, ref header, ref value, ' ', ',', ';');
-				}
+			    if (!string.IsNullOrWhiteSpace(value))
+			    {
+			        if (value.StartsWith("\""))
+			        {
+			            ProcessValue(1, ref header, ref value, '"');
+			        }
+			        else if (value.StartsWith("'"))
+			        {
+			            ProcessValue(1, ref header, ref value, '\'');
+			        }
+			        else
+			        {
+			            ProcessValue(0, ref header, ref value, ' ', ',', ';');
+			        }
 
-				result.Set(name, value);
+			        result.Set(name, value);
+			    }
 			}
 		}
 

@@ -25,7 +25,7 @@ namespace AE.Net.Mail {
 		public virtual ContentType ContentType {
 			get {
 				if (_ContentType == null)
-					_ContentType = new ContentType(Headers["Content-Type"].ToString());
+					_ContentType = new ContentType(Headers["Content-Type"].Value);
 				return _ContentType;
 			}
 		}
