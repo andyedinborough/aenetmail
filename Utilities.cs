@@ -591,5 +591,25 @@ YEKT +05"
 				}
 		}
 		 */
+
+        /// <summary>
+        /// Removes all Diacritics from a string. For example: é -> e
+        /// </summary>
+        public static String RemoveDiacritics(this String value)
+        {
+            var stringBuilder = new StringBuilder();
+
+            var normalizedString = value.Normalize(NormalizationForm.FormD);
+
+            foreach (var character in normalizedString)
+            {
+                if (CharUnicodeInfo.GetUnicodeCategory(character) != UnicodeCategory.NonSpacingMark)
+                {
+                    stringBuilder.Append(character);
+                }
+            }
+
+            return stringBuilder.ToString();
+        }
 	}
 }
