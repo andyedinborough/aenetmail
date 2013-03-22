@@ -56,5 +56,14 @@ namespace Tests
 
             attachment.ContentDisposition.Inline.ShouldBe();
         }
+
+        [TestMethod]
+        public void Inline_ContentDispositionInlineWithFileNameWithExoticCharacter_True()
+        {
+            var attachment = new Attachment { Headers = new HeaderDictionary { { "Content-Disposition", new HeaderValue(@"attachment;filename=""2013135 Charité.pdf""") } } };
+
+            attachment.ContentDisposition.Inline.ShouldNotBe();
+            attachment.ContentDisposition.FileName.ShouldBe("2013135 Charite.pdf");
+        }
     }
 }

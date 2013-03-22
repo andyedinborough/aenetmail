@@ -15,8 +15,10 @@ namespace AE.Net.Mail {
 		private ContentDisposition _contentDisposition;
 		public ContentDisposition ContentDisposition {
 			get {
-				if (_contentDisposition == null) {
-					var value = Headers["Content-Disposition"].RawValue;
+				if (_contentDisposition == null)
+				{
+				    var value = Headers["Content-Disposition"].RawValue.RemoveDiacritics();
+
 					_contentDisposition = string.IsNullOrEmpty(value)
 						? new ContentDisposition { Inline = true }
 						: new ContentDisposition(value);
