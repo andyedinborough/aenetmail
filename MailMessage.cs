@@ -3,7 +3,8 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
-#if WINDOWS_PHONE
+
+#if WINDOWS_PHONE || PORTABLE_LIB
 using Portable.Utils;
 using Portable.Utils.Mail;
 using NetMail = Portable.Utils.Mail;

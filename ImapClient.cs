@@ -14,7 +14,7 @@ using Portable.Utils;
 
 namespace AE.Net.Mail {
 
-	public class ImapClient : TextClient, IMailClient {
+	public class ImapClient : TextClient, IMailClient, IImapClient {
 		private string _SelectedMailbox;
 		private int _tag = 0;
 		private string[] _Capability;

@@ -7,7 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 
-#if WINDOWS_PHONE
+#if WINDOWS_PHONE || PORTABLE_LIB
 using Portable.Utils;
 using WP7Helpers.Common;
 using Portable.Utils.Mail;
@@ -17,7 +17,7 @@ using System.Net.Mail;
 
 namespace AE.Net.Mail {
 	internal static class Utilities {
-#if WINDOWS_PHONE
+#if WINDOWS_PHONE || PORTABLE_LIB
 	    private static CultureInfo _enUsCulture = CultureInfo.InvariantCulture;
 #else
 		private static CultureInfo _enUsCulture = CultureInfo.GetCultureInfo("en-US");

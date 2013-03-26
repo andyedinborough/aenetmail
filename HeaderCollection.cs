@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 
-#if WINDOWS_PHONE
+#if WINDOWS_PHONE || PORTABLE_LIB
 using Portable.Utils;
 using Portable.Utils.Mail;
 #else

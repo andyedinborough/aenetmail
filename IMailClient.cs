@@ -1,5 +1,9 @@
 ﻿using System;
 
+#if PORTABLE_LIB
+using Portable.Utils.Mail;
+#endif
+
 namespace AE.Net.Mail {
 	public interface IMailClient : IDisposable {
 		int GetMessageCount();
