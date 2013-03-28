@@ -1,26 +1,37 @@
 using System;
+using System.Net.Mime;
 
 namespace AE.Net.Mail {
 	public class Attachment : ObjectWHeaders {
 		public virtual string Filename {
 			get {
 				return Headers["Content-Disposition"]["filename"].NotEmpty(
-													Headers["Content-Disposition"]["name"],
-													Headers["Content-Type"]["filename"],
-													Headers["Content-Type"]["name"]);
+					Headers["Content-Disposition"]["name"],
+					Headers["Content-Type"]["filename"],
+					Headers["Content-Type"]["name"]);
 			}
 		}
 
-		private string _ContentDisposition;
-		private string ContentDisposition {
-			get { return _ContentDisposition ?? (_ContentDisposition = Headers["Content-Disposition"].Value.ToLower()); }
+		private ContentDisposition _contentDisposition;
+		public ContentDisposition ContentDisposition {
+			get {
+				if (_contentDisposition == null)
+				{
+				    var value = Headers["Content-Disposition"].RawValue.RemoveDiacritics();
+
+					_contentDisposition = string.IsNullOrEmpty(value)
+						? new ContentDisposition { Inline = true }
+						: new ContentDisposition(value);
+				}
+				return _contentDisposition;
+			}
 		}
 
 		public virtual bool OnServer { get; internal set; }
 
 		internal bool IsAttachment {
 			get {
-				return ContentDisposition == "attachment" || !string.IsNullOrEmpty(Filename);
+				return ContentDisposition.DispositionType == DispositionTypeNames.Attachment || !string.IsNullOrEmpty(Filename);
 			}
 		}
 

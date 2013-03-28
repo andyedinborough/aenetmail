@@ -495,5 +495,91 @@ Content-Disposition: attachment
 			var text = Utilities.DecodeBase64(b64);
 			text.ShouldBe("I don't wanna work, I just wanna bang on my drums all day!");
 		}
+
+        [TestMethod]
+		public void ParsesCorrectly()
+        {
+            GetMessage(MailWithTextHtmlMultiView);
+        }
+
+	    private const string MailWithTextHtmlMultiView = @"Return-Path: testmailaddress+caf_=domaintool=application.com@gmail.com
+Delivered-To: user.123@mailtodomain.com
+Received: from mxscan0.Mailer.nl ([195.74.65.130])
+	by mailtodomain.com
+	; Sun, 10 Mar 2013 15:04:29 +0000
+Received: from s03.application.com (s03.application.com [195.248.77.90])
+	by mxscan0.Mailer.nl (Postfix) with ESMTP id 48CA211735C
+	for <user.123@mailtodomain.com>; Sun, 10 Mar 2013 16:04:25 +0100 (CET)
+Received: (qmail 6983 invoked by uid 110); 10 Mar 2013 16:04:25 +0100
+Delivered-To: 91-domaintool@application.com
+Received: (qmail 6978 invoked from network); 10 Mar 2013 16:04:25 +0100
+Received: from mail-wi0-f179.google.com (209.85.212.179)
+  by s03.application.com with (RC4-SHA encrypted) SMTP; 10 Mar 2013 16:04:25 +0100
+Received: by mail-wi0-f179.google.com with SMTP id ez12so477129wid.6
+        for <domaintool@application.com>; Sun, 10 Mar 2013 08:04:24 -0700 (PDT)
+X-Received: by 10.180.94.135 with SMTP id dc7mr7694160wib.11.1362927864382;
+        Sun, 10 Mar 2013 08:04:24 -0700 (PDT)
+X-Forwarded-To: domaintool@application.com
+X-Forwarded-For: testmailaddress@gmail.com domaintool@application.com
+Delivered-To: testmailaddress@gmail.com
+Received: by 10.194.152.231 with SMTP id vb7csp16691wjb;
+        Sun, 10 Mar 2013 08:04:23 -0700 (PDT)
+X-Received: by 10.14.0.135 with SMTP id 7mr26885876eeb.5.1362927863116;
+        Sun, 10 Mar 2013 08:04:23 -0700 (PDT)
+Received: from mxscan0.Mailer.nl (mxscan0.Mailer.nl. [195.74.65.130])
+        by mx.google.com with ESMTP id a1si22070761eez.115.2013.03.10.08.04.22;
+        Sun, 10 Mar 2013 08:04:23 -0700 (PDT)
+Received-SPF: softfail (google.com: domain of transitioning user@application.com does not designate 185.74.65.130 as permitted sender) client-ip=185.74.65.130;
+Authentication-Results: mx.google.com;
+       spf=softfail (google.com: domain of transitioning user@application.com does not designate 185.74.65.130 as permitted sender) smtp.mail=user@application.com
+Received: from s03.application.com (s03.application.com [195.248.77.90])
+	by mxscan0.Mailer.nl (Postfix) with ESMTP id CE2A211735C
+	for <testmailaddress@gmail.com>; Sun, 10 Mar 2013 16:04:19 +0100 (CET)
+Received: (qmail 6964 invoked by uid 110); 10 Mar 2013 16:04:19 +0100
+Delivered-To: 91-testmailaddress@application.com
+Received: (qmail 6943 invoked by uid 110); 10 Mar 2013 16:04:19 +0100
+Delivered-To: 91-othermailaddress@application.com
+Received: (qmail 6919 invoked by uid 48); 10 Mar 2013 16:04:19 +0100
+To: othermailaddress@application.com
+Subject: Factuur
+Date: Sun, 10 Mar 2013 16:04:19 +0100
+From: Administratie || user Media <user@application.com>
+Reply-to: user@application.com
+Message-ID: <c77c8671dbe63ccd55830ce570bf0a32@www.application.com>
+X-Priority: 3
+X-Mailer: PHPMailer [version 1.72]
+MIME-Version: 1.0
+Content-Type: multipart/mixed;
+	boundary=""b1_c77c8671dbe63ccd55830ce570bf0a32""
+X-Mailer-MailScanner: Found to be clean, Found to be clean
+X-Mailer-MailScanner-SpamCheck: not spam, SpamAssassin (not cached,
+	score=-0.789, required 6, BAYES_00 -1.90, HTML_MESSAGE 0.00,
+	HTML_MIME_NO_HTML_TAG 0.38, MIME_HTML_ONLY 0.72,
+	T_OBFU_PDF_ATTACH 0.01), not spam, SpamAssassin (cached, score=-0.789,
+	required 6, BAYES_00 -1.90, HTML_MESSAGE 0.00,
+	HTML_MIME_NO_HTML_TAG 0.38, MIME_HTML_ONLY 0.72,
+	T_OBFU_PDF_ATTACH 0.01)
+X-Spam-Status: No, No
+X-Mailer-MailScanner-Information: Please contact support@Mailer.nl for more information.
+X-Mailer-MailScanner-ID: 48CA211735C.AFA71
+X-Mailer-MailScanner-From: testmailaddress+caf_=domaintool=application.com@gmail.com
+
+
+--b1_c77c8671dbe63ccd55830ce570bf0a32
+Content-Type: text/html; charset = ""iso-8859-1""; 
+Content-Transfer-Encoding: quoted-printable
+
+Body
+
+--b1_c77c8671dbe63ccd55830ce570bf0a32
+Content-Type: application/octet-stream; name=""attachment.pdf""
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment; filename=""attachment.pdf""
+
+Attachment
+
+
+--b1_c77c8671dbe63ccd55830ce570bf0a32--
+";
 	}
 }

@@ -21,7 +21,7 @@ namespace AE.Net.Mail {
 		/// <param name="predicate"></param>
 		/// <returns></returns>
 		public IEnumerable<Attachment> OfType(Func<string, bool> predicate) {
-			return this.Where(x => predicate((x.ContentType ?? string.Empty).Trim()));
+			return this.Where(x => predicate(x.ContentType.MediaType));
 		}
 
 		public Attachment GetHtmlView() {

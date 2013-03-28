@@ -31,7 +31,7 @@ namespace AE.Net.Mail {
 			foreach (var a in msg.Bcc)
 				ret.Bcc.Add(a);
 			ret.Body = msg.Body;
-			ret.IsBodyHtml = msg.ContentType.Contains("html");
+			ret.IsBodyHtml = msg.ContentType.MediaType.Contains("html");
 			ret.From = msg.From;
 			ret.Priority = (System.Net.Mail.MailPriority)msg.Importance;
 			foreach (var a in msg.ReplyTo)
@@ -39,7 +39,7 @@ namespace AE.Net.Mail {
 			foreach (var a in msg.To)
 				ret.To.Add(a);
 			foreach (var a in msg.Attachments)
-				ret.Attachments.Add(new System.Net.Mail.Attachment(new System.IO.MemoryStream(a.GetData()), a.Filename, a.ContentType));
+				ret.Attachments.Add(new System.Net.Mail.Attachment(new System.IO.MemoryStream(a.GetData()), a.Filename, a.ContentType.MediaType));
 			foreach (var a in msg.AlternateViews)
 				ret.AlternateViews.Add(new System.Net.Mail.AlternateView(new System.IO.MemoryStream(a.GetData()), a.ContentType));
 
@@ -120,12 +120,12 @@ namespace AE.Net.Mail {
 				}
 			}
 
-			if ((string.IsNullOrWhiteSpace(Body) || ContentType.StartsWith("multipart/")) && AlternateViews.Count > 0) {
+			if ((string.IsNullOrWhiteSpace(Body) || ContentType.MediaType.StartsWith("multipart/")) && AlternateViews.Count > 0) {
 				var att = AlternateViews.GetTextView() ?? AlternateViews.GetHtmlView();
 				if (att != null) {
 					Body = att.Body;
 					ContentTransferEncoding = att.Headers["Content-Transfer-Encoding"].RawValue;
-					ContentType = att.Headers["Content-Type"].RawValue;
+					SetContentType( att.Headers["Content-Type"].RawValue);
 				}
 			}
 

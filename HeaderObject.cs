@@ -1,5 +1,6 @@
-﻿
-using System;
+﻿using System;
+using System.Net.Mime;
+
 namespace AE.Net.Mail {
 	public abstract class ObjectWHeaders {
 		public virtual string RawHeaders { get; internal set; }
@@ -20,11 +21,17 @@ namespace AE.Net.Mail {
 			}
 		}
 
-		public virtual string ContentType {
-			get { return Headers["Content-Type"].Value.NotEmpty("text/plain"); }
-			internal set {
-				Headers.Set("Content-Type", new HeaderValue(value));
+		private ContentType _ContentType;
+		public virtual ContentType ContentType {
+			get {
+				if (_ContentType == null)
+					_ContentType = new ContentType(Headers["Content-Type"].Value);
+				return _ContentType;
 			}
+		}
+		internal void SetContentType(string value) {
+			Headers.Set("Content-Type", new HeaderValue(value));
+			_ContentType = null;
 		}
 
 		public virtual string Charset {
@@ -56,7 +63,7 @@ namespace AE.Net.Mail {
 
 			} else if (ContentTransferEncoding.Is("base64")
 				//only decode the content if it is a text document
-							&& ContentType.StartsWith("text/", StringComparison.OrdinalIgnoreCase)
+							&& ContentType.MediaType.StartsWith("text/", StringComparison.OrdinalIgnoreCase)
 							&& Utilities.IsValidBase64String(ref value)) {
 				var data = Convert.FromBase64String(value);
 				using (var mem = new System.IO.MemoryStream(data))
