@@ -502,6 +502,16 @@ Content-Disposition: attachment
             GetMessage(MailWithTextHtmlMultiView);
         }
 
+        [TestMethod]
+        public void ParsesCorrectlyWithoutBody()
+        {
+            var message = GetMessage(DocuMate);
+
+            Assert.AreEqual(1, message.Attachments.Count);
+
+            Assert.AreEqual("file.pdf", message.Attachments.First().Filename);
+        }
+
 	    private const string MailWithTextHtmlMultiView = @"Return-Path: testmailaddress+caf_=domaintool=application.com@gmail.com
 Delivered-To: user.123@mailtodomain.com
 Received: from mxscan0.Mailer.nl ([195.74.65.130])
@@ -580,6 +590,49 @@ Attachment
 
 
 --b1_c77c8671dbe63ccd55830ce570bf0a32--
+";
+
+        private const string DocuMate = @"Return-Path: scanner@domain.com
+Delivered-To: user@domain.com
+Received: from relay.sub.domain.nl ([64.230.2.11])
+	by mailtobasecone.com
+	; Wed, 27 Mar 2013 15:21:13 +0000
+Received: from [84.233.13.84] (helo=office.domain.com)
+	by relay.domain.net with esmtp (Exim 4.80)
+	(envelope-from <scanner@domain.com>)
+	id 1UKsA1-000843-Ry
+	for user@mailtodomain.com; Wed, 27 Mar 2013 16:21:12 +0100
+Received: from DocuMate39203F ([192.168.0.40]) by office.domain.com with Microsoft SMTPSVC(6.0.3790.4675);
+	 Wed, 27 Mar 2013 16:18:47 +0100
+Date: 
+From: scanner@domain.nl
+To: user@domain.com
+Subject: Scan DocuMate
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary=""abcdfwefjsdvsdfg""
+Message-ID: <001SERVER1XvpFVjCRG0000002c@office.domain.com>
+X-OriginalArrivalTime: 27 Mar 2013 15:18:47.0640 (UTC) FILETIME=[60EB0D80:01CE2AFE]
+
+
+--abcdfwefjsdvsdfg
+
+
+--abcdfwefjsdvsdfg
+Content-Type: text/plain; charset=us-ascii
+
+
+=================================================================
+
+--abcdfwefjsdvsdfg
+Content-Type: application/octet-stream; name=""file.pdf""
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment; filename=""file.pdf""
+
+DATA
+
+--abcdfwefjsdvsdfg--
+
+
 ";
 	}
 }
