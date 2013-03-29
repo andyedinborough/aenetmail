@@ -520,7 +520,9 @@ namespace AE.Net.Mail {
 					break;
 
 				case AuthMethods.SaslOAuth:
-					command = tag + "AUTHENTICATE XOAUTH " + password;
+                    			string sasl = "user=" + login + "\x01" +  "auth=Bearer " + password + "\x01" + "\x01";
+                    			string base64 = Convert.ToBase64String(Encoding.GetBytes(sasl));
+					command = tag + "AUTHENTICATE XOAUTH2 " + base64;
 					result = SendCommandGetResponse(command);
 					break;
 
@@ -528,13 +530,20 @@ namespace AE.Net.Mail {
 					throw new NotSupportedException();
 			}
 
-			if (result.StartsWith("* CAPABILITY ")) {
+		        if (result.StartsWith("* CAPABILITY "))
+			{
 				_Capability = result.Substring(13).Trim().Split(' ');
 				result = GetResponse();
 			}
 
 			if (!result.StartsWith(tag + "OK")) {
-				throw new Exception(result);
+                		if (result.StartsWith("+ ") && result.EndsWith("=="))
+                		{
+                    			string jsonErr = Utilities.DecodeBase64(result.Substring(2),System.Text.Encoding.UTF7);
+                    			throw new Exception(jsonErr);
+                		}
+                		else
+                    		throw new Exception(result);
 			}
 
 			//if (Supports("COMPRESS=DEFLATE")) {
