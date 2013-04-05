@@ -4,13 +4,24 @@ using System.Collections.Specialized;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Net.Mail;
 using System.Text;
 using System.Text.RegularExpressions;
 
+#if WINDOWS_PHONE || PORTABLE_LIB
+using Portable.Utils;
+using WP7Helpers.Common;
+using Portable.Utils.Mail;
+#else
+using System.Net.Mail;
+#endif
+
 namespace AE.Net.Mail {
 	internal static class Utilities {
+#if WINDOWS_PHONE || PORTABLE_LIB
+	    private static CultureInfo _enUsCulture = CultureInfo.InvariantCulture;
+#else
 		private static CultureInfo _enUsCulture = CultureInfo.GetCultureInfo("en-US");
+#endif
 
 		internal static void CopyStream(Stream a, Stream b, int maxLength, int bufferSize = 8192) {
 			int read;
@@ -201,13 +212,13 @@ namespace AE.Net.Mail {
 
 		public static string DecodeQuotedPrintable(string value, Encoding encoding = null) {
 			if (encoding == null) {
-				encoding = System.Text.Encoding.Default;
+				encoding = EncodingHelper.GetDefault();
 			}
 
 			if (value.IndexOf('_') > -1 && value.IndexOf(' ') == -1)
 				value = value.Replace('_', ' ');
 
-			var data = System.Text.Encoding.ASCII.GetBytes(value);
+			var data = EncodingHelper.GetASCII().GetBytes(value);
 			var eq = Convert.ToByte('=');
 			var n = 0;
 
@@ -248,7 +259,7 @@ namespace AE.Net.Mail {
 				return data;
 			}
 			var bytes = Convert.FromBase64String(data);
-			return (encoding ?? System.Text.Encoding.Default).GetString(bytes);
+			return (encoding ?? EncodingHelper.GetDefault()).GetString(bytes);
 		}
 
 		#region OpenPOP.NET
@@ -329,6 +340,16 @@ namespace AE.Net.Mail {
 		/// <returns>An encoding which corresponds to the character set</returns>
 		/// <exception cref="ArgumentNullException">If <paramref name="characterSet"/> is <see langword="null"/></exception>
 		public static Encoding ParseCharsetToEncoding(string characterSet, Encoding @default) {
+#if WINDOWS_PHONE
+            if (characterSet.Equals("iso-8859-1", StringComparison.InvariantCultureIgnoreCase))
+                return EncodingHelper.GetIso88591();
+		    if (characterSet.Equals("iso-8859-2", StringComparison.InvariantCultureIgnoreCase))
+		        return EncodingHelper.GetIso88592();
+            if (characterSet.Equals("UTF-8", StringComparison.InvariantCultureIgnoreCase))
+		        return Encoding.UTF8;
+
+		    throw new NotSupportedException();
+#else
 			if (string.IsNullOrEmpty(characterSet))
 				return @default ?? Encoding.Default;
 
@@ -348,7 +369,8 @@ namespace AE.Net.Mail {
 
 			// It seems there is no codepage value in the characterSet. It must be a named encoding
 			return Encoding.GetEncodings().Where(x => x.Name.Is(characterSet))
-				.Select(x => x.GetEncoding()).FirstOrDefault() ?? @default ?? System.Text.Encoding.Default;
+				.Select(x => x.GetEncoding()).FirstOrDefault() ?? @default ?? EncodingHelper.GetDefault();
+#endif
 		}
 		#endregion
 

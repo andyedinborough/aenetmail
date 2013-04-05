@@ -1,8 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net.Mail;
 using System.Text.RegularExpressions;
+
+#if WINDOWS_PHONE || PORTABLE_LIB
+using Portable.Utils;
+using Portable.Utils.Mail;
+#else
+using System.Net.Mail;
+#endif
 
 namespace AE.Net.Mail {
 	public class SafeDictionary<KT, VT> : Dictionary<KT, VT> {
@@ -111,7 +117,11 @@ namespace AE.Net.Mail {
 		public virtual T GetEnum<T>(string name) where T : struct, IConvertible {
 			var value = this[name].RawValue;
 			if (string.IsNullOrEmpty(value)) return default(T);
+#if WINDOWS_PHONE
+          var values = Extensions.GetValues<T>().Cast<T>().ToArray();
+#else
 			var values = System.Enum.GetValues(typeof(T)).Cast<T>().ToArray();
+#endif
 			return values.FirstOrDefault(x => x.ToString().Equals(value, StringComparison.OrdinalIgnoreCase));
 		}
 

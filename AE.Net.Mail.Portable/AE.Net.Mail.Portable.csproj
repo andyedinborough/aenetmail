@@ -1,0 +1,108 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <MinimumVisualStudioVersion>10.0</MinimumVisualStudioVersion>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{FC4A5DD0-D764-40BF-9A11-78B48FEB0283}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>AE.Net.Mail.Portable</RootNamespace>
+    <AssemblyName>AE.Net.Mail.Portable</AssemblyName>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+    <TargetFrameworkProfile>Profile104</TargetFrameworkProfile>
+    <FileAlignment>512</FileAlignment>
+    <ProjectTypeGuids>{786C830F-07A1-408B-BD7F-6EE04809D6DB};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
+    <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\</SolutionDir>
+    <RestorePackages>true</RestorePackages>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>TRACE;DEBUG;PORTABLE_LIB</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- A reference to the entire .NET Framework is automatically included -->
+    <ProjectReference Include="..\Portable.Utils\Portable.Utils.csproj">
+      <Project>{38728eb5-a47b-4fae-bf54-446528162067}</Project>
+      <Name>Portable.Utils</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\AlternateViewCollection.cs">
+      <Link>AlternateViewCollection.cs</Link>
+    </Compile>
+    <Compile Include="..\Attachment.cs">
+      <Link>Attachment.cs</Link>
+    </Compile>
+    <Compile Include="..\EncodingHelper.cs">
+      <Link>EncodingHelper.cs</Link>
+    </Compile>
+    <Compile Include="..\HeaderCollection.cs">
+      <Link>HeaderCollection.cs</Link>
+    </Compile>
+    <Compile Include="..\HeaderObject.cs">
+      <Link>HeaderObject.cs</Link>
+    </Compile>
+    <Compile Include="..\IImapClient.cs">
+      <Link>IImapClient.cs</Link>
+    </Compile>
+    <Compile Include="..\IMailClient.cs">
+      <Link>IMailClient.cs</Link>
+    </Compile>
+    <Compile Include="..\Imap\Mailbox.cs">
+      <Link>Imap\Mailbox.cs</Link>
+    </Compile>
+    <Compile Include="..\Imap\MessageEventArgs.cs">
+      <Link>Imap\MessageEventArgs.cs</Link>
+    </Compile>
+    <Compile Include="..\Imap\ModifiedUtf7Encoding.cs">
+      <Link>Imap\ModifiedUtf7Encoding.cs</Link>
+    </Compile>
+    <Compile Include="..\Imap\Namespace.cs">
+      <Link>Imap\Namespace.cs</Link>
+    </Compile>
+    <Compile Include="..\Imap\Quota.cs">
+      <Link>Imap\Quota.cs</Link>
+    </Compile>
+    <Compile Include="..\Imap\SearchCondition.cs">
+      <Link>Imap\SearchCondition.cs</Link>
+    </Compile>
+    <Compile Include="..\MailMessage.cs">
+      <Link>MailMessage.cs</Link>
+    </Compile>
+    <Compile Include="..\Utilities.cs">
+      <Link>Utilities.cs</Link>
+    </Compile>
+    <Compile Include="..\WarningEventArgs.cs">
+      <Link>WarningEventArgs.cs</Link>
+    </Compile>
+    <Compile Include="HashSet.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
+  <Import Project="$(MSBuildExtensionsPath32)\Microsoft\Portable\$(TargetFrameworkVersion)\Microsoft.Portable.CSharp.targets" />
+  <Import Project="$(SolutionDir)\.nuget\nuget.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>

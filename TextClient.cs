@@ -1,6 +1,13 @@
 ﻿using System;
 using System.IO;
+#if WINDOWS_PHONE
+using Org.BouncyCastle.Crypto.Tls;
+using Portable.Utils;
+using SocketEx;
+#else
 using System.Net.Sockets;
+using NetSecurity = System.Net.Security;
+#endif
 
 namespace AE.Net.Mail {
 	public abstract class TextClient : IDisposable {
@@ -25,7 +32,13 @@ namespace AE.Net.Mail {
 		}
 
 		public TextClient() {
-			Encoding = System.Text.Encoding.GetEncoding(1252);
+
+#if WINDOWS_PHONE
+            //Encoding = System.Text.Encoding.GetEncoding("windows-1252");
+            Encoding = System.Text.Encoding.UTF8;
+#else
+            Encoding = System.Text.Encoding.GetEncoding(1252);
+#endif
 		}
 
 		internal abstract void OnLogin(string username, string password);
@@ -54,13 +67,21 @@ namespace AE.Net.Mail {
 
 
 		public virtual void Connect(string hostname, int port, bool ssl, bool skipSslValidation) {
-			System.Net.Security.RemoteCertificateValidationCallback validateCertificate = null;
+#if WINDOWS_PHONE
+            Connect(hostname, port, ssl);
+#else
+			NetSecurity.RemoteCertificateValidationCallback validateCertificate = null;
 			if (skipSslValidation)
-				validateCertificate = (sender, cert, chain, err) => true;
+                validateCertificate = (sender, cert, chain, err) => true;
 			Connect(hostname, port, ssl, validateCertificate);
+#endif
 		}
 
-		public virtual void Connect(string hostname, int port, bool ssl, System.Net.Security.RemoteCertificateValidationCallback validateCertificate) {
+		public virtual void Connect(string hostname, int port, bool ssl
+#if !WINDOWS_PHONE
+            , NetSecurity.RemoteCertificateValidationCallback validateCertificate
+#endif
+            ) {
 			try {
 				Host = hostname;
 				Port = port;
@@ -68,15 +89,24 @@ namespace AE.Net.Mail {
 
 				_Connection = new TcpClient(hostname, port);
 				_Stream = _Connection.GetStream();
+#if WINDOWS_PHONE
+                if (ssl)
+                {
+                    var handler = new TlsProtocolHandler(_Stream);
+                    handler.Connect(new AlwaysValidVerifyer());
+                    _Stream = handler.Stream;
+                }
+#else
 				if (ssl) {
-					System.Net.Security.SslStream sslStream;
+					NetSecurity.SslStream sslStream;
 					if (validateCertificate != null)
-						sslStream = new System.Net.Security.SslStream(_Stream, false, validateCertificate);
+						sslStream = new NetSecurity.SslStream(_Stream, false, validateCertificate);
 					else
-						sslStream = new System.Net.Security.SslStream(_Stream, false);
+						sslStream = new NetSecurity.SslStream(_Stream, false);
 					_Stream = sslStream;
 					sslStream.AuthenticateAsClient(hostname);
 				}
+#endif
 
 				OnConnected(GetResponse());
 
@@ -99,7 +129,7 @@ namespace AE.Net.Mail {
 		}
 
 		protected virtual void SendCommand(string command) {
-			var bytes = System.Text.Encoding.Default.GetBytes(command + "\r\n");
+			var bytes = EncodingHelper.GetDefault().GetBytes(command + "\r\n");
 			_Stream.Write(bytes, 0, bytes.Length);
 		}
 

@@ -8,9 +8,13 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 
+#if WINDOWS_PHONE
+using Portable.Utils;
+#endif
+
 namespace AE.Net.Mail {
 
-	public class ImapClient : TextClient, IMailClient {
+	public class ImapClient : TextClient, IMailClient, IImapClient {
 		private string _SelectedMailbox;
 		private int _tag = 0;
 		private string[] _Capability;
@@ -129,15 +133,23 @@ namespace AE.Net.Mail {
 		}
 
 		public virtual bool TryGetResponse(out string response, int millisecondsTimeout) {
+#if WINDOWS_PHONE
+            var mre = new System.Threading.ManualResetEvent(false);
+#else
 			var mre = new System.Threading.ManualResetEventSlim(false);
+#endif
 			string resp = response = null;
-			ThreadPool.QueueUserWorkItem(_ => {
+			ThreadPool.QueueUserWorkItem((WaitCallback) => {
 				resp = GetResponse();
 				mre.Set();
 			});
 
+#if WINDOWS_PHONE
+			if (mre.WaitOne(millisecondsTimeout)) {
+#else
 			if (mre.Wait(millisecondsTimeout)) {
-				response = resp;
+#endif
+                                                   response = resp;
 				return true;
 			} else
 				return false;
@@ -504,14 +516,21 @@ namespace AE.Net.Mail {
 					result = SendCommandGetResponse(command);
 					// retrieve server key
 					key = result.Replace("+ ", "");
-					key = System.Text.Encoding.Default.GetString(Convert.FromBase64String(key));
+					key = EncodingHelper.GetDefault().GetString(Convert.FromBase64String(key));
 					// calcul hash
-					using (var kMd5 = new HMACMD5(System.Text.Encoding.ASCII.GetBytes(password))) {
-						byte[] hash1 = kMd5.ComputeHash(System.Text.Encoding.ASCII.GetBytes(key));
+#if WINDOWS_PHONE
+			        byte[] hash1 = MD5Core.GetHash(password);
+                    key = BitConverter.ToString(hash1).ToLower().Replace("-", "");
+					result = Convert.ToBase64String(EncodingHelper.GetASCII().GetBytes(login + " " + key));
+					result = SendCommandGetResponse(result);
+#else
+					using (var kMd5 = new HMACMD5(EncodingHelper.GetASCII().GetBytes(password))) {
+						byte[] hash1 = kMd5.ComputeHash(EncodingHelper.GetASCII().GetBytes(key));
 						key = BitConverter.ToString(hash1).ToLower().Replace("-", "");
-						result = Convert.ToBase64String(System.Text.Encoding.ASCII.GetBytes(login + " " + key));
+						result = Convert.ToBase64String(EncodingHelper.GetASCII().GetBytes(login + " " + key));
 						result = SendCommandGetResponse(result);
 					}
+#endif
 					break;
 
 				case AuthMethods.Login:
@@ -540,7 +559,7 @@ namespace AE.Net.Mail {
 			//if (Supports("COMPRESS=DEFLATE")) {
 			//  SendCommandCheckOK(GetTag() + "compress deflate");
 			//  _Stream0 = _Stream;
-			// // _Reader = new System.IO.StreamReader(new System.IO.Compression.DeflateStream(_Stream0, System.IO.Compression.CompressionMode.Decompress, true), System.Text.Encoding.Default);
+			// // _Reader = new System.IO.StreamReader(new System.IO.Compression.DeflateStream(_Stream0, System.IO.Compression.CompressionMode.Decompress, true), EncodingHelper.GetDefault());
 			// // _Stream = new System.IO.Compression.DeflateStream(_Stream0, System.IO.Compression.CompressionMode.Compress, true);
 			//}
 
