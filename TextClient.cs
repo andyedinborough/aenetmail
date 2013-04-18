@@ -36,8 +36,6 @@ namespace AE.Net.Mail {
 			CheckResultOK(result);
 		}
 
-		protected virtual void OnDispose() { }
-
 		public virtual void Login(string username, string password) {
 			if (!IsConnected) {
 				throw new Exception("You must connect first!");
@@ -125,21 +123,25 @@ namespace AE.Net.Mail {
 			Utilities.TryDispose(ref _Connection);
 		}
 
-		public virtual void Dispose() {
-			if (IsDisposed) return;
-			lock (this) {
-				if (IsDisposed) return;
-				IsDisposed = true;
-				Disconnect();
-
-				try {
-					OnDispose();
-				} catch (Exception) { }
-
-				_Stream = null;
-				_Connection = null;
-			}
+		~TextClient() {
+			Dispose(false);
+		}
+		public void Dispose() {
+			Dispose(true);
 			GC.SuppressFinalize(this);
+		}
+		protected virtual void Dispose(bool disposing) {
+			if (!IsDisposed && disposing)
+				lock (this)
+					if (!IsDisposed && disposing) {
+						IsDisposed = true;
+						Disconnect();
+						if (_Stream != null) _Stream.Dispose();
+						if (_Connection != null) _Connection.Close();
+					}
+
+			_Stream = null;
+			_Connection = null;
 		}
 	}
 }

@@ -100,6 +100,7 @@ namespace AE.Net.Mail {
 			IdleResumeCommand();
 
 			if (_IdleEvents == null) {
+				_IdleARE = new AutoResetEvent(false);
 				_IdleEvents = new Thread(WatchIdleQueue);
 				_IdleEvents.Name = "_IdleEvents";
 				_IdleEvents.Start();
@@ -108,7 +109,7 @@ namespace AE.Net.Mail {
 
 		private void IdleResumeCommand() {
 			SendCommandGetResponse(GetTag() + "IDLE");
-			_IdleARE.Set();
+			if (_IdleARE != null) _IdleARE.Set();
 		}
 
 		private bool HasEvents {
@@ -129,22 +130,23 @@ namespace AE.Net.Mail {
 		}
 
 		public virtual bool TryGetResponse(out string response, int millisecondsTimeout) {
-			var mre = new System.Threading.ManualResetEventSlim(false);
-			string resp = response = null;
-			ThreadPool.QueueUserWorkItem(_ => {
-				resp = GetResponse();
-				mre.Set();
-			});
+			using (var mre = new System.Threading.ManualResetEventSlim(false)) {
+				string resp = response = null;
+				ThreadPool.QueueUserWorkItem(_ => {
+					resp = GetResponse();
+					mre.Set();
+				});
 
-			if (mre.Wait(millisecondsTimeout)) {
-				response = resp;
-				return true;
-			} else
-				return false;
+				if (mre.Wait(millisecondsTimeout)) {
+					response = resp;
+					return true;
+				} else
+					return false;
+			}
 		}
 
 		private static readonly int idleTimeout = (int)TimeSpan.FromMinutes(10).TotalMilliseconds;
-		private static AutoResetEvent _IdleARE = new AutoResetEvent(false);
+		private static AutoResetEvent _IdleARE;
 		private void WatchIdleQueue() {
 			try {
 				string last = null, resp;
@@ -172,12 +174,18 @@ namespace AE.Net.Mail {
 			} catch (Exception) { }
 		}
 
-		protected override void OnDispose() {
-			base.OnDispose();
-			if (_IdleEvents != null) {
-				_IdleEvents.Abort();
-				_IdleEvents = null;
+		protected override void Dispose(bool disposing) {
+			base.Dispose(disposing);
+			if (disposing) {
+				if (_IdleEvents != null) {
+					_IdleEvents.Abort();
+				}
+				if (_IdleARE != null) {
+					_IdleARE.Dispose();
+				}
 			}
+			_IdleEvents = null;
+			_IdleARE = null;
 		}
 
 		public virtual void AppendMail(MailMessage email, string mailbox = null) {
@@ -655,40 +663,40 @@ namespace AE.Net.Mail {
 					.ToArray();
 		}
 
-		public virtual Mailbox SelectMailbox(string mailbox) {
+		public virtual Mailbox SelectMailbox(string mailboxName) {
 			IdlePause();
 
-			mailbox = ModifiedUtf7Encoding.Encode(mailbox);
-			Mailbox x = null;
-			string tag = GetTag();
-			string command = tag + "SELECT " + mailbox.QuoteString();
-			string response = SendCommandGetResponse(command);
-			if (response.StartsWith("*")) {
-				x = new Mailbox(mailbox);
-				while (response.StartsWith("*")) {
-					Match m;
-					m = Regex.Match(response, @"(\d+) EXISTS");
-					if (m.Groups.Count > 1) { x.NumMsg = Convert.ToInt32(m.Groups[1].ToString()); }
-					m = Regex.Match(response, @"(\d+) RECENT");
-					if (m.Groups.Count > 1)
-						x.NumNewMsg = Convert.ToInt32(m.Groups[1].ToString());
-					m = Regex.Match(response, @"UNSEEN (\d+)");
-					if (m.Groups.Count > 1)
-						x.NumUnSeen = Convert.ToInt32(m.Groups[1].ToString());
-					m = Regex.Match(response, @" FLAGS \((.*?)\)");
-					if (m.Groups.Count > 1)
-						x.SetFlags(m.Groups[1].ToString());
-					response = GetResponse();
-				}
-				if (IsResultOK(response)) {
-					x.IsWritable = Regex.IsMatch(response, "READ.WRITE", RegexOptions.IgnoreCase);
-				}
-				_SelectedMailbox = mailbox;
-			} else {
-				throw new Exception(response);
+			mailboxName = ModifiedUtf7Encoding.Encode(mailboxName);
+			var tag = GetTag();
+			var command = tag + "SELECT " + mailboxName.QuoteString();
+			var response = SendCommandGetResponse(command);
+			if (IsResultOK(response))
+				response = GetResponse();
+			var mailbox = new Mailbox(mailboxName);
+			Match match;
+
+			while (response.StartsWith("*")) {
+				if ((match = Regex.Match(response, @"\d+(?=\s+EXISTS)")).Success)
+					mailbox.NumMsg = match.Value.ToInt();
+
+				else if ((match = Regex.Match(response, @"\d+(?=\s+RECENT)")).Success)
+					mailbox.NumNewMsg = match.Value.ToInt();
+
+				else if ((match = Regex.Match(response, @"(?<=UNSEEN\s+)\d+")).Success)
+					mailbox.NumUnSeen = match.Value.ToInt();
+
+				else if ((match = Regex.Match(response, @"(?<=\sFLAGS\s+\().*?(?=\))")).Success)
+					mailbox.SetFlags(match.Value);
+
+				response = GetResponse();
 			}
+
+			CheckResultOK(response);
+			mailbox.IsWritable = Regex.IsMatch(response, "READ.WRITE", RegexOptions.IgnoreCase);
+			_SelectedMailbox = mailboxName;
+
 			IdleResume();
-			return x;
+			return mailbox;
 		}
 
 		public virtual void SetFlags(Flags flags, params MailMessage[] msgs) {
