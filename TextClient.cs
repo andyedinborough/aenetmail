@@ -28,7 +28,7 @@ namespace AE.Net.Mail {
 			Encoding = System.Text.Encoding.GetEncoding(1252);
 		}
 
-		internal abstract void OnLogin(string username, string password);
+		internal abstract void OnLogin(string username, string password, string authPassword = "");
 		internal abstract void OnLogout();
 		internal abstract void CheckResultOK(string result);
 
@@ -42,6 +42,17 @@ namespace AE.Net.Mail {
 			}
 			IsAuthenticated = false;
 			OnLogin(username, password);
+			IsAuthenticated = true;
+		}
+
+		public virtual void Login(string username, string authUsername, string authPassword)
+		{
+			if (!IsConnected)
+			{
+				throw new Exception("You must connect first!");
+			}
+			IsAuthenticated = false;
+			OnLogin(username, authPassword, authUsername);
 			IsAuthenticated = true;
 		}
 
