@@ -175,7 +175,7 @@ namespace AE.Net.Mail {
           {
               if (key != null && (line[0] == '\t' || line[0] == ' '))
               {
-                  temp[key] += line.Trim();
+                  temp[key] += line.TrimOnce();
 
               }
               else
@@ -183,8 +183,8 @@ namespace AE.Net.Mail {
                   i = line.IndexOf(':');
                   if (i > -1)
                   {
-                      key = line.Substring(0, i).Trim();
-                      value = line.Substring(i + 1).Trim();
+                      key = line.Substring(0, i).TrimOnce();
+                      value = line.Substring(i + 1).TrimOnce();
                       temp.Set(key, value);
                   }
               }

@@ -192,12 +192,35 @@ namespace AE.Net.Mail {
 											.Replace("\"", "\\\"") + "\"";
 		}
 
-		internal static bool StartsWithWhiteSpace(this string line) {
-			if (string.IsNullOrEmpty(line))
-				return false;
-			var chr = line[0];
-			return chr == ' ' || chr == '\t' || chr == '\n' || chr == '\r';
-		}
+        internal static bool StartsWithWhiteSpace(this string line) {
+            if (string.IsNullOrEmpty(line))
+                return false;
+            var chr = line[0];
+            return IsWhiteSpace(chr);
+        }
+
+        internal static bool EndsWithWhiteSpace(this string line) {
+            if (string.IsNullOrEmpty(line))
+                return false;
+            var chr = line[line.Length - 1];
+            return IsWhiteSpace(chr);
+        }
+
+        internal static bool IsWhiteSpace(this char chr) {
+            return chr == ' ' || chr == '\t' || chr == '\n' || chr == '\r';
+        }
+
+        internal static string TrimOnce(this string line) {
+            var result = line;
+
+            if (result.StartsWithWhiteSpace())
+                result = result.Substring(1, result.Length - 1);
+
+            if (result.EndsWithWhiteSpace())
+                result = result.Substring(0, result.Length - 1);
+
+            return result;
+        }
 
 		public static string DecodeQuotedPrintable(string value, Encoding encoding = null) {
 			if (encoding == null) {
