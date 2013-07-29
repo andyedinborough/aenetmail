@@ -213,10 +213,10 @@ namespace AE.Net.Mail {
         internal static string TrimOnce(this string line) {
             var result = line;
 
-            if (result.StartsWithWhiteSpace() && result.Length > 0)
+            if (result.StartsWithWhiteSpace())
                 result = result.Substring(1, result.Length - 1);
 
-            if (result.EndsWithWhiteSpace() && result.Length < 0)
+            if (result.EndsWithWhiteSpace())
                 result = result.Substring(0, result.Length - 1);
 
             return result;
