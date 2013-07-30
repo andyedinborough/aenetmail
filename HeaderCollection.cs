@@ -175,16 +175,18 @@ namespace AE.Net.Mail {
           {
               if (key != null && (line[0] == '\t' || line[0] == ' '))
               {
-                  temp[key] += line.Trim();
-
+                  temp[key] += line.TrimStartOnce();
               }
               else
               {
+                  if (key != null)
+                      temp[key] = temp[key].TrimEndOnce(); // It trims the last line of the previous key
+
                   i = line.IndexOf(':');
                   if (i > -1)
                   {
-                      key = line.Substring(0, i).Trim();
-                      value = line.Substring(i + 1).Trim();
+                      key = line.Substring(0, i).TrimStartOnce();
+                      value = line.Substring(i + 1).TrimStartOnce();
                       temp.Set(key, value);
                   }
               }
