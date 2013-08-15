@@ -65,7 +65,7 @@ namespace AE.Net.Mail.Imap
                 }
             }
 
-            if (result.Length == 0 && nonAsciiBuffer.Length > 0) {
+            if (nonAsciiBuffer.Length > 0) {
                 result.Append(EncodeNonPrintableAsciiString(nonAsciiBuffer.ToString()));
             }
 
