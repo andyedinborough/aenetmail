@@ -440,7 +440,7 @@ namespace AE.Net.Mail {
 
 		public virtual Quota GetQuota(string mailbox) {
 			if (!Supports("NAMESPACE"))
-				new Exception("This command is not supported by the server!");
+				throw new Exception("This command is not supported by the server!");
 			IdlePause();
 
 			Quota quota = null;
