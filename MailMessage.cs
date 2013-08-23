@@ -101,22 +101,30 @@ namespace AE.Net.Mail {
 			}
 			RawHeaders = headers.ToString();
 
-			if (!headersOnly) {
+			if ( !headersOnly )
+			{
 				string boundary = Headers.GetBoundary();
-				if (!string.IsNullOrEmpty(boundary)) {
+				if ( !string.IsNullOrEmpty( boundary ) )
+				{
 					var atts = new List<Attachment>();
-					var body = ParseMime(reader, boundary, ref maxLength, atts, Encoding, termChar);
-					if (!string.IsNullOrEmpty(body))
-						SetBody(body);
+					var body = ParseMime( reader, boundary, ref maxLength, atts, Encoding, termChar );
+					if ( !string.IsNullOrEmpty( body ) )
+						SetBody( body );
 
-					foreach (var att in atts)
-						(att.IsAttachment ? Attachments : AlternateViews).Add(att);
+					foreach ( var att in atts )
+						( att.IsAttachment ? Attachments : AlternateViews ).Add( att );
 
-					if (maxLength > 0)
-						reader.ReadToEnd(maxLength, Encoding);
+					if ( maxLength > 0 )
+						reader.ReadToEnd( maxLength, Encoding );
+				}
+				else
+				{
+					//	sometimes when email doesn't have a body, we get here with maxLength == 0 and we shouldn't read any further
+					string body = String.Empty;
+					if ( maxLength > 0 )
+						body = reader.ReadToEnd( maxLength, Encoding );
 
-				} else {
-					SetBody(reader.ReadToEnd(maxLength, Encoding));
+					SetBody( body );
 				}
 			}
 
