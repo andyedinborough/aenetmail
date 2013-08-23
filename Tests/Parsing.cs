@@ -3,7 +3,9 @@ using AE.Net.Mail.Imap;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Shouldly;
 using System;
+using System.IO;
 using System.Linq;
+using System.Text;
 
 namespace Tests {
 	/// <summary>
@@ -430,7 +432,79 @@ Content-Disposition: attachment
 
 		[TestMethod]
 		public void Attachment_FilenameInContentType_ReturnsCorrectFileName() {
-			var msg = GetMessage(@"Return-Path: test@domain.com
+            var msg = GetSampleAttachmentMessage();
+
+			msg.Attachments.Count.ShouldBe(1);
+			msg.Attachments.First().Filename.ShouldBe("Filename.pdf");
+		}
+
+        [TestMethod]
+        public void Attachment_SavesWithMessage()
+        {
+            var msg = new AE.Net.Mail.MailMessage()
+            {
+                From = new System.Net.Mail.MailAddress("test@test.com")
+            };
+            var firstAttachmentContents = "This is a test.";
+            var attachment = new Attachment()
+            {
+                Body = Convert.ToBase64String(Encoding.Default.GetBytes(firstAttachmentContents)),
+                ContentTransferEncoding = "base64",
+                Encoding = Encoding.ASCII
+            };
+            attachment.Headers.Add("Content-Type", new HeaderValue(@"text/plain; filename=""Readme.txt"""));
+            msg.Attachments.Add(attachment);
+
+            var rnd = new Random();
+            var secondAttachmentContents = new byte[rnd.Next(10, 1000)];
+            rnd.NextBytes(secondAttachmentContents);
+            attachment = new Attachment()
+            {
+                Body = Convert.ToBase64String(secondAttachmentContents),
+                ContentTransferEncoding = "base64",
+                Encoding = Encoding.ASCII
+            };
+            attachment.Headers.Add("Content-Type", new HeaderValue(@"application/binary; filename=""Data.bin"""));
+            msg.Attachments.Add(attachment);
+            
+
+            var reparsed = Reparse(msg);
+            reparsed.Attachments.Count.ShouldBe(2);
+            reparsed.Attachments.First().Filename.ShouldBe("Readme.txt");
+            reparsed.Attachments.First().Body.ShouldBe(firstAttachmentContents);
+            reparsed.Attachments.Last().Filename.ShouldBe("Data.bin");
+            Convert.FromBase64String(reparsed.Attachments.Last().Body).ShouldBe(secondAttachmentContents);
+        }
+
+        [TestMethod]
+        public void Attachment_ParsesBackSaved()
+        {
+            var msg = GetSampleAttachmentMessage();
+
+            msg.Attachments.Count.ShouldBe(1);
+            msg.Attachments.First().Filename.ShouldBe("Filename.pdf");
+
+            var parsedMessage = Reparse(msg);
+            parsedMessage.Attachments.Count.ShouldBe(1);
+            parsedMessage.Attachments.First().Filename.ShouldBe("Filename.pdf");
+        }
+
+        private MailMessage Reparse(MailMessage msg)
+        {
+            var sb = new StringBuilder();
+            using (var w = new StringWriter(sb))
+            {
+                msg.Save(w);
+            }
+            // System.Diagnostics.Debug.WriteLine(sb.ToString());
+
+            var parsedMessage = GetMessage(sb.ToString());
+            return parsedMessage;
+        }
+
+        private MailMessage GetSampleAttachmentMessage()
+        {
+            var msg = GetMessage(@"Return-Path: test@domain.com
 Delivered-To: test@domain.com
 Received: from mail.mailer.domain.com ([194.0.194.158])
 	by mail.com
@@ -461,10 +535,8 @@ Content-Disposition: attachment
 <attachment>
 ----boundary_0_f0e8cefb-e5b4-4f31-90b9-9d85b3774fc7--
 ");
-
-			msg.Attachments.Count.ShouldBe(1);
-			msg.Attachments.First().Filename.ShouldBe("Filename.pdf");
-		}
+            return msg;
+        }
 
 		private AE.Net.Mail.MailMessage GetMessage(string raw) {
 			var msg = new AE.Net.Mail.MailMessage();
