@@ -233,10 +233,38 @@ namespace AE.Net.Mail {
 			if (Importance != MailPriority.Normal)
 				txt.WriteLine("Importance: {0}", (int)Importance);
 			txt.WriteLine("Subject: {0}", Subject);
+
+            string boundary = null;
+            if (this.Attachments.Any())
+            {
+                boundary = string.Format("--boundary_{0}", Guid.NewGuid());
+                txt.WriteLine("Content-Type: multipart/mixed; boundary={0}", boundary);
+            }
+
+            // signal end of headers
 			txt.WriteLine();
 
-			//todo: attachments
+            if (boundary != null)
+            {
+                txt.WriteLine("--" + boundary);
+                txt.WriteLine();
+            }
+			
 			txt.Write(Body);
-		}
+
+            this.Attachments.ToList().ForEach(att =>
+            {
+                txt.WriteLine();
+                txt.WriteLine("--" + boundary);
+                txt.WriteLine(string.Join("\n", att.Headers.Select(h => string.Format("{0}: {1}", h.Key, h.Value))));
+                txt.WriteLine();
+                txt.WriteLine(att.Body);
+            });
+
+            if (boundary != null)
+            {
+                txt.WriteLine("--" + boundary + "--");
+            }
+        }
 	}
 }
