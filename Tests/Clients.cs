@@ -48,6 +48,7 @@ namespace Tests {
 		public void Select_Folder() {
 			using (var imap = GetClient<ImapClient>()) {
 				imap.SelectMailbox("Notes");
+				imap.Examine("Notes").UIDValidity.ShouldBeGreaterThan(0);
 				imap.GetMessageCount().ShouldBeInRange(1, int.MaxValue);
 			}
 		}
