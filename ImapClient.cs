@@ -286,13 +286,16 @@ namespace AE.Net.Mail {
 				while (response.StartsWith("*")) {
 					Match m;
 					m = Regex.Match(response, @"(\d+) EXISTS");
-					if (m.Groups.Count > 1) { x.NumMsg = Convert.ToInt32(m.Groups[1].ToString()); }
+					if (m.Groups.Count > 1) { x.NumMsg = m.Groups[1].ToString().ToInt(); }
 					m = Regex.Match(response, @"(\d+) RECENT");
 					if (m.Groups.Count > 1)
-						x.NumNewMsg = Convert.ToInt32(m.Groups[1].ToString());
+						x.NumNewMsg = m.Groups[1].Value.ToInt();
 					m = Regex.Match(response, @"UNSEEN (\d+)");
 					if (m.Groups.Count > 1)
-						x.NumUnSeen = Convert.ToInt32(m.Groups[1].ToString());
+						x.NumUnSeen = m.Groups[1].Value.ToInt();
+					m = Regex.Match(response, @"UIDVALIDITY (\d+)");
+					if (m.Groups.Count > 1)
+						x.UIDValidity = m.Groups[1].Value.ToInt();
 					m = Regex.Match(response, @" FLAGS \((.*?)\)");
 					if (m.Groups.Count > 1)
 						x.SetFlags(m.Groups[1].ToString());
