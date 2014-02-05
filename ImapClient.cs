@@ -26,11 +26,17 @@ namespace AE.Net.Mail {
 			AuthMethod = method;
 			Login(username, password);
 		}
-
+		public ImapClient(string host, string username, string authUsername, string authPassword, AuthMethods method = AuthMethods.Plain, int port = 143, bool secure = false, bool skipSslValidation = false)
+		{
+			Connect(host, port, secure, skipSslValidation);
+			AuthMethod = method;
+			Login(username, authUsername, authPassword);
+		}
 		public enum AuthMethods {
 			Login,
 			CRAMMD5,
-			SaslOAuth
+			SaslOAuth,
+			Plain
 		}
 
 		public virtual AuthMethods AuthMethod { get; set; }
@@ -511,7 +517,7 @@ namespace AE.Net.Mail {
 			return x.ToArray();
 		}
 
-		internal override void OnLogin(string login, string password) {
+		internal override void OnLogin(string login, string password, string authUsername = "") {
 			string command = String.Empty;
 			string result = String.Empty;
 			string tag = GetTag();
@@ -536,6 +542,19 @@ namespace AE.Net.Mail {
 				case AuthMethods.Login:
 					command = tag + "LOGIN " + login.QuoteString() + " " + password.QuoteString();
 					result = SendCommandGetResponse(command);
+					break;
+
+				case AuthMethods.Plain:
+					command = tag + "AUTHENTICATE PLAIN";
+					result = SendCommandGetResponse(command);
+					// Null character
+					char nullChar = '\0';
+					// Set string for authentication
+					string authenticationString = String.Format("{0}{3}{1}{3}{2}", login, authUsername, password, nullChar);
+					// String must be converted to base64
+					byte[] toEncodeAsBytes = ASCIIEncoding.ASCII.GetBytes(authenticationString);
+					string returnValue = System.Convert.ToBase64String(toEncodeAsBytes);
+					result = SendCommandGetResponse(returnValue);
 					break;
 
 				case AuthMethods.SaslOAuth:

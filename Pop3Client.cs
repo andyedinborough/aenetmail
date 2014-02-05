@@ -9,7 +9,7 @@ namespace AE.Net.Mail {
 			Login(username, password);
 		}
 
-		internal override void OnLogin(string username, string password) {
+		internal override void OnLogin(string username, string password, string authUsername = "") {
 			SendCommandCheckOK("USER " + username);
 			SendCommandCheckOK("PASS " + password);
 		}
