@@ -106,9 +106,9 @@ namespace AE.Net.Mail {
 			return GetResponse();
 		}
 
-		protected virtual string GetResponse() {
+		protected virtual string GetResponse(int Timeout = 10000) {
 			int max = 0;
-			return _Stream.ReadLine(ref max, Encoding, null);
+			return _Stream.ReadLine(ref max, Encoding, null, Timeout);
 		}
 
 		protected virtual void SendCommandCheckOK(string command) {
@@ -118,7 +118,8 @@ namespace AE.Net.Mail {
 		public virtual void Disconnect() {
 			if (IsAuthenticated)
 				Logout();
-
+            _Stream.Close();  //Should probably close the stream
+            IsConnected = false;
 			Utilities.TryDispose(ref _Stream);
 			Utilities.TryDispose(ref _Connection);
 		}
