@@ -124,7 +124,7 @@ namespace AE.Net.Mail {
             if (_IdleTask == null || !_Idling)
 				return;
 			CheckConnectionStatus();
-			SendCommand("DONE");
+            SendCommand("DONE");
 
             if (!_IdleTask.Wait(_ServerTimeout))
             {
@@ -180,6 +180,8 @@ namespace AE.Net.Mail {
                 if (_ResponseTask.Wait(_IdleTimeout))
                 {
                     response = resp;
+                    _ResponseTask.Dispose();
+                    _ResponseTask = null;
                     return true;
                 }
                 else
@@ -224,7 +226,7 @@ namespace AE.Net.Mail {
 						if (data[2].Is("EXISTS") && !last.Is("EXPUNGE") && e.MessageCount > 0) {
                             Task.Factory.StartNew(() => _NewMessage.Fire(this, e)); //Fire the event in a task
 						} else if (data[2].Is("EXPUNGE")) {
-							_MessageDeleted.Fire(this, e);
+							Task.Factory.StartNew(() => _MessageDeleted.Fire(this, e));
 						}
 						last = data[2];
 					}
@@ -233,13 +235,6 @@ namespace AE.Net.Mail {
                 ImapClientExceptionEventArgs args = new ImapClientExceptionEventArgs(e);
                 Task.Factory.StartNew(() => _ImapException.Fire(this, args));
             }
-		}
-
-		protected override void Dispose(bool disposing) {
-			base.Dispose(disposing);
-			if (disposing) {
-                IdleStop();
-			}
 		}
 
 		public virtual void AppendMail(MailMessage email, string mailbox = null) {
@@ -480,10 +475,22 @@ namespace AE.Net.Mail {
 					continue;
 
 				var imapHeaders = Utilities.ParseImapHeader(response.Substring(response.IndexOf('(') + 1));
+                if ((imapHeaders["BODY[HEADER]"] ?? imapHeaders["BODY[]"]) == null)
+                {
+                    System.Diagnostics.Debugger.Break();
+                    RaiseWarning(null, "Expected BODY[] in stream, but received \"" + response + "\"");
+                    break;
+                }
 				var size = (imapHeaders["BODY[HEADER]"] ?? imapHeaders["BODY[]"]).Trim('{', '}').ToInt();
 				var msg = action(_Stream, size, imapHeaders);
 
 				response = GetResponse();
+                if (response == null)
+                {
+                    System.Diagnostics.Debugger.Break();
+                    RaiseWarning(null, "Expected \")\" in stream, but received nothing");
+                    break;
+                }
 				var n = response.Trim().LastOrDefault();
 				if (n != ')') {
 					System.Diagnostics.Debugger.Break();
@@ -621,8 +628,14 @@ namespace AE.Net.Mail {
 		}
 
 		internal override void OnLogout() {
-			if (IsConnected)
-				SendCommand(GetTag() + "LOGOUT");
+            if (IsConnected)
+            {
+                if (_IdleTask != null && _Idling)
+                {
+                    IdleStop();
+                }
+                SendCommand(GetTag() + "LOGOUT");
+            }
 		}
 
 		public virtual Namespaces Namespace() {
