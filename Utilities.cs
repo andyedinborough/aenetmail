@@ -184,6 +184,10 @@ namespace AE.Net.Mail {
 			return date.ToString("dd-MMM-yyyy hh:mm:ss zz", _enUsCulture);
 		}
 
+		internal static string GetRFC2822Date(this DateTime date) {
+			return date.ToString("ddd, d MMM yyyy HH:mm:ss zz", _enUsCulture);
+		}
+
 		internal static string QuoteString(this string value) {
 			return "\"" + value
 											.Replace("\\", "\\\\")

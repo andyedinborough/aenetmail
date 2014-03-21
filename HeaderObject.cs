@@ -15,14 +15,14 @@ namespace AE.Net.Mail {
 
 		public virtual string ContentTransferEncoding {
 			get { return Headers["Content-Transfer-Encoding"].Value ?? string.Empty; }
-			internal set {
+			set {
 				Headers.Set("Content-Transfer-Encoding", new HeaderValue(value));
 			}
 		}
 
 		public virtual string ContentType {
 			get { return Headers["Content-Type"].Value.NotEmpty("text/plain"); }
-			internal set {
+			set {
 				Headers.Set("Content-Type", new HeaderValue(value));
 			}
 		}
@@ -67,6 +67,11 @@ namespace AE.Net.Mail {
 			}
 
 			Body = value;
+		}
+
+		internal void SetBody(byte[] data) {
+			ContentTransferEncoding = "base64";
+			Body = Convert.ToBase64String(data);
 		}
 	}
 }

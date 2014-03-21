@@ -2,6 +2,24 @@ using System;
 
 namespace AE.Net.Mail {
 	public class Attachment : ObjectWHeaders {
+		public Attachment() { }
+		public Attachment(byte[] data, string contentType, string name = null, bool isAttachment = false)
+			: this(contentType, name, isAttachment) {
+			SetBody(data);
+		}
+		public Attachment(string data, string contentType, string name = null, bool isAttachment = false)
+			: this(contentType, name, isAttachment) {
+			SetBody(data);
+		}
+		private Attachment(string contentType, string name, bool isAttachment) {
+			Headers.Add("Content-Type", contentType);
+			if (!string.IsNullOrEmpty(name)) {
+				var contentDisposition = new HeaderValue(isAttachment ? "attachment" : "inline");
+				Headers.Add("Content-Disposition", contentDisposition);
+				contentDisposition[isAttachment ? "filename" : "name"] = name;
+			}
+		}
+
 		public virtual string Filename {
 			get {
 				return Headers["Content-Disposition"]["filename"].NotEmpty(
