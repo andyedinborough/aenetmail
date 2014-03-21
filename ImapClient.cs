@@ -10,6 +10,12 @@ using System.Threading.Tasks;
 
 namespace AE.Net.Mail {
 
+	public enum AuthMethods {
+		Login,
+		CRAMMD5,
+		SaslOAuth
+	}
+
 	public class ImapClient : TextClient, IMailClient {
 		private string _SelectedMailbox;
 		private int _tag = 0;
@@ -35,12 +41,6 @@ namespace AE.Net.Mail {
 		public int ServerTimeout { get; set; }
 
 		public int IdleTimeout { get; set; }
-
-		public enum AuthMethods {
-			Login,
-			CRAMMD5,
-			SaslOAuth
-		}
 
 		public virtual AuthMethods AuthMethod { get; set; }
 
