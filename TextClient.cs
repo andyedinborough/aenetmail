@@ -46,8 +46,8 @@ namespace AE.Net.Mail {
 		}
 
 		public virtual void Logout() {
-			IsAuthenticated = false;
 			OnLogout();
+            IsAuthenticated = false;
 		}
 
 
@@ -106,9 +106,9 @@ namespace AE.Net.Mail {
 			return GetResponse();
 		}
 
-		protected virtual string GetResponse() {
+		protected virtual string GetResponse(int Timeout = 10000) {
 			int max = 0;
-			return _Stream.ReadLine(ref max, Encoding, null);
+			return _Stream.ReadLine(ref max, Encoding, null, Timeout);
 		}
 
 		protected virtual void SendCommandCheckOK(string command) {
@@ -116,9 +116,17 @@ namespace AE.Net.Mail {
 		}
 
 		public virtual void Disconnect() {
-			if (IsAuthenticated)
-				Logout();
-
+            if (!IsConnected)
+                return;
+            if (IsAuthenticated)
+            {
+                Logout();
+            }
+            if (_Stream != null)
+            {
+                _Stream.Close();  //Should probably close the stream
+            }
+            IsConnected = false;
 			Utilities.TryDispose(ref _Stream);
 			Utilities.TryDispose(ref _Connection);
 		}
@@ -136,8 +144,9 @@ namespace AE.Net.Mail {
 					if (!IsDisposed && disposing) {
 						IsDisposed = true;
 						Disconnect();
-						if (_Stream != null) _Stream.Dispose();
-						if (_Connection != null) _Connection.Close();
+                        //This happens in Disconnect()
+						//if (_Stream != null) _Stream.Dispose();
+						//if (_Connection != null) _Connection.Close();
 					}
 
 			_Stream = null;

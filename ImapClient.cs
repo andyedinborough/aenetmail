@@ -6,7 +6,7 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading;
+using System.Threading.Tasks;
 
 namespace AE.Net.Mail {
 
@@ -16,7 +16,8 @@ namespace AE.Net.Mail {
 		private string[] _Capability;
 
 		private bool _Idling;
-		private Thread _IdleEvents;
+        private Task _IdleTask;
+        private Task _ResponseTask;
 
 		private string _FetchHeaders = null;
 
@@ -26,6 +27,32 @@ namespace AE.Net.Mail {
 			AuthMethod = method;
 			Login(username, password);
 		}
+
+        private int _ServerTimeout=10000;
+        public int ServerTimeout_ms
+        {
+            get
+            {
+                return _ServerTimeout;
+            }
+            set
+            {
+                _ServerTimeout = value;
+            }
+        }
+
+        private int _IdleTimeout = 1200000;
+        public int IdleTimeout_sec
+        {
+            get
+            {
+                return _IdleTimeout / 1000;
+            }
+            set
+            {
+                _IdleTimeout = value * 1000;
+            }
+        }
 
 		public enum AuthMethods {
 			Login,
@@ -70,27 +97,45 @@ namespace AE.Net.Mail {
 			}
 		}
 
+        private EventHandler<ImapClientExceptionEventArgs> _ImapException;
+        public virtual event EventHandler<ImapClientExceptionEventArgs> ImapException
+        {
+            add
+            {
+                _ImapException += value;
+            }
+            remove
+            {
+                _ImapException -= value;
+            }
+        }
+
 		protected virtual void IdleStart() {
-			if (string.IsNullOrEmpty(_SelectedMailbox)) {
-				SelectMailbox("Inbox");
-			}
+            CheckMailboxSelected();
+
 			_Idling = true;
 			if (!Supports("IDLE")) {
 				throw new InvalidOperationException("This IMAP server does not support the IDLE command");
 			}
-			CheckMailboxSelected();
 			IdleResume();
 		}
 
 		protected virtual void IdlePause() {
-			if (_IdleEvents == null || !_Idling)
+            if (_IdleTask == null || !_Idling)
 				return;
-
 			CheckConnectionStatus();
-			SendCommand("DONE");
-			if (!_IdleEvents.Join(2000))
-				_IdleEvents.Abort();
-			_IdleEvents = null;
+            SendCommand("DONE");
+
+            if (!_IdleTask.Wait(_ServerTimeout))
+            {
+                //Not responding
+                Disconnect();
+                ImapClientException e = new ImapClientException("Lost communication to IMAP server, connection closed.");
+                ImapClientExceptionEventArgs args = new ImapClientExceptionEventArgs(e);
+                Task.Factory.StartNew(() => _ImapException.Fire(this, args));
+            }
+            _IdleTask.Dispose();
+            _IdleTask = null;
 		}
 
 		protected virtual void IdleResume() {
@@ -99,17 +144,15 @@ namespace AE.Net.Mail {
 
 			IdleResumeCommand();
 
-			if (_IdleEvents == null) {
-				_IdleARE = new AutoResetEvent(false);
-				_IdleEvents = new Thread(WatchIdleQueue);
-				_IdleEvents.Name = "_IdleEvents";
-				_IdleEvents.Start();
-			}
+            if (_IdleTask == null)
+            {
+                _IdleTask = new Task(() => WatchIdleQueue());
+                _IdleTask.Start();
+            }
 		}
 
 		private void IdleResumeCommand() {
 			SendCommandGetResponse(GetTag() + "IDLE");
-			if (_IdleARE != null) _IdleARE.Set();
 		}
 
 		private bool HasEvents {
@@ -119,73 +162,79 @@ namespace AE.Net.Mail {
 		}
 
 		protected virtual void IdleStop() {
-			_Idling = false;
 			IdlePause();
-			if (_IdleEvents != null) {
-				_IdleARE.Close();
-				if (!_IdleEvents.Join(2000))
-					_IdleEvents.Abort();
-				_IdleEvents = null;
-			}
+            _Idling = false;
 		}
 
-		public virtual bool TryGetResponse(out string response, int millisecondsTimeout) {
-			using (var mre = new System.Threading.ManualResetEventSlim(false)) {
-				string resp = response = null;
-				ThreadPool.QueueUserWorkItem(_ => {
-					resp = GetResponse();
-					mre.Set();
-				});
+        public virtual bool TryGetResponse(out string response)
+        {
+            string resp = response = null;
 
-				if (mre.Wait(millisecondsTimeout)) {
-					response = resp;
-					return true;
-				} else
-					return false;
-			}
-		}
+            _ResponseTask = Task.Factory.StartNew(() =>
+            {
+                resp = GetResponse(_IdleTimeout + _ServerTimeout * 3);
+            });
 
-		private static readonly int idleTimeout = (int)TimeSpan.FromMinutes(10).TotalMilliseconds;
-		private static AutoResetEvent _IdleARE;
+            try
+            {
+                if (_ResponseTask.Wait(_IdleTimeout))
+                {
+                    response = resp;
+                    _ResponseTask.Dispose();
+                    _ResponseTask = null;
+                    return true;
+                }
+                else
+                    return false;
+            }
+            catch (AggregateException)
+            {
+                throw;
+            }
+        }
+
 		private void WatchIdleQueue() {
 			try {
 				string last = null, resp;
 
 				while (true) {
-					if (!TryGetResponse(out resp, idleTimeout)) {   //send NOOP every 20 minutes
-						Noop(false);        //call noop without aborting this Idle thread
+					if (!TryGetResponse(out resp)) {
+                        //Child task should still running on ReadByte here.
+                        //Need to send some data to get it to exit.
+
+                        SendCommand("DONE"); //_ResponseTask should pick up response and exit
+                        if (!_ResponseTask.Wait(_ServerTimeout)) 
+                        {
+                            //Not responding
+                            Disconnect();
+                            throw new ImapClientException("Lost communication to IMAP server, connection closed.");
+                        }
+                        _ResponseTask.Dispose();
+                        _ResponseTask = null;
+
+                        IdleResumeCommand();
+
 						continue;
 					}
 
-					if (resp.Contains("OK IDLE"))
+					if (resp.Contains("OK IDLE"))  //Server response after DONE
 						return;
 
 					var data = resp.Split(' ');
 					if (data[0] == "*" && data.Length >= 3) {
 						var e = new MessageEventArgs { Client = this, MessageCount = int.Parse(data[1]) };
 						if (data[2].Is("EXISTS") && !last.Is("EXPUNGE") && e.MessageCount > 0) {
-							ThreadPool.QueueUserWorkItem(callback => _NewMessage.Fire(this, e));    //Fire the event on a separate thread
+                            Task.Factory.StartNew(() => _NewMessage.Fire(this, e)); //Fire the event in a task
 						} else if (data[2].Is("EXPUNGE")) {
-							_MessageDeleted.Fire(this, e);
+							Task.Factory.StartNew(() => _MessageDeleted.Fire(this, e));
 						}
 						last = data[2];
 					}
 				}
-			} catch (Exception) { }
-		}
-
-		protected override void Dispose(bool disposing) {
-			base.Dispose(disposing);
-			if (disposing) {
-				if (_IdleEvents != null) {
-					_IdleEvents.Abort();
-				}
-				if (_IdleARE != null) {
-					_IdleARE.Dispose();
-				}
-			}
-			_IdleEvents = null;
-			_IdleARE = null;
+			} catch (Exception e) {                
+                ImapClientExceptionEventArgs args = new ImapClientExceptionEventArgs(e);
+                Task.Factory.StartNew(() => _ImapException.Fire(this, args));
+            }
 		}
 
 		public virtual void AppendMail(MailMessage email, string mailbox = null) {
@@ -215,24 +264,16 @@ namespace AE.Net.Mail {
 		}
 
 		public virtual void Noop() {
-			Noop(true);
-		}
-		private void Noop(bool pauseIdle) {
-			if (pauseIdle)
-				IdlePause();
-			else
-				SendCommandGetResponse("DONE");
+            IdlePause();
 
-			var tag = GetTag();
-			var response = SendCommandGetResponse(tag + "NOOP");
-			while (!response.StartsWith(tag)) {
-				response = GetResponse();
-			}
+            var tag = GetTag();
+            var response = SendCommandGetResponse(tag + "NOOP");
+            while (!response.StartsWith(tag))
+            {
+                response = GetResponse();
+            }
 
-			if (pauseIdle)
-				IdleResume();
-			else
-				IdleResumeCommand();
+            IdleResume();
 		}
 
 		public virtual string[] Capability() {
@@ -434,10 +475,22 @@ namespace AE.Net.Mail {
 					continue;
 
 				var imapHeaders = Utilities.ParseImapHeader(response.Substring(response.IndexOf('(') + 1));
+                if ((imapHeaders["BODY[HEADER]"] ?? imapHeaders["BODY[]"]) == null)
+                {
+                    System.Diagnostics.Debugger.Break();
+                    RaiseWarning(null, "Expected BODY[] in stream, but received \"" + response + "\"");
+                    break;
+                }
 				var size = (imapHeaders["BODY[HEADER]"] ?? imapHeaders["BODY[]"]).Trim('{', '}').ToInt();
 				var msg = action(_Stream, size, imapHeaders);
 
 				response = GetResponse();
+                if (response == null)
+                {
+                    System.Diagnostics.Debugger.Break();
+                    RaiseWarning(null, "Expected \")\" in stream, but received nothing");
+                    break;
+                }
 				var n = response.Trim().LastOrDefault();
 				if (n != ')') {
 					System.Diagnostics.Debugger.Break();
@@ -575,8 +628,14 @@ namespace AE.Net.Mail {
 		}
 
 		internal override void OnLogout() {
-			if (IsConnected)
-				SendCommand(GetTag() + "LOGOUT");
+            if (IsConnected)
+            {
+                if (_IdleTask != null && _Idling)
+                {
+                    IdleStop();
+                }
+                SendCommand(GetTag() + "LOGOUT");
+            }
 		}
 
 		public virtual Namespaces Namespace() {

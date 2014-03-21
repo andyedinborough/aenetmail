@@ -69,9 +69,9 @@ namespace AE.Net.Mail {
 			return data;
 		}
 
-		internal static string ReadLine(this Stream stream, ref int maxLength, Encoding encoding, char? termChar) {
+		internal static string ReadLine(this Stream stream, ref int maxLength, Encoding encoding, char? termChar, int ReadTimeout = 10000) {
 			if (stream.CanTimeout)
-				stream.ReadTimeout = 10000;
+				stream.ReadTimeout = ReadTimeout;
 
 			var maxLengthSpecified = maxLength > 0;
 			int i;
