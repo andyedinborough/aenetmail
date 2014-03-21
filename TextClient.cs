@@ -50,7 +50,6 @@ namespace AE.Net.Mail {
 			IsAuthenticated = false;
 		}
 
-
 		public virtual void Connect(string hostname, int port, bool ssl, bool skipSslValidation) {
 			System.Net.Security.RemoteCertificateValidationCallback validateCertificate = null;
 			if (skipSslValidation)
@@ -121,9 +120,6 @@ namespace AE.Net.Mail {
 			if (IsAuthenticated) {
 				Logout();
 			}
-			if (_Stream != null) {
-				_Stream.Close();  //Should probably close the stream
-			}
 			IsConnected = false;
 			Utilities.TryDispose(ref _Stream);
 			Utilities.TryDispose(ref _Connection);
@@ -142,9 +138,6 @@ namespace AE.Net.Mail {
 					if (!IsDisposed && disposing) {
 						IsDisposed = true;
 						Disconnect();
-						//This happens in Disconnect()
-						//if (_Stream != null) _Stream.Dispose();
-						//if (_Connection != null) _Connection.Close();
 					}
 
 			_Stream = null;
