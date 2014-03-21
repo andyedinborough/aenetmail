@@ -16,43 +16,25 @@ namespace AE.Net.Mail {
 		private string[] _Capability;
 
 		private bool _Idling;
-        private Task _IdleTask;
-        private Task _ResponseTask;
+		private Task _IdleTask;
+		private Task _ResponseTask;
 
 		private string _FetchHeaders = null;
 
-		public ImapClient() { }
-		public ImapClient(string host, string username, string password, AuthMethods method = AuthMethods.Login, int port = 143, bool secure = false, bool skipSslValidation = false) {
+		public ImapClient() {
+			ServerTimeout = 10000;
+			IdleTimeout = 1200000;
+		}
+		public ImapClient(string host, string username, string password, AuthMethods method = AuthMethods.Login, int port = 143, bool secure = false, bool skipSslValidation = false)
+			: this() {
 			Connect(host, port, secure, skipSslValidation);
 			AuthMethod = method;
 			Login(username, password);
 		}
 
-        private int _ServerTimeout=10000;
-        public int ServerTimeout_ms
-        {
-            get
-            {
-                return _ServerTimeout;
-            }
-            set
-            {
-                _ServerTimeout = value;
-            }
-        }
+		public int ServerTimeout { get; set; }
 
-        private int _IdleTimeout = 1200000;
-        public int IdleTimeout_sec
-        {
-            get
-            {
-                return _IdleTimeout / 1000;
-            }
-            set
-            {
-                _IdleTimeout = value * 1000;
-            }
-        }
+		public int IdleTimeout { get; set; }
 
 		public enum AuthMethods {
 			Login,
@@ -97,21 +79,10 @@ namespace AE.Net.Mail {
 			}
 		}
 
-        private EventHandler<ImapClientExceptionEventArgs> _ImapException;
-        public virtual event EventHandler<ImapClientExceptionEventArgs> ImapException
-        {
-            add
-            {
-                _ImapException += value;
-            }
-            remove
-            {
-                _ImapException -= value;
-            }
-        }
+		public virtual event EventHandler<ImapClientExceptionEventArgs> ImapException;
 
 		protected virtual void IdleStart() {
-            CheckMailboxSelected();
+			CheckMailboxSelected();
 
 			_Idling = true;
 			if (!Supports("IDLE")) {
@@ -121,21 +92,20 @@ namespace AE.Net.Mail {
 		}
 
 		protected virtual void IdlePause() {
-            if (_IdleTask == null || !_Idling)
+			if (_IdleTask == null || !_Idling)
 				return;
 			CheckConnectionStatus();
-            SendCommand("DONE");
+			SendCommand("DONE");
 
-            if (!_IdleTask.Wait(_ServerTimeout))
-            {
-                //Not responding
-                Disconnect();
-                ImapClientException e = new ImapClientException("Lost communication to IMAP server, connection closed.");
-                ImapClientExceptionEventArgs args = new ImapClientExceptionEventArgs(e);
-                Task.Factory.StartNew(() => _ImapException.Fire(this, args));
-            }
-            _IdleTask.Dispose();
-            _IdleTask = null;
+			if (!_IdleTask.Wait(ServerTimeout)) {
+				//Not responding
+				Disconnect();
+				ImapClientException e = new ImapClientException("Lost communication to IMAP server, connection closed.");
+				ImapClientExceptionEventArgs args = new ImapClientExceptionEventArgs(e);
+				Task.Factory.StartNew(() => ImapException.Fire(this, args));
+			}
+			_IdleTask.Dispose();
+			_IdleTask = null;
 		}
 
 		protected virtual void IdleResume() {
@@ -144,11 +114,10 @@ namespace AE.Net.Mail {
 
 			IdleResumeCommand();
 
-            if (_IdleTask == null)
-            {
-                _IdleTask = new Task(() => WatchIdleQueue());
-                _IdleTask.Start();
-            }
+			if (_IdleTask == null) {
+				_IdleTask = new Task(() => WatchIdleQueue());
+				_IdleTask.Start();
+			}
 		}
 
 		private void IdleResumeCommand() {
@@ -163,35 +132,28 @@ namespace AE.Net.Mail {
 
 		protected virtual void IdleStop() {
 			IdlePause();
-            _Idling = false;
+			_Idling = false;
 		}
 
-        public virtual bool TryGetResponse(out string response)
-        {
-            string resp = response = null;
+		public virtual bool TryGetResponse(out string response) {
+			string resp = response = null;
 
-            _ResponseTask = Task.Factory.StartNew(() =>
-            {
-                resp = GetResponse(_IdleTimeout + _ServerTimeout * 3);
-            });
+			_ResponseTask = Task.Factory.StartNew(() => {
+				resp = GetResponse(IdleTimeout + ServerTimeout * 3);
+			});
 
-            try
-            {
-                if (_ResponseTask.Wait(_IdleTimeout))
-                {
-                    response = resp;
-                    _ResponseTask.Dispose();
-                    _ResponseTask = null;
-                    return true;
-                }
-                else
-                    return false;
-            }
-            catch (AggregateException)
-            {
-                throw;
-            }
-        }
+			try {
+				if (_ResponseTask.Wait(IdleTimeout)) {
+					response = resp;
+					_ResponseTask.Dispose();
+					_ResponseTask = null;
+					return true;
+				} else
+					return false;
+			} catch (AggregateException) {
+				throw;
+			}
+		}
 
 		private void WatchIdleQueue() {
 			try {
@@ -199,20 +161,19 @@ namespace AE.Net.Mail {
 
 				while (true) {
 					if (!TryGetResponse(out resp)) {
-                        //Child task should still running on ReadByte here.
-                        //Need to send some data to get it to exit.
+						//Child task should still running on ReadByte here.
+						//Need to send some data to get it to exit.
 
-                        SendCommand("DONE"); //_ResponseTask should pick up response and exit
-                        if (!_ResponseTask.Wait(_ServerTimeout)) 
-                        {
-                            //Not responding
-                            Disconnect();
-                            throw new ImapClientException("Lost communication to IMAP server, connection closed.");
-                        }
-                        _ResponseTask.Dispose();
-                        _ResponseTask = null;
+						SendCommand("DONE"); //_ResponseTask should pick up response and exit
+						if (!_ResponseTask.Wait(ServerTimeout)) {
+							//Not responding
+							Disconnect();
+							throw new ImapClientException("Lost communication to IMAP server, connection closed.");
+						}
+						_ResponseTask.Dispose();
+						_ResponseTask = null;
 
-                        IdleResumeCommand();
+						IdleResumeCommand();
 
 						continue;
 					}
@@ -224,17 +185,17 @@ namespace AE.Net.Mail {
 					if (data[0] == "*" && data.Length >= 3) {
 						var e = new MessageEventArgs { Client = this, MessageCount = int.Parse(data[1]) };
 						if (data[2].Is("EXISTS") && !last.Is("EXPUNGE") && e.MessageCount > 0) {
-                            Task.Factory.StartNew(() => _NewMessage.Fire(this, e)); //Fire the event in a task
+							Task.Factory.StartNew(() => _NewMessage.Fire(this, e)); //Fire the event in a task
 						} else if (data[2].Is("EXPUNGE")) {
 							Task.Factory.StartNew(() => _MessageDeleted.Fire(this, e));
 						}
 						last = data[2];
 					}
 				}
-			} catch (Exception e) {                
-                ImapClientExceptionEventArgs args = new ImapClientExceptionEventArgs(e);
-                Task.Factory.StartNew(() => _ImapException.Fire(this, args));
-            }
+			} catch (Exception e) {
+				ImapClientExceptionEventArgs args = new ImapClientExceptionEventArgs(e);
+				Task.Factory.StartNew(() => ImapException.Fire(this, args));
+			}
 		}
 
 		public virtual void AppendMail(MailMessage email, string mailbox = null) {
@@ -264,16 +225,15 @@ namespace AE.Net.Mail {
 		}
 
 		public virtual void Noop() {
-            IdlePause();
+			IdlePause();
 
-            var tag = GetTag();
-            var response = SendCommandGetResponse(tag + "NOOP");
-            while (!response.StartsWith(tag))
-            {
-                response = GetResponse();
-            }
+			var tag = GetTag();
+			var response = SendCommandGetResponse(tag + "NOOP");
+			while (!response.StartsWith(tag)) {
+				response = GetResponse();
+			}
 
-            IdleResume();
+			IdleResume();
 		}
 
 		public virtual string[] Capability() {
@@ -458,10 +418,10 @@ namespace AE.Net.Mail {
 
 			string tag = GetTag();
 			string command = tag + (uid ? "UID " : null)
-				+ "FETCH " + start + ":" + end + " ("
-				+ _FetchHeaders + "UID FLAGS BODY"
-				+ (setseen ? null : ".PEEK")
-				+ "[" + (headersonly ? "HEADER" : null) + "])";
+					+ "FETCH " + start + ":" + end + " ("
+					+ _FetchHeaders + "UID FLAGS BODY"
+					+ (setseen ? null : ".PEEK")
+					+ "[" + (headersonly ? "HEADER" : null) + "])";
 
 			string response;
 
@@ -475,22 +435,20 @@ namespace AE.Net.Mail {
 					continue;
 
 				var imapHeaders = Utilities.ParseImapHeader(response.Substring(response.IndexOf('(') + 1));
-                if ((imapHeaders["BODY[HEADER]"] ?? imapHeaders["BODY[]"]) == null)
-                {
-                    System.Diagnostics.Debugger.Break();
-                    RaiseWarning(null, "Expected BODY[] in stream, but received \"" + response + "\"");
-                    break;
-                }
+				if ((imapHeaders["BODY[HEADER]"] ?? imapHeaders["BODY[]"]) == null) {
+					System.Diagnostics.Debugger.Break();
+					RaiseWarning(null, "Expected BODY[] in stream, but received \"" + response + "\"");
+					break;
+				}
 				var size = (imapHeaders["BODY[HEADER]"] ?? imapHeaders["BODY[]"]).Trim('{', '}').ToInt();
 				var msg = action(_Stream, size, imapHeaders);
 
 				response = GetResponse();
-                if (response == null)
-                {
-                    System.Diagnostics.Debugger.Break();
-                    RaiseWarning(null, "Expected \")\" in stream, but received nothing");
-                    break;
-                }
+				if (response == null) {
+					System.Diagnostics.Debugger.Break();
+					RaiseWarning(null, "Expected \")\" in stream, but received nothing");
+					break;
+				}
 				var n = response.Trim().LastOrDefault();
 				if (n != ')') {
 					System.Diagnostics.Debugger.Break();
@@ -514,10 +472,10 @@ namespace AE.Net.Mail {
 				Match m = Regex.Match(response, reg);
 				if (m.Groups.Count > 1) {
 					quota = new Quota(m.Groups[1].ToString(),
-															m.Groups[2].ToString(),
-															Int32.Parse(m.Groups[3].ToString()),
-															Int32.Parse(m.Groups[4].ToString())
-													);
+																									m.Groups[2].ToString(),
+																									Int32.Parse(m.Groups[3].ToString()),
+																									Int32.Parse(m.Groups[4].ToString())
+																					);
 					break;
 				}
 				response = GetResponse();
@@ -628,14 +586,12 @@ namespace AE.Net.Mail {
 		}
 
 		internal override void OnLogout() {
-            if (IsConnected)
-            {
-                if (_IdleTask != null && _Idling)
-                {
-                    IdleStop();
-                }
-                SendCommand(GetTag() + "LOGOUT");
-            }
+			if (IsConnected) {
+				if (_IdleTask != null && _Idling) {
+					IdleStop();
+				}
+				SendCommand(GetTag() + "LOGOUT");
+			}
 		}
 
 		public virtual Namespaces Namespace() {
@@ -735,8 +691,8 @@ namespace AE.Net.Mail {
 
 		public virtual Lazy<MailMessage>[] SearchMessages(SearchCondition criteria, bool headersonly = false, bool setseen = false) {
 			return Search(criteria, true)
-					.Select(x => new Lazy<MailMessage>(() => GetMessage(x, headersonly, setseen)))
-					.ToArray();
+							.Select(x => new Lazy<MailMessage>(() => GetMessage(x, headersonly, setseen)))
+							.ToArray();
 		}
 
 		public virtual Mailbox SelectMailbox(string mailboxName) {

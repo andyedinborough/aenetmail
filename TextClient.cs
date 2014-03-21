@@ -47,7 +47,7 @@ namespace AE.Net.Mail {
 
 		public virtual void Logout() {
 			OnLogout();
-            IsAuthenticated = false;
+			IsAuthenticated = false;
 		}
 
 
@@ -116,17 +116,15 @@ namespace AE.Net.Mail {
 		}
 
 		public virtual void Disconnect() {
-            if (!IsConnected)
-                return;
-            if (IsAuthenticated)
-            {
-                Logout();
-            }
-            if (_Stream != null)
-            {
-                _Stream.Close();  //Should probably close the stream
-            }
-            IsConnected = false;
+			if (!IsConnected)
+				return;
+			if (IsAuthenticated) {
+				Logout();
+			}
+			if (_Stream != null) {
+				_Stream.Close();  //Should probably close the stream
+			}
+			IsConnected = false;
 			Utilities.TryDispose(ref _Stream);
 			Utilities.TryDispose(ref _Connection);
 		}
@@ -144,7 +142,7 @@ namespace AE.Net.Mail {
 					if (!IsDisposed && disposing) {
 						IsDisposed = true;
 						Disconnect();
-                        //This happens in Disconnect()
+						//This happens in Disconnect()
 						//if (_Stream != null) _Stream.Dispose();
 						//if (_Connection != null) _Connection.Close();
 					}
