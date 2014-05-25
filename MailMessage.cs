@@ -92,7 +92,7 @@ namespace AE.Net.Mail {
 			var headers = new StringBuilder();
 			string line;
 			while ((line = reader.ReadLine(ref maxLength, _DefaultEncoding, termChar)) != null) {
-				if (line.Trim().Length == 0)
+				if (line.Length == 0)
 					if (headers.Length == 0)
 						continue;
 					else
@@ -123,6 +123,8 @@ namespace AE.Net.Mail {
 					SetBody(body);
 				}
 			}
+			else if (maxLength > 0)
+				reader.ReadToEnd(maxLength, Encoding);
 
 			if ((string.IsNullOrWhiteSpace(Body) || ContentType.StartsWith("multipart/")) && AlternateViews.Count > 0) {
 				var att = AlternateViews.GetTextView() ?? AlternateViews.GetHtmlView();
