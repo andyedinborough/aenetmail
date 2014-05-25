@@ -57,3 +57,4 @@ TestResults/*
 */bin/*
 */obj/*
 Tests/packages/*
+*.snk

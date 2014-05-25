@@ -83,10 +83,13 @@ namespace AE.Net.Mail {
 			}
 		}
 
-		public virtual void Load(Stream reader, bool headersOnly = false, int maxLength = 0, char? termChar = null) {
+		public virtual void Load(Stream reader, bool headersOnly = false, int maxLength = 0, char? termChar = null)
+		{
 			_HeadersOnly = headersOnly;
 			Headers = null;
 			Body = null;
+			if (maxLength == 0)
+				return;
 
 
 			var headers = new StringBuilder();

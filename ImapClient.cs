@@ -373,14 +373,14 @@ namespace AE.Net.Mail {
 		}
 
 		public virtual void DownloadMessage(System.IO.Stream stream, int index, bool setseen) {
-			GetMessages((index + 1).ToString(), (index + 1).ToString(), false, false, setseen, (message, size, headers) => {
+			GetMessages((index + 1).ToString(), (index + 1).ToString(), false, false, false, setseen, (message, size, headers) => {
 				Utilities.CopyStream(message, stream, size);
 				return null;
 			});
 		}
 
 		public virtual void DownloadMessage(System.IO.Stream stream, string uid, bool setseen) {
-			GetMessages(uid, uid, true, false, setseen, (message, size, headers) => {
+			GetMessages(uid, uid, true, false, false, setseen, (message, size, headers) => {
 				Utilities.CopyStream(message, stream, size);
 				return null;
 			});
@@ -389,7 +389,7 @@ namespace AE.Net.Mail {
 		public virtual MailMessage[] GetMessages(string start, string end, bool uid, bool headersonly, bool setseen) {
 			var x = new List<MailMessage>();
 
-			GetMessages(start, end, uid, headersonly, setseen, (stream, size, imapHeaders) => {
+			GetMessages(start, end, uid, false, headersonly, setseen, (stream, size, imapHeaders) => {
 				var mail = new MailMessage { Encoding = Encoding };
 				mail.Size = size;
 
@@ -412,16 +412,39 @@ namespace AE.Net.Mail {
 			return x.ToArray();
 		}
 
-		public virtual void GetMessages(string start, string end, bool uid, bool headersonly, bool setseen, Func<System.IO.Stream, int, NameValueCollection, MailMessage> action) {
+		public virtual void GetMessages(string start, string end, bool uid, bool uidsonly, bool headersonly, bool setseen, Action<MailMessage> processCallback) {
+
+			GetMessages(start, end, uid, uidsonly, headersonly, setseen, (stream, size, imapHeaders) => {
+				var mail = new MailMessage { Encoding = Encoding };
+				mail.Size = size;
+
+				if (imapHeaders["UID"] != null)
+					mail.Uid = imapHeaders["UID"];
+
+				if (imapHeaders["Flags"] != null)
+					mail.SetFlags(imapHeaders["Flags"]);
+
+				mail.Load(_Stream, headersonly, mail.Size);
+
+				foreach (var key in imapHeaders.AllKeys.Except(new[] { "UID", "Flags", "BODY[]", "BODY[HEADER]" }, StringComparer.OrdinalIgnoreCase))
+					mail.Headers.Add(key, new HeaderValue(imapHeaders[key]));
+
+				processCallback(mail);
+
+				return mail;
+			});
+		}
+
+		public virtual void GetMessages(string start, string end, bool uid, bool uidsonly, bool headersonly, bool setseen, Func<System.IO.Stream, int, NameValueCollection, MailMessage> action) {
 			CheckMailboxSelected();
 			IdlePause();
 
 			string tag = GetTag();
 			string command = tag + (uid ? "UID " : null)
 					+ "FETCH " + start + ":" + end + " ("
-					+ _FetchHeaders + "UID FLAGS BODY"
-					+ (setseen ? null : ".PEEK")
-					+ "[" + (headersonly ? "HEADER" : null) + "])";
+					+ _FetchHeaders + "UID FLAGS"
+					+ (uidsonly ? null : (setseen ? "BODY[" : "BODY.PEEK[") + (headersonly ? "HEADER]" : "]"))
+					+ ")";
 
 			string response;
 
@@ -435,19 +458,25 @@ namespace AE.Net.Mail {
 					continue;
 
 				var imapHeaders = Utilities.ParseImapHeader(response.Substring(response.IndexOf('(') + 1));
-				if ((imapHeaders["BODY[HEADER]"] ?? imapHeaders["BODY[]"]) == null) {
+				String body = (imapHeaders["BODY[HEADER]"] ?? imapHeaders["BODY[]"]);
+				if (body == null && !uidsonly) {
 					System.Diagnostics.Debugger.Break();
 					RaiseWarning(null, "Expected BODY[] in stream, but received \"" + response + "\"");
 					break;
 				}
-				var size = (imapHeaders["BODY[HEADER]"] ?? imapHeaders["BODY[]"]).Trim('{', '}').ToInt();
+				var size = (uidsonly ? 0 : body.Trim('{', '}').ToInt());
 				var msg = action(_Stream, size, imapHeaders);
 
-				response = GetResponse();
-				if (response == null) {
-					System.Diagnostics.Debugger.Break();
-					RaiseWarning(null, "Expected \")\" in stream, but received nothing");
-					break;
+				// with only uids we have no body and the closing bracket is on the same line
+				if (!uidsonly)
+				{
+					response = GetResponse();
+					if (response == null)
+					{
+						System.Diagnostics.Debugger.Break();
+						RaiseWarning(null, "Expected \")\" in stream, but received nothing");
+						break;
+					}
 				}
 				var n = response.Trim().LastOrDefault();
 				if (n != ')') {
