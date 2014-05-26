@@ -443,7 +443,7 @@ namespace AE.Net.Mail {
 			string command = tag + (uid ? "UID " : null)
 					+ "FETCH " + start + ":" + end + " ("
 					+ _FetchHeaders + "UID FLAGS"
-					+ (uidsonly ? null : (setseen ? "BODY[" : "BODY.PEEK[") + (headersonly ? "HEADER]" : "]"))
+					+ (uidsonly ? null : (setseen ? " BODY[" : " BODY.PEEK[") + (headersonly ? "HEADER]" : "]"))
 					+ ")";
 
 			string response;
