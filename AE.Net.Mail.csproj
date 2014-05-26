@@ -56,12 +56,6 @@
     <DebugSymbols>true</DebugSymbols>
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
-  <PropertyGroup>
-    <SignAssembly>true</SignAssembly>
-  </PropertyGroup>
-  <PropertyGroup>
-    <AssemblyOriginatorKeyFile>PublicPrivateKey.snk</AssemblyOriginatorKeyFile>
-  </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -95,7 +89,6 @@
       <SubType>Designer</SubType>
     </None>
     <None Include="Create-Package.ps1" />
-    <None Include="PublicPrivateKey.snk" />
     <None Include="README.md" />
   </ItemGroup>
   <ItemGroup>

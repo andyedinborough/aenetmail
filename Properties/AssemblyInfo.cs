@@ -34,4 +34,4 @@ using System.Runtime.InteropServices;
 // [assembly: AssemblyVersion("1.0.*")]
 [assembly: AssemblyVersion("1.7.9.1")]
 [assembly: AssemblyFileVersion("1.7.9.1")]
-[assembly: InternalsVisibleTo("Tests, PublicKey=0024000004800000940000000602000000240000525341310004000001000100d7bcc3dc63b91121206d9e62c5fe7294da499ea3ac6019001e40563961744b917989df8fd594f3070133955ef01105031f8a0c92b5d5f0bf5abf457134becdb39b1bca32db48c849c994217bf327a2482b8ec0d3c8dbaba67734107f93203a7f5f19599e5bace8ecbd9c731c5af936427767df62727246a1dfcf635d62e9abcf")]
+[assembly: InternalsVisibleTo("Tests")]
