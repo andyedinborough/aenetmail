@@ -216,10 +216,18 @@ namespace AE.Net.Mail {
 			}).Sum();
 		}
 
-		public virtual void Save(System.IO.Stream stream, Encoding encoding = null) {
-			using (var str = new System.IO.StreamWriter(stream, encoding ?? System.Text.Encoding.Default))
+        public virtual void Save(System.IO.Stream stream, Encoding encoding = null)
+        {
+#if NET45
+			using (var str = new System.IO.StreamWriter(stream, encoding ?? System.Text.Encoding.Default, 8096, true)) {
 				Save(str);
-		}
+            }
+#else
+            var str = new System.IO.StreamWriter(stream, encoding ?? System.Text.Encoding.Default);
+            Save(str);
+            str.Flush();
+#endif
+        } 
 
 		private static readonly string[] SpecialHeaders = "Date,To,Cc,Reply-To,Bcc,Sender,From,Message-ID,Importance,Subject".Split(',');
 		public virtual void Save(System.IO.TextWriter txt) {
