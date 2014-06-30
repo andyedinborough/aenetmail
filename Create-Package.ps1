@@ -44,7 +44,7 @@ del "bin\Package" -recurse
 #deploy "3.5"
 deploy "4.0"
 deploy "4.5"
-deploy "4.5.2"
+#deploy "4.5.2"
 
 create-nuspec
 .nuget\NuGet.exe pack "bin\Package\$name.nuspec" /o "bin\Package"
