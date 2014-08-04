@@ -36,5 +36,9 @@ to simplify the creation of the Pop3 client.
        }
     }
 
+###Installation
+
+    Install-Package AE.Net.Mail
+
 ###License
 http://andyedinborough.mit-license.org/
