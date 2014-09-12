@@ -185,6 +185,8 @@ namespace AE.Net.Mail {
 				var nestedboundary = a.Headers.GetBoundary();
 				if (!string.IsNullOrEmpty(nestedboundary)) {
 					ParseMime(reader, nestedboundary, ref maxLength, attachments, encoding, termChar);
+					while (!data.StartsWith(bounderInner))
+                        			data = reader.ReadLine(ref maxLength, encoding, termChar);
 				} else {
 					data = reader.ReadLine(ref maxLength, a.Encoding, termChar);
 					if (data == null) break;
