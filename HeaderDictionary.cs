@@ -65,7 +65,7 @@ namespace AE.Net.Mail {
 
 			while (mailAddressEndIndex < headerValue.Length) {
 				// Start searching for the next comma by skipping the previous mailAddressEndIndex
-				mailAddressEndIndex = headerValue.IndexOf(',', mailAddressEndIndex);
+				mailAddressEndIndex = IndexOfExcludingQuoted(headerValue, ',', mailAddressEndIndex);
 
 				if (mailAddressEndIndex == notFound) {
 					mailAddressEndIndex = headerValue.Length;
@@ -116,6 +116,25 @@ namespace AE.Net.Mail {
 			}
 			return result;
 		}
-	}
 
+        private static int IndexOfExcludingQuoted(string str, char searchChar, int startIndex)
+        {
+            bool withinQuotes = false;
+
+            for (int i = startIndex; i < str.Length; i++) {
+                if (!withinQuotes) {
+                    if (str[i] == searchChar)
+                        return i;
+                    
+                    if (str[i] == '"')
+                        withinQuotes = true;
+                }
+                else if (str[i] == '"') {
+                    withinQuotes = false;
+                }
+            }
+
+            return -1;
+        }
+	}
 }
