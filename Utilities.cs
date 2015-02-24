@@ -181,7 +181,7 @@ namespace AE.Net.Mail {
 		}
 
 		internal static string GetRFC2060Date(this DateTime date) {
-			return date.ToString("dd-MMM-yyyy hh:mm:ss zz", _enUsCulture);
+			return date.ToString("dd-MMM-yyyy HH:mm:ss zz", _enUsCulture);
 		}
 
 		internal static string GetRFC2822Date(this DateTime date) {
