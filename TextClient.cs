@@ -14,6 +14,7 @@ namespace AE.Net.Mail {
 		public virtual bool IsAuthenticated { get; private set; }
 		public virtual bool IsDisposed { get; private set; }
 		public virtual System.Text.Encoding Encoding { get; set; }
+		public int ServerTimeout { get; set; }
 
 		public event EventHandler<WarningEventArgs> Warning;
 
@@ -26,6 +27,7 @@ namespace AE.Net.Mail {
 
 		public TextClient() {
 			Encoding = System.Text.Encoding.GetEncoding(1252);
+			ServerTimeout = 10000;
 		}
 
 		internal abstract void OnLogin(string username, string password);
@@ -105,9 +107,14 @@ namespace AE.Net.Mail {
 			return GetResponse();
 		}
 
-		protected virtual string GetResponse(int Timeout = 10000) {
+		protected virtual string GetResponse()
+		{
+			return GetResponse(ServerTimeout);
+		}
+
+		protected virtual string GetResponse(int timeout) {
 			int max = 0;
-			return _Stream.ReadLine(ref max, Encoding, null, Timeout);
+			return _Stream.ReadLine(ref max, Encoding, null, timeout);
 		}
 
 		protected virtual void SendCommandCheckOK(string command) {
