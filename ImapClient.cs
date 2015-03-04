@@ -28,7 +28,6 @@ namespace AE.Net.Mail {
 		private string _FetchHeaders = null;
 
 		public ImapClient() {
-			ServerTimeout = 10000;
 			IdleTimeout = 1200000;
 		}
 		public ImapClient(string host, string username, string password, AuthMethods method = AuthMethods.Login, int port = 143, bool secure = false, bool skipSslValidation = false)
@@ -37,8 +36,6 @@ namespace AE.Net.Mail {
 			AuthMethod = method;
 			Login(username, password);
 		}
-
-		public int ServerTimeout { get; set; }
 
 		public int IdleTimeout { get; set; }
 
