@@ -49,7 +49,16 @@ namespace AE.Net.Mail {
 			msg.Uid = uid;
 			var last = GetResponse();
 			if (string.IsNullOrEmpty(last))
-				last = GetResponse();
+			{
+				try
+				{
+					last = GetResponse();
+				}
+				catch (System.IO.IOException)
+				{
+					// There was really nothing back to read from the remote server
+				}
+			}
 
 			if (last != ".") {
 				System.Diagnostics.Debugger.Break();
