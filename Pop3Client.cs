@@ -49,10 +49,21 @@ namespace AE.Net.Mail {
 			msg.Uid = uid;
 			var last = GetResponse();
 			if (string.IsNullOrEmpty(last))
-				last = GetResponse();
+			{
+				try
+				{
+					last = GetResponse();
+				}
+				catch (System.IO.IOException)
+				{
+					// There was really nothing back to read from the remote server
+				}
+			}
 
 			if (last != ".") {
+#if DEBUG
 				System.Diagnostics.Debugger.Break();
+#endif
 				RaiseWarning(msg, "Expected \".\" in stream, but received \"" + last + "\"");
 			}
 

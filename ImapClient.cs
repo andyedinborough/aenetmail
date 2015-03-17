@@ -457,7 +457,10 @@ namespace AE.Net.Mail {
 				var imapHeaders = Utilities.ParseImapHeader(response.Substring(response.IndexOf('(') + 1));
 				String body = (imapHeaders["BODY[HEADER]"] ?? imapHeaders["BODY[]"]);
 				if (body == null && !uidsonly) {
+#if DEBUG
 					System.Diagnostics.Debugger.Break();
+#endif
+
 					RaiseWarning(null, "Expected BODY[] in stream, but received \"" + response + "\"");
 					break;
 				}
@@ -470,14 +473,18 @@ namespace AE.Net.Mail {
 					response = GetResponse();
 					if (response == null)
 					{
+#if DEBUG
 						System.Diagnostics.Debugger.Break();
+#endif
 						RaiseWarning(null, "Expected \")\" in stream, but received nothing");
 						break;
 					}
 				}
 				var n = response.Trim().LastOrDefault();
 				if (n != ')') {
+#if DEBUG
 					System.Diagnostics.Debugger.Break();
+#endif
 					RaiseWarning(null, "Expected \")\" in stream, but received \"" + response + "\"");
 				}
 			}
