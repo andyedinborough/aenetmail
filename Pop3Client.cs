@@ -61,7 +61,9 @@ namespace AE.Net.Mail {
 			}
 
 			if (last != ".") {
+#if DEBUG
 				System.Diagnostics.Debugger.Break();
+#endif
 				RaiseWarning(msg, "Expected \".\" in stream, but received \"" + last + "\"");
 			}
 
