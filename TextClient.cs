@@ -33,6 +33,7 @@ namespace AE.Net.Mail {
 		internal abstract void OnLogin(string username, string password);
 		internal abstract void OnLogout();
 		internal abstract void CheckResultOK(string result);
+        protected abstract bool isUntaggedResponse(string response);
 
 		protected virtual void OnConnected(string result) {
 			CheckResultOK(result);
@@ -116,6 +117,23 @@ namespace AE.Net.Mail {
 			int max = 0;
 			return _Stream.ReadLine(ref max, Encoding, null, timeout);
 		}
+
+        protected virtual void SendCommandCheckOK(string command, Action<string> unilateralUntaggedCallback)
+        {
+            SendCommand(command);
+
+            while (true)
+            {
+                var response = GetResponse();
+                if (isUntaggedResponse(response))
+                    unilateralUntaggedCallback(response);
+                else
+                {
+                    CheckResultOK(response);
+                    return;
+                }
+            }
+        }
 
 		protected virtual void SendCommandCheckOK(string command) {
 			CheckResultOK(SendCommandGetResponse(command));

@@ -82,5 +82,10 @@ namespace AE.Net.Mail {
 		public virtual void DeleteMessage(AE.Net.Mail.MailMessage msg) {
 			DeleteMessage(msg.Uid);
 		}
+
+        protected override bool isUntaggedResponse(string response)
+        {
+            return false;
+        }
 	}
 }

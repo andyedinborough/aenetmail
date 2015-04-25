@@ -254,7 +254,7 @@ namespace AE.Net.Mail {
 				prefix = "UID ";
 			}
 			string command = string.Concat(GetTag(), prefix, "COPY ", messageset, " " + destination.QuoteString());
-			SendCommandCheckOK(command);
+            SendCommandCheckOK(command, s => { } );
 			IdleResume();
 		}
 
@@ -826,5 +826,10 @@ namespace AE.Net.Mail {
 			response = response.Substring(response.IndexOf(" ")).Trim();
 			return response.ToUpper().StartsWith("OK");
 		}
+
+        protected override bool isUntaggedResponse(string response)
+        {
+            return response.Trim().StartsWith("* ");
+        }
 	}
 }
