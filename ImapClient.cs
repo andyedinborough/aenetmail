@@ -196,23 +196,28 @@ namespace AE.Net.Mail {
 		}
 
 		public virtual void AppendMail(MailMessage email, string mailbox = null) {
+			var body = new StringBuilder();
+			using (var txt = new System.IO.StringWriter(body))
+				email.Save(txt);
+			AppendMail(body.ToString(), email.RawFlags.Length > 0 ? email.Flags : (Flags?)null, mailbox);
+		}
+
+		public virtual void AppendMail(string rawMessage, Flags? messageFlags = null, string mailbox = null) {
 			IdlePause();
 
 			mailbox = ModifiedUtf7Encoding.Encode(mailbox);
 			string flags = String.Empty;
-			var body = new StringBuilder();
-			using (var txt = new System.IO.StringWriter(body))
-				email.Save(txt);
 
-			string size = body.Length.ToString();
-			if (email.RawFlags.Length > 0) {
-				flags = " (" + string.Join(" ", email.Flags) + ")";
+			string size = rawMessage.Length.ToString();
+			if (messageFlags.HasValue) {
+				flags = " (" + string.Join(" ", messageFlags.Value) + ")";
 			}
 
 			if (mailbox == null)
 				CheckMailboxSelected();
 			mailbox = mailbox ?? _SelectedMailbox;
 
+			string body = rawMessage;
 			string command = GetTag() + "APPEND " + (mailbox ?? _SelectedMailbox).QuoteString() + flags + " {" + size + "}";
 			string response = SendCommandGetResponse(command);
 			if (response.StartsWith("+")) {
