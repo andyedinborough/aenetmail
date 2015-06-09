@@ -217,6 +217,8 @@ namespace AE.Net.Mail {
 			string response = SendCommandGetResponse(command);
 			if (response.StartsWith("+")) {
 				response = SendCommandGetResponse(body.ToString());
+				while (response.StartsWith("*"))
+					response = GetResponse();
 			}
 			IdleResume();
 		}
