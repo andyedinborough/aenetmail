@@ -5,14 +5,18 @@ using System.Text;
 
 namespace AE.Net.Mail
 {
-    [Serializable()]
     public class ImapClientException : Exception
     {
-        public ImapClientException() : base() { }
-        public ImapClientException(string message) : base(message) { }
-        public ImapClientException(string message, Exception inner) : base(message, inner) { }
+        public ImapClientException() : base()
+        {
+        }
 
-        protected ImapClientException(System.Runtime.Serialization.SerializationInfo info,
-                System.Runtime.Serialization.StreamingContext context) { }
+        public ImapClientException(string message) : base(message)
+        {
+        }
+
+        public ImapClientException(string message, Exception inner) : base(message, inner)
+        {
+        }
     }
 }

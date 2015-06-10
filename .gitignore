@@ -58,3 +58,4 @@ TestResults/*
 */obj/*
 Tests/packages/*
 *.snk
+project.lock.json
