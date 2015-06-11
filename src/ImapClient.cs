@@ -1,3 +1,4 @@
+using AE.Net.Mail.Imap;
 using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
@@ -6,10 +7,10 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using AE.Net.Mail.Imap;
 
 namespace AE.Net.Mail
 {
+
     public enum AuthMethods
     {
         Login,
@@ -19,27 +20,20 @@ namespace AE.Net.Mail
 
     public class ImapClient : TextClient, IMailClient
     {
-        #region Fields
-
-        private string[] _Capability;
-        private string _FetchHeaders = null;
-        private Task _IdleTask;
-        private bool _Idling;
-        private EventHandler<MessageEventArgs> _MessageDeleted;
-        private EventHandler<MessageEventArgs> _NewMessage;
-        private Task _ResponseTask;
         private string _SelectedMailbox;
         private int _tag = 0;
+        private string[] _Capability;
 
-        #endregion
+        private bool _Idling;
+        private Task _IdleTask;
+        private Task _ResponseTask;
 
-        #region Constructors
+        private string _FetchHeaders = null;
 
         public ImapClient()
         {
             IdleTimeout = 1200000;
         }
-
         public ImapClient(string host, string username, string password, AuthMethods method = AuthMethods.Login, int port = 143, bool secure = false, bool skipSslValidation = false)
             : this()
         {
@@ -48,27 +42,22 @@ namespace AE.Net.Mail
             Login(username, password);
         }
 
-        #endregion
+        public int IdleTimeout { get; set; }
 
-        #region Events
+        public virtual AuthMethods AuthMethod { get; set; }
 
-        public virtual event EventHandler<ImapClientExceptionEventArgs> ImapException;
-
-        public virtual event EventHandler<MessageEventArgs> MessageDeleted
+        private string GetTag()
         {
-            add
-            {
-                _MessageDeleted += value;
-                IdleStart();
-            }
-            remove
-            {
-                _MessageDeleted -= value;
-                if (!HasEvents)
-                    IdleStop();
-            }
+            _tag++;
+            return string.Format("xm{0:000} ", _tag);
         }
 
+        public virtual bool Supports(string command)
+        {
+            return (_Capability ?? Capability()).Contains(command, StringComparer.OrdinalIgnoreCase);
+        }
+
+        private EventHandler<MessageEventArgs> _NewMessage;
         public virtual event EventHandler<MessageEventArgs> NewMessage
         {
             add
@@ -84,13 +73,72 @@ namespace AE.Net.Mail
             }
         }
 
-        #endregion
+        private EventHandler<MessageEventArgs> _MessageDeleted;
+        public virtual event EventHandler<MessageEventArgs> MessageDeleted
+        {
+            add
+            {
+                _MessageDeleted += value;
+                IdleStart();
+            }
+            remove
+            {
+                _MessageDeleted -= value;
+                if (!HasEvents)
+                    IdleStop();
+            }
+        }
 
-        #region Properties
+        public virtual event EventHandler<ImapClientExceptionEventArgs> ImapException;
 
-        public virtual AuthMethods AuthMethod { get; set; }
+        protected virtual void IdleStart()
+        {
+            CheckMailboxSelected();
 
-        public int IdleTimeout { get; set; }
+            _Idling = true;
+            if (!Supports("IDLE"))
+            {
+                throw new InvalidOperationException("This IMAP server does not support the IDLE command");
+            }
+            IdleResume();
+        }
+
+        protected virtual void IdlePause()
+        {
+            if (_IdleTask == null || !_Idling)
+                return;
+            CheckConnectionStatus();
+            SendCommand("DONE");
+
+            if (!_IdleTask.Wait(ServerTimeout))
+            {
+                //Not responding
+                Disconnect();
+                ImapClientException e = new ImapClientException("Lost communication to IMAP server, connection closed.");
+                ImapClientExceptionEventArgs args = new ImapClientExceptionEventArgs(e);
+                Task.Factory.StartNew(() => ImapException.Fire(this, args));
+            }
+            _IdleTask = null;
+        }
+
+        protected virtual void IdleResume()
+        {
+            if (!_Idling)
+                return;
+
+            IdleResumeCommand();
+
+            if (_IdleTask == null)
+            {
+                _IdleTask = new Task(() => WatchIdleQueue());
+                _IdleTask.Start();
+            }
+        }
+
+        private void IdleResumeCommand()
+        {
+            SendCommandGetResponse(GetTag() + "IDLE");
+        }
 
         private bool HasEvents
         {
@@ -100,50 +148,138 @@ namespace AE.Net.Mail
             }
         }
 
-        #endregion
-
-        #region Methods
-
-        public virtual void AddFlags(Flags flags, params MailMessage[] msgs)
+        protected virtual void IdleStop()
         {
-            AddFlags(FlagsToFlagString(flags), msgs);
+            IdlePause();
+            _Idling = false;
         }
 
-        public virtual void AddFlags(string flags, params MailMessage[] msgs)
+        public virtual bool TryGetResponse(out string response)
         {
-            Store("UID " + string.Join(" ", msgs.Select(x => x.Uid)), false, flags);
-            foreach (var msg in msgs)
+            string resp = response = null;
+
+            _ResponseTask = Task.Factory.StartNew(() => {
+                resp = GetResponse(IdleTimeout + ServerTimeout * 3);
+            });
+
+            try
             {
-                msg.SetFlags(FlagsToFlagString(msg.Flags) + " " + flags);
+                if (_ResponseTask.Wait(IdleTimeout))
+                {
+                    response = resp;
+                    _ResponseTask = null;
+                    return true;
+                }
+                else
+                    return false;
+            }
+            catch (AggregateException)
+            {
+                throw;
+            }
+        }
+
+        private void WatchIdleQueue()
+        {
+            try
+            {
+                string last = null, resp;
+
+                while (true)
+                {
+                    if (!TryGetResponse(out resp))
+                    {
+                        //Child task should still running on ReadByte here.
+                        //Need to send some data to get it to exit.
+
+                        SendCommand("DONE"); //_ResponseTask should pick up response and exit
+                        if (!_ResponseTask.Wait(ServerTimeout))
+                        {
+                            //Not responding
+                            Disconnect();
+                            throw new ImapClientException("Lost communication to IMAP server, connection closed.");
+                        }
+                        _ResponseTask = null;
+
+                        IdleResumeCommand();
+
+                        continue;
+                    }
+
+                    if (resp.Contains("OK IDLE"))  //Server response after DONE
+                        return;
+
+                    var data = resp.Split(' ');
+                    if (data[0] == "*" && data.Length >= 3)
+                    {
+                        var e = new MessageEventArgs { Client = this, MessageCount = int.Parse(data[1]) };
+                        if (data[2].Is("EXISTS") && !last.Is("EXPUNGE") && e.MessageCount > 0)
+                        {
+                            Task.Factory.StartNew(() => _NewMessage.Fire(this, e)); //Fire the event in a task
+                        }
+                        else if (data[2].Is("EXPUNGE"))
+                        {
+                            Task.Factory.StartNew(() => _MessageDeleted.Fire(this, e));
+                        }
+                        last = data[2];
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                ImapClientExceptionEventArgs args = new ImapClientExceptionEventArgs(e);
+                Task.Factory.StartNew(() => ImapException.Fire(this, args));
             }
         }
 
         public virtual void AppendMail(MailMessage email, string mailbox = null)
         {
+            var body = new StringBuilder();
+            using (var txt = new System.IO.StringWriter(body))
+                email.Save(txt);
+            AppendMail(body.ToString(), email.RawFlags.Length > 0 ? email.Flags : (Flags?)null, mailbox);
+        }
+
+        public virtual void AppendMail(string rawMessage, Flags? messageFlags = null, string mailbox = null)
+        {
             IdlePause();
 
             mailbox = ModifiedUtf7Encoding.Encode(mailbox);
             string flags = String.Empty;
-            var body = new StringBuilder();
-            using (var txt = new System.IO.StringWriter(body))
-                email.Save(txt);
 
-            string size = body.Length.ToString();
-            if (email.RawFlags.Length > 0)
+            string size = rawMessage.Length.ToString();
+            if (messageFlags.HasValue)
             {
-                flags = " (" + string.Join(" ", email.Flags) + ")";
+                flags = " (" + string.Join(" ", messageFlags.Value) + ")";
             }
 
             if (mailbox == null)
                 CheckMailboxSelected();
             mailbox = mailbox ?? _SelectedMailbox;
 
+            string body = rawMessage;
             string command = GetTag() + "APPEND " + (mailbox ?? _SelectedMailbox).QuoteString() + flags + " {" + size + "}";
             string response = SendCommandGetResponse(command);
             if (response.StartsWith("+"))
             {
                 response = SendCommandGetResponse(body.ToString());
+                while (response.StartsWith("*"))
+                    response = GetResponse();
             }
+            IdleResume();
+        }
+
+        public virtual void Noop()
+        {
+            IdlePause();
+
+            var tag = GetTag();
+            var response = SendCommandGetResponse(tag + "NOOP");
+            while (!response.StartsWith(tag))
+            {
+                response = GetResponse();
+            }
+
             IdleResume();
         }
 
@@ -189,35 +325,6 @@ namespace AE.Net.Mail
             string command = GetTag() + "DELETE " + ModifiedUtf7Encoding.Encode(mailbox).QuoteString();
             SendCommandCheckOK(command);
             IdleResume();
-        }
-
-        public virtual void DeleteMessage(AE.Net.Mail.MailMessage msg)
-        {
-            DeleteMessage(msg.Uid);
-        }
-
-        public virtual void DeleteMessage(string uid)
-        {
-            CheckMailboxSelected();
-            Store("UID " + uid, true, "\\Seen \\Deleted");
-        }
-
-        public virtual void DownloadMessage(System.IO.Stream stream, int index, bool setseen)
-        {
-            GetMessages((index + 1).ToString(), (index + 1).ToString(), false, false, false, setseen, (message, size, headers) =>
-            {
-                Utilities.CopyStream(message, stream, size);
-                return null;
-            });
-        }
-
-        public virtual void DownloadMessage(System.IO.Stream stream, string uid, bool setseen)
-        {
-            GetMessages(uid, uid, true, false, false, setseen, (message, size, headers) =>
-            {
-                Utilities.CopyStream(message, stream, size);
-                return null;
-            });
         }
 
         public virtual Mailbox Examine(string mailbox)
@@ -278,6 +385,30 @@ namespace AE.Net.Mail
             IdleResume();
         }
 
+        public virtual void DeleteMessage(AE.Net.Mail.MailMessage msg)
+        {
+            DeleteMessage(msg.Uid);
+        }
+
+        public virtual void DeleteMessage(string uid)
+        {
+            CheckMailboxSelected();
+            Store("UID " + uid, true, "\\Seen \\Deleted");
+        }
+
+        public virtual void MoveMessage(string uid, string folderName)
+        {
+            CheckMailboxSelected();
+            Copy("UID " + uid, folderName);
+            DeleteMessage(uid);
+        }
+
+        protected virtual void CheckMailboxSelected()
+        {
+            if (string.IsNullOrEmpty(_SelectedMailbox))
+                SelectMailbox("INBOX");
+        }
+
         public virtual MailMessage GetMessage(string uid, bool headersonly = false)
         {
             return GetMessage(uid, headersonly, true);
@@ -298,32 +429,6 @@ namespace AE.Net.Mail
             return GetMessages(uid, uid, headersonly, setseen).FirstOrDefault();
         }
 
-        public virtual int GetMessageCount()
-        {
-            CheckMailboxSelected();
-            return GetMessageCount(null);
-        }
-
-        public virtual int GetMessageCount(string mailbox)
-        {
-            IdlePause();
-
-            string command = GetTag() + "STATUS " + Utilities.QuoteString(ModifiedUtf7Encoding.Encode(mailbox) ?? _SelectedMailbox) + " (MESSAGES)";
-            string response = SendCommandGetResponse(command);
-            string reg = @"\* STATUS.*MESSAGES (\d+)";
-            int result = 0;
-            while (response.StartsWith("*"))
-            {
-                Match m = Regex.Match(response, reg);
-                if (m.Groups.Count > 1)
-                    result = Convert.ToInt32(m.Groups[1].ToString());
-                response = GetResponse();
-                m = Regex.Match(response, reg);
-            }
-            IdleResume();
-            return result;
-        }
-
         public virtual MailMessage[] GetMessages(string startUID, string endUID, bool headersonly = true, bool setseen = false)
         {
             return GetMessages(startUID, endUID, true, headersonly, setseen);
@@ -334,12 +439,27 @@ namespace AE.Net.Mail
             return GetMessages((startIndex + 1).ToString(), (endIndex + 1).ToString(), false, headersonly, setseen);
         }
 
+        public virtual void DownloadMessage(System.IO.Stream stream, int index, bool setseen)
+        {
+            GetMessages((index + 1).ToString(), (index + 1).ToString(), false, false, false, setseen, (message, size, headers) => {
+                Utilities.CopyStream(message, stream, size);
+                return null;
+            });
+        }
+
+        public virtual void DownloadMessage(System.IO.Stream stream, string uid, bool setseen)
+        {
+            GetMessages(uid, uid, true, false, false, setseen, (message, size, headers) => {
+                Utilities.CopyStream(message, stream, size);
+                return null;
+            });
+        }
+
         public virtual MailMessage[] GetMessages(string start, string end, bool uid, bool headersonly, bool setseen)
         {
             var x = new List<MailMessage>();
 
-            GetMessages(start, end, uid, false, headersonly, setseen, (stream, size, imapHeaders) =>
-            {
+            GetMessages(start, end, uid, false, headersonly, setseen, (stream, size, imapHeaders) => {
                 var mail = new MailMessage { Encoding = Encoding };
                 mail.Size = size;
 
@@ -364,8 +484,8 @@ namespace AE.Net.Mail
 
         public virtual void GetMessages(string start, string end, bool uid, bool uidsonly, bool headersonly, bool setseen, Action<MailMessage> processCallback)
         {
-            GetMessages(start, end, uid, uidsonly, headersonly, setseen, (stream, size, imapHeaders) =>
-            {
+
+            GetMessages(start, end, uid, uidsonly, headersonly, setseen, (stream, size, imapHeaders) => {
                 var mail = new MailMessage { Encoding = Encoding };
                 mail.Size = size;
 
@@ -386,7 +506,7 @@ namespace AE.Net.Mail
             });
         }
 
-        public virtual void GetMessages(string start, string end, bool uid, bool uidsonly, bool headersonly, bool setseen, Func<System.IO.Stream, int, SafeDictionary<string, string>, MailMessage> action)
+        public virtual void GetMessages(string start, string end, bool uid, bool uidsonly, bool headersonly, bool setseen, Func<System.IO.Stream, int, SafeDictionary<string,string>, MailMessage> action)
         {
             CheckMailboxSelected();
             IdlePause();
@@ -510,11 +630,87 @@ namespace AE.Net.Mail
             return x.ToArray();
         }
 
-        public virtual void MoveMessage(string uid, string folderName)
+        internal override void OnLogin(string login, string password)
         {
-            CheckMailboxSelected();
-            Copy("UID " + uid, folderName);
-            DeleteMessage(uid);
+            string command = String.Empty;
+            string result = String.Empty;
+            string tag = GetTag();
+            string key;
+
+            switch (AuthMethod)
+            {
+                case AuthMethods.CRAMMD5:
+                    command = tag + "AUTHENTICATE CRAM-MD5";
+                    result = SendCommandGetResponse(command);
+                    // retrieve server key
+                    key = result.Replace("+ ", "");
+                    key = Utilities._defaultEncoding.GetString(Convert.FromBase64String(key));
+                    // calcul hash
+                    using (var kMd5 = new HMACMD5(System.Text.Encoding.ASCII.GetBytes(password)))
+                    {
+                        byte[] hash1 = kMd5.ComputeHash(System.Text.Encoding.ASCII.GetBytes(key));
+                        key = BitConverter.ToString(hash1).ToLower().Replace("-", "");
+                        result = Convert.ToBase64String(System.Text.Encoding.ASCII.GetBytes(login + " " + key));
+                        result = SendCommandGetResponse(result);
+                    }
+                    break;
+
+                case AuthMethods.Login:
+                    command = tag + "LOGIN " + login.QuoteString() + " " + password.QuoteString();
+                    result = SendCommandGetResponse(command);
+                    break;
+
+                case AuthMethods.SaslOAuth:
+                    string sasl = "user=" + login + "\x01" + "auth=Bearer " + password + "\x01" + "\x01";
+                    string base64 = Convert.ToBase64String(Encoding.GetBytes(sasl));
+                    command = tag + "AUTHENTICATE XOAUTH2 " + base64;
+                    result = SendCommandGetResponse(command);
+                    break;
+
+                default:
+                    throw new NotSupportedException();
+            }
+
+            if (result.StartsWith("* CAPABILITY "))
+            {
+                _Capability = result.Substring(13).Trim().Split(' ');
+                result = GetResponse();
+            }
+
+            if (!result.StartsWith(tag + "OK"))
+            {
+                if (result.StartsWith("+ ") && result.EndsWith("=="))
+                {
+                    string jsonErr = Utilities.DecodeBase64(result.Substring(2), System.Text.Encoding.UTF7);
+                    throw new Exception(jsonErr);
+                }
+                else
+                    throw new Exception(result);
+            }
+
+            //if (Supports("COMPRESS=DEFLATE")) {
+            //  SendCommandCheckOK(GetTag() + "compress deflate");
+            //  _Stream0 = _Stream;
+            // // _Reader = new System.IO.StreamReader(new System.IO.Compression.DeflateStream(_Stream0, System.IO.Compression.CompressionMode.Decompress, true), System.Text.Encoding.Default);
+            // // _Stream = new System.IO.Compression.DeflateStream(_Stream0, System.IO.Compression.CompressionMode.Compress, true);
+            //}
+
+            if (Supports("X-GM-EXT-1"))
+            {
+                _FetchHeaders = "X-GM-MSGID X-GM-THRID X-GM-LABELS ";
+            }
+        }
+
+        internal override void OnLogout()
+        {
+            if (IsConnected)
+            {
+                if (_IdleTask != null && _Idling)
+                {
+                    IdleStop();
+                }
+                SendCommand(GetTag() + "LOGOUT");
+            }
         }
 
         public virtual Namespaces Namespace()
@@ -562,18 +758,29 @@ namespace AE.Net.Mail
             return n;
         }
 
-        public virtual void Noop()
+        public virtual int GetMessageCount()
+        {
+            CheckMailboxSelected();
+            return GetMessageCount(null);
+        }
+        public virtual int GetMessageCount(string mailbox)
         {
             IdlePause();
 
-            var tag = GetTag();
-            var response = SendCommandGetResponse(tag + "NOOP");
-            while (!response.StartsWith(tag))
+            string command = GetTag() + "STATUS " + Utilities.QuoteString(ModifiedUtf7Encoding.Encode(mailbox) ?? _SelectedMailbox) + " (MESSAGES)";
+            string response = SendCommandGetResponse(command);
+            string reg = @"\* STATUS.*MESSAGES (\d+)";
+            int result = 0;
+            while (response.StartsWith("*"))
             {
+                Match m = Regex.Match(response, reg);
+                if (m.Groups.Count > 1)
+                    result = Convert.ToInt32(m.Groups[1].ToString());
                 response = GetResponse();
+                m = Regex.Match(response, reg);
             }
-
             IdleResume();
+            return result;
         }
 
         public virtual void RenameMailbox(string frommailbox, string tomailbox)
@@ -638,10 +845,13 @@ namespace AE.Net.Mail
             {
                 if ((match = Regex.Match(response, @"\d+(?=\s+EXISTS)")).Success)
                     mailbox.NumMsg = match.Value.ToInt();
+
                 else if ((match = Regex.Match(response, @"\d+(?=\s+RECENT)")).Success)
                     mailbox.NumNewMsg = match.Value.ToInt();
+
                 else if ((match = Regex.Match(response, @"(?<=UNSEEN\s+)\d+")).Success)
                     mailbox.NumUnSeen = match.Value.ToInt();
+
                 else if ((match = Regex.Match(response, @"(?<=\sFLAGS\s+\().*?(?=\))")).Success)
                     mailbox.SetFlags(match.Value);
 
@@ -670,6 +880,26 @@ namespace AE.Net.Mail
             }
         }
 
+        private string FlagsToFlagString(Flags flags)
+        {
+            return string.Join(" ", flags.ToString().Split(',').Select(x => "\\" + x.Trim()));
+        }
+
+
+        public virtual void AddFlags(Flags flags, params MailMessage[] msgs)
+        {
+            AddFlags(FlagsToFlagString(flags), msgs);
+        }
+
+        public virtual void AddFlags(string flags, params MailMessage[] msgs)
+        {
+            Store("UID " + string.Join(" ", msgs.Select(x => x.Uid)), false, flags);
+            foreach (var msg in msgs)
+            {
+                msg.SetFlags(FlagsToFlagString(msg.Flags) + " " + flags);
+            }
+        }
+
         public virtual void Store(string messageset, bool replace, string flags)
         {
             CheckMailboxSelected();
@@ -691,11 +921,6 @@ namespace AE.Net.Mail
             IdleResume();
         }
 
-        public virtual bool Supports(string command)
-        {
-            return (_Capability ?? Capability()).Contains(command, StringComparer.OrdinalIgnoreCase);
-        }
-
         public virtual void SuscribeMailbox(string mailbox)
         {
             IdlePause();
@@ -703,32 +928,6 @@ namespace AE.Net.Mail
             string command = GetTag() + "SUBSCRIBE " + ModifiedUtf7Encoding.Encode(mailbox).QuoteString();
             SendCommandCheckOK(command);
             IdleResume();
-        }
-
-        public virtual bool TryGetResponse(out string response)
-        {
-            string resp = response = null;
-
-            _ResponseTask = Task.Factory.StartNew(() =>
-            {
-                resp = GetResponse(IdleTimeout + ServerTimeout * 3);
-            });
-
-            try
-            {
-                if (_ResponseTask.Wait(IdleTimeout))
-                {
-                    response = resp;
-                    _ResponseTask = null;
-                    return true;
-                }
-                else
-                    return false;
-            }
-            catch (AggregateException)
-            {
-                throw;
-            }
         }
 
         public virtual void UnSuscribeMailbox(string mailbox)
@@ -754,216 +953,5 @@ namespace AE.Net.Mail
             response = response.Substring(response.IndexOf(" ")).Trim();
             return response.ToUpper().StartsWith("OK");
         }
-
-        internal override void OnLogin(string login, string password)
-        {
-            string command = String.Empty;
-            string result = String.Empty;
-            string tag = GetTag();
-            string key;
-
-            switch (AuthMethod)
-            {
-                case AuthMethods.CRAMMD5:
-                    command = tag + "AUTHENTICATE CRAM-MD5";
-                    result = SendCommandGetResponse(command);
-                    // retrieve server key
-                    key = result.Replace("+ ", "");
-                    key = Encoding.GetString(Convert.FromBase64String(key));
-                    // calcul hash
-                    //TODO: this is not using the server key
-                    using (var kMd5 = MD5.Create())
-                    {
-                        byte[] hash1 = kMd5.ComputeHash(Encoding.ASCII.GetBytes(key));
-                        key = BitConverter.ToString(hash1).ToLower().Replace("-", "");
-                        result = Convert.ToBase64String(Encoding.ASCII.GetBytes(login + " " + key));
-                        result = SendCommandGetResponse(result);
-                    }
-                    break;
-
-                case AuthMethods.Login:
-                    command = tag + "LOGIN " + login.QuoteString() + " " + password.QuoteString();
-                    result = SendCommandGetResponse(command);
-                    break;
-
-                case AuthMethods.SaslOAuth:
-                    string sasl = "user=" + login + "\x01" + "auth=Bearer " + password + "\x01" + "\x01";
-                    string base64 = Convert.ToBase64String(Encoding.GetBytes(sasl));
-                    command = tag + "AUTHENTICATE XOAUTH2 " + base64;
-                    result = SendCommandGetResponse(command);
-                    break;
-
-                default:
-                    throw new NotSupportedException();
-            }
-
-            if (result.StartsWith("* CAPABILITY "))
-            {
-                _Capability = result.Substring(13).Trim().Split(' ');
-                result = GetResponse();
-            }
-
-            if (!result.StartsWith(tag + "OK"))
-            {
-                if (result.StartsWith("+ ") && result.EndsWith("=="))
-                {
-                    string jsonErr = Utilities.DecodeBase64(result.Substring(2), System.Text.Encoding.UTF7);
-                    throw new Exception(jsonErr);
-                }
-                else
-                    throw new Exception(result);
-            }
-
-            //if (Supports("COMPRESS=DEFLATE")) {
-            //  SendCommandCheckOK(GetTag() + "compress deflate");
-            //  _Stream0 = _Stream;
-            // // _Reader = new System.IO.StreamReader(new System.IO.Compression.DeflateStream(_Stream0, System.IO.Compression.CompressionMode.Decompress, true), System.Text.Encoding.Default);
-            // // _Stream = new System.IO.Compression.DeflateStream(_Stream0, System.IO.Compression.CompressionMode.Compress, true);
-            //}
-
-            if (Supports("X-GM-EXT-1"))
-            {
-                _FetchHeaders = "X-GM-MSGID X-GM-THRID X-GM-LABELS ";
-            }
-        }
-
-        internal override void OnLogout()
-        {
-            if (IsConnected)
-            {
-                if (_IdleTask != null && _Idling)
-                {
-                    IdleStop();
-                }
-                SendCommand(GetTag() + "LOGOUT");
-            }
-        }
-
-        protected virtual void CheckMailboxSelected()
-        {
-            if (string.IsNullOrEmpty(_SelectedMailbox))
-                SelectMailbox("INBOX");
-        }
-
-        protected virtual void IdlePause()
-        {
-            if (_IdleTask == null || !_Idling)
-                return;
-            CheckConnectionStatus();
-            SendCommand("DONE");
-
-            if (!_IdleTask.Wait(ServerTimeout))
-            {
-                //Not responding
-                Disconnect();
-                var e = new ImapClientException("Lost communication to IMAP server, connection closed.");
-                var args = new ImapClientExceptionEventArgs(e);
-                Task.Factory.StartNew(() => ImapException.Fire(this, args));
-            }
-            _IdleTask = null;
-        }
-
-        protected virtual void IdleResume()
-        {
-            if (!_Idling)
-                return;
-
-            IdleResumeCommand();
-
-            if (_IdleTask == null)
-            {
-                _IdleTask = new Task(() => WatchIdleQueue());
-                _IdleTask.Start();
-            }
-        }
-
-        protected virtual void IdleStart()
-        {
-            CheckMailboxSelected();
-
-            _Idling = true;
-            if (!Supports("IDLE"))
-            {
-                throw new InvalidOperationException("This IMAP server does not support the IDLE command");
-            }
-            IdleResume();
-        }
-
-        protected virtual void IdleStop()
-        {
-            IdlePause();
-            _Idling = false;
-        }
-
-        private string FlagsToFlagString(Flags flags)
-        {
-            return string.Join(" ", flags.ToString().Split(',').Select(x => "\\" + x.Trim()));
-        }
-
-        private string GetTag()
-        {
-            _tag++;
-            return string.Format("xm{0:000} ", _tag);
-        }
-
-        private void IdleResumeCommand()
-        {
-            SendCommandGetResponse(GetTag() + "IDLE");
-        }
-
-        private void WatchIdleQueue()
-        {
-            try
-            {
-                string last = null, resp;
-
-                while (true)
-                {
-                    if (!TryGetResponse(out resp))
-                    {
-                        //Child task should still running on ReadByte here.
-                        //Need to send some data to get it to exit.
-
-                        SendCommand("DONE"); //_ResponseTask should pick up response and exit
-                        if (!_ResponseTask.Wait(ServerTimeout))
-                        {
-                            //Not responding
-                            Disconnect();
-                            throw new ImapClientException("Lost communication to IMAP server, connection closed.");
-                        }
-                        _ResponseTask = null;
-
-                        IdleResumeCommand();
-
-                        continue;
-                    }
-
-                    if (resp.Contains("OK IDLE"))  //Server response after DONE
-                        return;
-
-                    var data = resp.Split(' ');
-                    if (data[0] == "*" && data.Length >= 3)
-                    {
-                        var e = new MessageEventArgs { Client = this, MessageCount = int.Parse(data[1]) };
-                        if (data[2].Is("EXISTS") && !last.Is("EXPUNGE") && e.MessageCount > 0)
-                        {
-                            Task.Factory.StartNew(() => _NewMessage.Fire(this, e)); //Fire the event in a task
-                        }
-                        else if (data[2].Is("EXPUNGE"))
-                        {
-                            Task.Factory.StartNew(() => _MessageDeleted.Fire(this, e));
-                        }
-                        last = data[2];
-                    }
-                }
-            }
-            catch (Exception e)
-            {
-                ImapClientExceptionEventArgs args = new ImapClientExceptionEventArgs(e);
-                Task.Factory.StartNew(() => ImapException.Fire(this, args));
-            }
-        }
-
-        #endregion
     }
 }
