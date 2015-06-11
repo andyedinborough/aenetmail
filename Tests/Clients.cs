@@ -95,28 +95,49 @@ namespace Tests {
 					mail.Disconnect();
 					mail.Disconnect();
 				}
-		}
+        }
 
-		[TestMethod]
-		public void Search_Conditions() {
-			var deleted = SearchCondition.Deleted();
-			var seen = SearchCondition.Seen();
-			var text = SearchCondition.Text("andy");
+        [TestMethod]
+        public void Search_Conditions()
+        {
+            var deleted = SearchCondition.Deleted();
+            var seen = SearchCondition.Seen();
+            var text = SearchCondition.Text("andy");
 
-			deleted.ToString().ShouldBe("DELETED");
-			deleted.Or(seen).ToString().ShouldBe("OR (DELETED) (SEEN)");
-			seen.And(text).ToString().ShouldBe("(SEEN) (TEXT \"andy\")");
+            deleted.ToString().ShouldBe("DELETED");
+            deleted.Or(seen).ToString().ShouldBe("OR (DELETED) (SEEN)");
+            seen.And(text).ToString().ShouldBe("(SEEN) (TEXT \"andy\")");
 
-			var since = new DateTime(2000, 1, 1);
-			SearchCondition.Undeleted().And(
-									SearchCondition.From("david"),
-									SearchCondition.SentSince(since)
-							).Or(SearchCondition.To("andy"))
-					.ToString()
-					.ShouldBe("OR ((UNDELETED) (FROM \"david\") (SENTSINCE \"" + Utilities.GetRFC2060Date(since) + "\")) (TO \"andy\")");
-		}
+            var since = new DateTime(2000, 1, 1);
+            SearchCondition.Undeleted().And(
+                                    SearchCondition.From("david"),
+                                    SearchCondition.SentSince(since)
+                            ).Or(SearchCondition.To("andy"))
+                    .ToString()
+                    .ShouldBe("OR ((UNDELETED) (FROM \"david\") (SENTSINCE \"" + Utilities.GetRFC2060Date(since) + "\")) (TO \"andy\")");
+        }
 
-		[TestMethod]
+        [TestMethod]
+        public void Search_Conditions_Operators()
+        {
+            var deleted = SearchCondition.Deleted();
+            var seen = SearchCondition.Seen();
+            var text = SearchCondition.Text("andy");
+
+            deleted.ToString().ShouldBe("DELETED");
+            (deleted | seen).ToString().ShouldBe("OR (DELETED) (SEEN)");
+            ( seen & text).ToString().ShouldBe("(SEEN) (TEXT \"andy\")");
+
+            var since = new DateTime(2000, 1, 1);
+            ((SearchCondition.Undeleted()
+                & SearchCondition.From("david")
+                & SearchCondition.SentSince(since)
+                            ) | SearchCondition.To("andy"))
+                    .ToString()
+                    .ShouldBe("OR ((UNDELETED) (FROM \"david\") (SENTSINCE \"" + Utilities.GetRFC2060Date(since) + "\")) (TO \"andy\")");
+        }
+
+        [TestMethod]
 		public void Search() {
 			using (var imap = GetClient<ImapClient>()) {
 				var result = imap.SearchMessages(
