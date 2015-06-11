@@ -351,7 +351,7 @@ namespace AE.Net.Mail
 
                 mail.Load(_Stream, headersonly, mail.Size);
 
-                foreach (var key in imapHeaders.AllKeys.Except(new[] { "UID", "Flags", "BODY[]", "BODY[HEADER]" }, StringComparer.OrdinalIgnoreCase))
+                foreach (var key in imapHeaders.Keys.Except(new[] { "UID", "Flags", "BODY[]", "BODY[HEADER]" }, StringComparer.OrdinalIgnoreCase))
                     mail.Headers.Add(key, new HeaderValue(imapHeaders[key]));
 
                 x.Add(mail);
@@ -377,7 +377,7 @@ namespace AE.Net.Mail
 
                 mail.Load(_Stream, headersonly, mail.Size);
 
-                foreach (var key in imapHeaders.AllKeys.Except(new[] { "UID", "Flags", "BODY[]", "BODY[HEADER]" }, StringComparer.OrdinalIgnoreCase))
+                foreach (var key in imapHeaders.Keys.Except(new[] { "UID", "Flags", "BODY[]", "BODY[HEADER]" }, StringComparer.OrdinalIgnoreCase))
                     mail.Headers.Add(key, new HeaderValue(imapHeaders[key]));
 
                 processCallback(mail);
@@ -386,7 +386,7 @@ namespace AE.Net.Mail
             });
         }
 
-        public virtual void GetMessages(string start, string end, bool uid, bool uidsonly, bool headersonly, bool setseen, Func<System.IO.Stream, int, dynamic, MailMessage> action)
+        public virtual void GetMessages(string start, string end, bool uid, bool uidsonly, bool headersonly, bool setseen, Func<System.IO.Stream, int, SafeDictionary<string, string>, MailMessage> action)
         {
             CheckMailboxSelected();
             IdlePause();

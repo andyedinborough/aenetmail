@@ -175,9 +175,9 @@ namespace AE.Net.Mail
                 .FirstOrDefault() ?? @default ?? _defaultEncoding;
         }
 
-        public static dynamic ParseImapHeader(string data)
+        public static SafeDictionary<string, string> ParseImapHeader(string data)
         {
-            dynamic values = new NameValueCollection();
+            var values = new SafeDictionary<string, string>();
             string name = null;
             int nump = 0;
             var temp = new StringBuilder();
