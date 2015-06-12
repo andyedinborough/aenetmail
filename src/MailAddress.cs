@@ -5,6 +5,8 @@ namespace AE.Net.Mail
 {
     public class MailAddress
     {
+        #region Constructors
+
         public MailAddress()
         {
         }
@@ -22,20 +24,72 @@ namespace AE.Net.Mail
             DisplayName = displayName;
             Address = address;
         }
-        
-        public string DisplayName { get; set; }
-        
-        public string Address { get; set; }
-        
-        public static bool TryParse(string value, out MailAddress address) 
+
+        #endregion
+
+        #region Properties
+
+        public string Address { get; private set; }
+
+        public string DisplayName { get; private set; }
+        public string Host { get; private set; }
+        public string User { get; private set; }
+
+        #endregion
+
+        #region Methods
+
+        internal static Match ParseEmailAddress(string address)
+        {
+            if (string.IsNullOrWhiteSpace(address)) return null;
+
+            const string RX = @"^                 #beginning of the string
+    (?<user>
+       [a-z0-9+=_\-]+    #one or more of these characters (this list is what I trimmed down)
+       (?:               #group, but don’t capture 
+          \.             #must have a . here
+          [a-z0-9+=_\-]+ #same list as above
+       )*                #this grouping can occur zero or more times
+    )
+    @                 #must have a @ here
+    (?<host>
+       (?:               #group, don’t capture
+          [a-z0-9]       #any character in this list, once
+          (?:            #group don’t capture
+             [a-z0-9-]*  #any of these, zero or more
+             [a-z0-9]    #any of these, once
+          )?             #this grouping can happen 0 or 1 times
+          \.             #must have a .
+       )*                #this grouping zero or more times
+       [a-z0-9]          #any of these characters, once
+       (?:               #group don’t capture
+          [a-z0-9-]*     #any of these characters, one or more times
+          [a-z0-9]       #any of these characters, once
+       )+                #this grouping, 1 or more times
+    )
+   $                 #end of the string
+";
+
+            var match = Regex.Match(address, RX, RegexOptions.IgnoreCase | RegexOptions.IgnorePatternWhitespace);
+            return match;
+        }
+
+        public static bool TryParse(string value, out MailAddress address)
         {
             var parsed = new MailAddress();
             var passed = parsed.TryParse(value);
             address =  passed ? parsed : null;
             return passed;
         }
-        
-        private bool TryParse(string value) 
+
+        public override string ToString()
+        {
+            return string.IsNullOrWhiteSpace(DisplayName)
+                ? Address
+                : (DisplayName + " <" + Address + ">");
+        }
+
+        private bool TryParse(string value)
         {
             if(string.IsNullOrWhiteSpace(value))
             {
@@ -47,7 +101,7 @@ namespace AE.Net.Mail
             {
                 var bracket = value.LastIndexOf("<");
                 if(bracket == -1) return false;
-                Address = value.Substring(bracket + 1, value.Length - 1);
+                Address = value.Substring(bracket + 1, value.Length - bracket - 2);
                 DisplayName =bracket > 0 ? value.Substring(0, bracket - 1) : string.Empty;
                 
                 if(DisplayName.Length > 1)
@@ -65,30 +119,15 @@ namespace AE.Net.Mail
                 Address = value;
                 DisplayName = string.Empty;
             }
-         
-            return IsValidEmailAddress(Address);   
+
+            var match = ParseEmailAddress(Address);
+            if (match == null || !match.Success) return false;
+
+            Host = match.Groups["host"].Value;
+            User = match.Groups["user"].Value;
+            return !string.IsNullOrWhiteSpace(Host) && !string.IsNullOrWhiteSpace(User);
         }
-        
-        public static bool IsValidEmailAddress(string address)
-        {
-            if(string.IsNullOrWhiteSpace(address)) return false;
-            
-            return Regex.IsMatch(address, @"^(?:[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*
-                  |  ""(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21\x23-\x5b\x5d-\x7f]
-                      |  \\[\x01-\x09\x0b\x0c\x0e-\x7f])*"")
-                @ (?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?
-                  |  \[(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}
-                       (?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?|[a-z0-9-]*[a-z0-9]:
-                          (?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21-\x5a\x53-\x7f]
-                          |  \\[\x01-\x09\x0b\x0c\x0e-\x7f])+)
-                     \])$", RegexOptions.IgnoreCase | RegexOptions.IgnorePatternWhitespace);
-        }
-        
-        public override string ToString()
-        {
-            return string.IsNullOrWhiteSpace(DisplayName) 
-                ? Address
-                : (DisplayName + " <" + Address + ">");
-        }
+
+        #endregion
     }
 }

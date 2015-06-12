@@ -153,7 +153,17 @@ namespace AE.Net.Mail
         public static Encoding ParseCharsetToEncoding(string characterSet, Encoding @default)
         {
             if (string.IsNullOrEmpty(characterSet))
+            {
                 return @default ?? _defaultEncoding;
+            }
+
+            Encoding encoding = null;
+            try
+            {
+                encoding = Encoding.GetEncoding(characterSet);
+                if (encoding != null) return encoding;
+            }
+            catch { }
 
             string charSetUpper = characterSet.ToUpperInvariant();
             if (charSetUpper.Contains("WINDOWS") || charSetUpper.Contains("CP"))
@@ -165,13 +175,18 @@ namespace AE.Net.Mail
 
                 // Now we hope the only thing left in the characterSet is numbers.
                 int codepageNumber = int.Parse(charSetUpper, System.Globalization.CultureInfo.InvariantCulture);
+                try
+                {
+                    encoding = Encoding.GetEncoding(codepageNumber);
+                    if (encoding != null) return encoding;
+                }
+                catch { }
 
-                return GetEncodings().Where(x => x.CodePage == codepageNumber)
-                    .FirstOrDefault() ?? @default ?? _defaultEncoding;
             }
 
             // It seems there is no codepage value in the characterSet. It must be a named encoding
-            return GetEncodings().Where(x => x.EncodingName.Is(characterSet))
+            return GetEncodings()
+                .Where(x => x.EncodingName.Is(characterSet))
                 .FirstOrDefault() ?? @default ?? _defaultEncoding;
         }
 

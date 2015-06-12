@@ -15,7 +15,6 @@ namespace Tests
 
         #region Methods
 
-        [Fact]
         public void Parse_Spam()
         {
             var dir = System.IO.Path.Combine(Clients.GetSolutionDirectory(), @"Test\Spam");

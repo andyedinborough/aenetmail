@@ -32,3 +32,4 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyVersion("1.7.10.*")]
 [assembly: AssemblyFileVersion("1.7.10.0")]
 [assembly: InternalsVisibleTo("Tests")]
+[assembly: InternalsVisibleTo("Test")]

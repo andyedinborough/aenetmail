@@ -11,7 +11,7 @@ namespace Shouldly {
 
         public static void ShouldBe<T>(this T input, T value)
         {
-            Assert.Equal(input, value);
+            Assert.Equal(value, input);
         }
         public static void ShouldBe(this object input)
         {
