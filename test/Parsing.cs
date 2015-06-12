@@ -1,19 +1,17 @@
 ﻿using AE.Net.Mail;
 using AE.Net.Mail.Imap;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Shouldly;
 using System;
 using System.IO;
 using System.Linq;
 using System.Text;
+using Xunit;
 
 namespace Tests {
 	/// <summary>
 	/// Summary description for UnitTest1
 	/// </summary>
-	[TestClass]
 	public class Parsing {
-		public TestContext TestContext { get; set; }
 
 		#region messages
 		string bodyNotHeader = @"Delivered-To: yyy@gmail.com
@@ -217,7 +215,7 @@ E-mail Deployment Division
 ";
 		#endregion
 
-		[TestMethod]
+		[Fact]
 		public void Quoted_Printable() {
 			Utilities.DecodeQuotedPrintable("=1");
 
@@ -246,10 +244,9 @@ E-mail Deployment Division
 		void imap_NewMessage(object sender, MessageEventArgs e) {
 			var imap = (sender as ImapClient);
 			var msg = imap.GetMessage(e.MessageCount - 1);
-			Console.WriteLine(msg.Subject);
 		}
 
-		[TestMethod]
+		[Fact]
 		public void Parse_Message_From_iPhone() {
 			var msg = GetMessage(iphoneMessage);
 			msg.Attachments.Count.ShouldBe(1);
@@ -261,7 +258,7 @@ E-mail Deployment Division
 			msg.Body.ShouldContain("Joplin");
 		}
 
-		[TestMethod]
+		[Fact]
 		public void Basic_Message() {
 			var msg = GetMessage(@"From: test@localhost
 To: root@localhost
@@ -289,7 +286,7 @@ WE REPOSE IN YOU.");
 			msg.Body.ShouldNotBeNullOrEmpty();
 		}
 
-		[TestMethod]
+		[Fact]
 		public void Basic_Mime_Message() {
 			var msg = GetMessage(@"From: John Doe <example@example.com>
 MIME-Version: 1.0
@@ -316,7 +313,7 @@ this is the attachment text
 			msg.Attachments.All(a => a.GetData().Any().ShouldBe());
 		}
 
-		[TestMethod]
+		[Fact]
 		public void Nested_Mime_Message() {
 			var msg = GetMessage(@"From: John Doe <example@example.com>
 MIME-Version: 1.0
@@ -354,7 +351,7 @@ Content-Disposition: attachment; filename=""test.html""
 			msg.Attachments.All(a => a.GetData().Any().ShouldBe());
 		}
 
-		[TestMethod]
+		[Fact]
 		public void Nested_Mime_Message_2() {
 			var msg = GetMessage(@"From: John Doe <example@example.com>
 MIME-Version: 1.0
@@ -392,7 +389,7 @@ Content-Type: text/html
 			msg.Attachments.All(a => a.GetData().Any().ShouldBe());
 		}
 
-		[TestMethod]
+		[Fact]
 		public void Attachment_NameInContentType_ReturnsCorrectFileName() {
 			var msg = GetMessage(@"Return-Path: test@domain.com
 Delivered-To: test@domain.com
@@ -430,7 +427,7 @@ Content-Disposition: attachment
 			msg.Attachments.First().Filename.ShouldBe("Filename.pdf");
 		}
 
-		[TestMethod]
+		[Fact]
 		public void Attachment_FilenameInContentType_ReturnsCorrectFileName() {
             var msg = GetSampleAttachmentMessage();
 
@@ -438,17 +435,17 @@ Content-Disposition: attachment
 			msg.Attachments.First().Filename.ShouldBe("Filename.pdf");
 		}
 
-        [TestMethod]
+        [Fact]
         public void Attachment_SavesWithMessage()
         {
             var msg = new AE.Net.Mail.MailMessage()
             {
-                From = new System.Net.Mail.MailAddress("test@test.com")
+                From = new AE.Net.Mail.MailAddress("test@test.com")
             };
             var firstAttachmentContents = "This is a test.";
             var attachment = new Attachment()
             {
-                Body = Convert.ToBase64String(Encoding.Default.GetBytes(firstAttachmentContents)),
+                Body = Convert.ToBase64String(Utilities._defaultEncoding.GetBytes(firstAttachmentContents)),
                 ContentTransferEncoding = "base64",
                 Encoding = Encoding.ASCII
             };
@@ -476,7 +473,7 @@ Content-Disposition: attachment
             Convert.FromBase64String(reparsed.Attachments.Last().Body).ShouldBe(secondAttachmentContents);
         }
 
-        [TestMethod]
+        [Fact]
         public void Attachment_ParsesBackSaved()
         {
             var msg = GetSampleAttachmentMessage();
@@ -545,7 +542,7 @@ Content-Disposition: attachment
 			return msg;
 		}
 
-		[TestMethod]
+		[Fact]
 		public void Dont_Die_On_Completely_Invalid_Messages() {
 			GetMessage("x");
 
@@ -561,7 +558,7 @@ Content-Disposition: attachment
 			GetMessage(null);
 		}
 
-		[TestMethod]
+		[Fact]
 		public void Loose_Base64_Encoding() {
 			var b64 = "SSBkb24ndCB3YW5uYSB3b3JrLCBJIGp1c3Qgd2Fu\nbmEgYmFuZyBvbiBteSBkcnVtcyBhbGwgZGF5IQ";
 			var text = Utilities.DecodeBase64(b64);

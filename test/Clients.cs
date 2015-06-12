@@ -1,15 +1,14 @@
 ﻿using AE.Net.Mail;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Shouldly;
 using System;
 using System.Linq;
+using Xunit;
+using System.Reflection;
 
 namespace Tests {
-	[TestClass]
-	public class UnitTest1 {
-		public TestContext TestContext { get; set; }
+	public class Clients {
 
-		[TestMethod]
+		[Fact]
 		public void IDLE() {
 			var mre1 = new System.Threading.ManualResetEventSlim(false);
 			var mre2 = new System.Threading.ManualResetEventSlim(false);
@@ -34,7 +33,7 @@ namespace Tests {
 			}
 		}
 
-		[TestMethod]
+		[Fact]
 		public void Message_With_Attachments() {
 			using (var imap = GetClient<ImapClient>()) {
 				var msg = imap.SearchMessages(SearchCondition.Larger(100 * 1000)).FirstOrDefault().Value;
@@ -44,7 +43,7 @@ namespace Tests {
 			}
 		}
 
-		[TestMethod]
+		[Fact]
 		public void Select_Folder() {
 			using (var imap = GetClient<ImapClient>()) {
 				imap.SelectMailbox("Notes");
@@ -53,7 +52,7 @@ namespace Tests {
 			}
 		}
 
-		[TestMethod]
+		[Fact]
 		public void Polish_Characters() {
 			using (var imap = GetClient<ImapClient>()) {
 				var msg = imap.SearchMessages(SearchCondition.Subject("POLISH LANGUAGE TEST")).FirstOrDefault();
@@ -64,17 +63,16 @@ namespace Tests {
 			}
 		}
 
-		[TestMethod]
+		[Fact]
 		public void POP() {
 			using (var client = GetClient<Pop3Client>("gmail", "pop3")) {
 				var msg = client.GetMessage(0);
-				Console.WriteLine(msg.Body);
 			}
 		}
 
-		[TestMethod]
+		[Fact]
 		public void Connections() {
-			var accountsToTest = System.IO.Path.Combine(Environment.CurrentDirectory.Split(new[] { "\\aenetmail\\" }, StringSplitOptions.RemoveEmptyEntries).First(), "ae.net.mail.usernames.txt");
+			var accountsToTest = System.IO.Path.Combine(Clients.GetSolutionDirectory(), @"..\ae.net.mail.usernames.txt");
 			var lines = System.IO.File.ReadAllLines(accountsToTest)
 					.Select(x => x.Split(','))
 					.Where(x => x.Length == 6)
@@ -97,7 +95,7 @@ namespace Tests {
 				}
 		}
 
-		[TestMethod]
+		[Fact]
 		public void Search_Conditions() {
 			var deleted = SearchCondition.Deleted();
 			var seen = SearchCondition.Seen();
@@ -116,7 +114,7 @@ namespace Tests {
 					.ShouldBe("OR ((UNDELETED) (FROM \"david\") (SENTSINCE \"" + Utilities.GetRFC2060Date(since) + "\")) (TO \"andy\")");
 		}
 
-		[TestMethod]
+		[Fact]
 		public void Search() {
 			using (var imap = GetClient<ImapClient>()) {
 				var result = imap.SearchMessages(
@@ -131,7 +129,7 @@ namespace Tests {
 			}
 		}
 
-		[TestMethod]
+		[Fact]
 		public void Issue_49() {
 			using (var client = GetClient<ImapClient>()) {
 				var msg = client.SearchMessages(SearchCondition.Subject("aenetmail").And(SearchCondition.Subject("#49"))).Select(x => x.Value).FirstOrDefault();
@@ -140,7 +138,7 @@ namespace Tests {
 			}
 		}
 
-		[TestMethod]
+		[Fact]
 		public void Append_Mail() {
 			using (var client = GetClient<ImapClient>()) {
 				var msg = new MailMessage {
@@ -153,7 +151,7 @@ namespace Tests {
 			}
 		}
 
-		[TestMethod]
+		[Fact]
 		public void Parse_Imap_Header() {
 			var header = @"X-GM-THRID 1320777376118077475 X-GM-MSGID 1320777376118077475 X-GM-LABELS () UID 8286 RFC822.SIZE 9369 FLAGS (\Seen) BODY[] {9369}";
 
@@ -165,7 +163,7 @@ namespace Tests {
 			values["RFC822.SIZE"].ShouldBe("9369");
 		}
 
-		[TestMethod]
+		[Fact]
 		public void Get_Several_Messages() {
 			int numMessages = 10;
 			using (var imap = GetClient<ImapClient>()) {
@@ -185,7 +183,7 @@ namespace Tests {
 			}
 		}
 
-		[TestMethod]
+		[Fact]
 		public void Download_Message() {
 			var filename = System.IO.Path.GetTempFileName();
 
@@ -206,7 +204,7 @@ namespace Tests {
 			}
 		}
 
-		[TestMethod]
+		[Fact]
 		public void Delete_Message() {
 			using (var client = GetClient<ImapClient>()) {
 				var lazymsg = client.SearchMessages(SearchCondition.From("DRAGONEXT")).FirstOrDefault();
@@ -217,12 +215,11 @@ namespace Tests {
 				client.DeleteMessage(msg);
 
 				msg = client.GetMessage(uid);
-				Console.WriteLine(msg);
 			}
 		}
 
-		private string GetSolutionDirectory() {
-			var dir = new System.IO.DirectoryInfo(Environment.CurrentDirectory);
+		public static string GetSolutionDirectory() {
+			var dir = new System.IO.DirectoryInfo(string.Empty);
 			while (dir.GetFiles("*.sln").Length == 0) {
 				dir = dir.Parent;
 			}

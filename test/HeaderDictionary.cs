@@ -1,13 +1,12 @@
 ﻿using System.Linq;
 using AE.Net.Mail;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Xunit;
 
 namespace Tests
 {
-    [TestClass]
     public class HeaderDictionaryTests
     {
-        [TestMethod]
+        [Fact]
         public void GetAddresses_EmptyHeader_ReturnsNoEmailAddresses()
         {
             var headerDictionary = new HeaderDictionary
@@ -17,10 +16,10 @@ namespace Tests
 
             var mailAddresses = headerDictionary.GetMailAddresses("From");
 
-            Assert.AreEqual(0, mailAddresses.Length);
+            Assert.Equal(0, mailAddresses.Length);
         }
 
-        [TestMethod]
+        [Fact]
         public void GetAddresses_Rubbish_ReturnsNoEmailAddresses()
         {
             var headerDictionary = new HeaderDictionary
@@ -30,10 +29,10 @@ namespace Tests
 
             var mailAddresses = headerDictionary.GetMailAddresses("From");
 
-            Assert.AreEqual(0, mailAddresses.Length);
+            Assert.Equal(0, mailAddresses.Length);
         }
 
-        [TestMethod]
+        [Fact]
         public void GetAddresses_OnlyOneSemicolon_ReturnsNoEmailAddresses()
         {
             var headerDictionary = new HeaderDictionary
@@ -43,10 +42,10 @@ namespace Tests
 
             var mailAddresses = headerDictionary.GetMailAddresses("From");
 
-            Assert.AreEqual(0, mailAddresses.Length);
+            Assert.Equal(0, mailAddresses.Length);
         }
 
-        [TestMethod]
+        [Fact]
         public void GetAddresses_OnlyOneComma_ReturnsNoEmailAddresses()
         {
             var headerDictionary = new HeaderDictionary
@@ -56,10 +55,10 @@ namespace Tests
 
             var mailAddresses = headerDictionary.GetMailAddresses("From");
 
-            Assert.AreEqual(0, mailAddresses.Length);
+            Assert.Equal(0, mailAddresses.Length);
         }
 
-        [TestMethod]
+        [Fact]
         public void GetAddresses_FiveCommasOnly_ReturnsNoEmailAddresses()
         {
             var headerDictionary = new HeaderDictionary
@@ -69,10 +68,10 @@ namespace Tests
 
             var mailAddresses = headerDictionary.GetMailAddresses("From");
 
-            Assert.AreEqual(0, mailAddresses.Length);
+            Assert.Equal(0, mailAddresses.Length);
         }
 
-        [TestMethod]
+        [Fact]
         public void GetAddresses_Spaces_ReturnsNoEmailAddresses()
         {
             var headerDictionary = new HeaderDictionary
@@ -82,10 +81,10 @@ namespace Tests
 
             var mailAddresses = headerDictionary.GetMailAddresses("From");
 
-            Assert.AreEqual(0, mailAddresses.Length);
+            Assert.Equal(0, mailAddresses.Length);
         }
 
-        [TestMethod]
+        [Fact]
         public void GetAddresses_SimpleWithQuotesAroundDisplayName_ParsesCorrectAddressAndDisplayName()
         {
             var headerDictionary = new HeaderDictionary
@@ -95,14 +94,14 @@ namespace Tests
 
             var mailAddresses = headerDictionary.GetMailAddresses("From");
 
-            Assert.AreEqual(1, mailAddresses.Length);
+            Assert.Equal(1, mailAddresses.Length);
 
             var mailAddress = mailAddresses.First();
-            Assert.AreEqual("name@domain.net", mailAddress.Address);
-            Assert.AreEqual("name", mailAddress.DisplayName);
+            Assert.Equal("name@domain.net", mailAddress.Address);
+            Assert.Equal("name", mailAddress.DisplayName);
         }
 
-        [TestMethod]
+        [Fact]
         public void GetAddresses_SimpleWithoutQuotesAroundDisplayName_ParsesCorrectAddressAndDisplayName()
         {
             var headerDictionary = new HeaderDictionary
@@ -112,14 +111,14 @@ namespace Tests
 
             var mailAddresses = headerDictionary.GetMailAddresses("From");
 
-            Assert.AreEqual(1, mailAddresses.Length);
+            Assert.Equal(1, mailAddresses.Length);
 
             var mailAddress = mailAddresses.First();
-            Assert.AreEqual("test@domain.net", mailAddress.Address);
-            Assert.AreEqual("Test van Testenstein", mailAddress.DisplayName);
+            Assert.Equal("test@domain.net", mailAddress.Address);
+            Assert.Equal("Test van Testenstein", mailAddress.DisplayName);
         }
 
-        [TestMethod]
+        [Fact]
         public void GetAddresses_PipelineInDisplayName_ParsesCorrectAddressAndDisplayName()
         {
             var headerDictionary = new HeaderDictionary
@@ -129,14 +128,14 @@ namespace Tests
 
             var mailAddresses = headerDictionary.GetMailAddresses("From");
 
-            Assert.AreEqual(1, mailAddresses.Length);
+            Assert.Equal(1, mailAddresses.Length);
 
             var mailAddress = mailAddresses.First();
-            Assert.AreEqual("test@domain.net", mailAddress.Address);
-            Assert.AreEqual("Test | Testenstein", mailAddress.DisplayName);
+            Assert.Equal("test@domain.net", mailAddress.Address);
+            Assert.Equal("Test | Testenstein", mailAddress.DisplayName);
         }
 
-        [TestMethod]
+        [Fact]
         public void GetAddresses_WithCommaInDispayName_ParsesCorrectAddressAndDisplayName()
         {
             var headerDictionary = new HeaderDictionary
@@ -146,14 +145,14 @@ namespace Tests
 
             var mailAddresses = headerDictionary.GetMailAddresses("From");
 
-            Assert.AreEqual(1, mailAddresses.Length);
+            Assert.Equal(1, mailAddresses.Length);
 
             var mailAddress = mailAddresses.First();
-            Assert.AreEqual("firstname.lastname@domain.net", mailAddress.Address);
-            Assert.AreEqual("lastname, firstname", mailAddress.DisplayName);
+            Assert.Equal("firstname.lastname@domain.net", mailAddress.Address);
+            Assert.Equal("lastname, firstname", mailAddress.DisplayName);
         }
 
-        [TestMethod]
+        [Fact]
         public void GetAddresses_WithTwoAddresses_ParsesCorrectAddressesAndDisplayName()
         {
             var headerDictionary = new HeaderDictionary
@@ -163,18 +162,18 @@ namespace Tests
 
             var mailAddresses = headerDictionary.GetMailAddresses("To");
 
-            Assert.AreEqual(2, mailAddresses.Length);
+            Assert.Equal(2, mailAddresses.Length);
 
             var firstMailAddress = mailAddresses.First();
-            Assert.AreEqual("first@domain.net", firstMailAddress.Address);
-            Assert.AreEqual("Firstname Lastname", firstMailAddress.DisplayName);
+            Assert.Equal("first@domain.net", firstMailAddress.Address);
+            Assert.Equal("Firstname Lastname", firstMailAddress.DisplayName);
 
             var secondMailAddress = mailAddresses.Last();
-            Assert.AreEqual("second.address@domain.net", secondMailAddress.Address);
-            Assert.AreEqual("", secondMailAddress.DisplayName);
+            Assert.Equal("second.address@domain.net", secondMailAddress.Address);
+            Assert.Equal("", secondMailAddress.DisplayName);
         }
 
-        [TestMethod]
+        [Fact]
         public void GetAddresses_WithTwoAddressesWithCommaInSecondEmail_ParsesCorrectAddressesAndDisplayName()
         {
             var headerDictionary = new HeaderDictionary
@@ -184,18 +183,18 @@ namespace Tests
 
             var mailAddresses = headerDictionary.GetMailAddresses("To");
 
-            Assert.AreEqual(2, mailAddresses.Length);
+            Assert.Equal(2, mailAddresses.Length);
 
             var firstMailAddress = mailAddresses.First();
-            Assert.AreEqual("first@domain.net", firstMailAddress.Address);
-            Assert.AreEqual("Firstname Lastname", firstMailAddress.DisplayName);
+            Assert.Equal("first@domain.net", firstMailAddress.Address);
+            Assert.Equal("Firstname Lastname", firstMailAddress.DisplayName);
 
             var secondMailAddress = mailAddresses.Last();
-            Assert.AreEqual("second.address@domain.net", secondMailAddress.Address);
-            Assert.AreEqual("Test, 2", secondMailAddress.DisplayName);
+            Assert.Equal("second.address@domain.net", secondMailAddress.Address);
+            Assert.Equal("Test, 2", secondMailAddress.DisplayName);
         }
 
-        [TestMethod]
+        [Fact]
         public void GetAddresses_WithTwoAddressesWithCommaInSecondEmailAndTrailingComma_ParsesCorrectAddressesAndDisplayName()
         {
             var headerDictionary = new HeaderDictionary
@@ -205,18 +204,18 @@ namespace Tests
 
             var mailAddresses = headerDictionary.GetMailAddresses("To");
 
-            Assert.AreEqual(2, mailAddresses.Length);
+            Assert.Equal(2, mailAddresses.Length);
 
             var firstMailAddress = mailAddresses.First();
-            Assert.AreEqual("first@domain.net", firstMailAddress.Address);
-            Assert.AreEqual("Firstname Lastname", firstMailAddress.DisplayName);
+            Assert.Equal("first@domain.net", firstMailAddress.Address);
+            Assert.Equal("Firstname Lastname", firstMailAddress.DisplayName);
 
             var secondMailAddress = mailAddresses.Last();
-            Assert.AreEqual("second.address@domain.net", secondMailAddress.Address);
-            Assert.AreEqual("Test, 2", secondMailAddress.DisplayName);
+            Assert.Equal("second.address@domain.net", secondMailAddress.Address);
+            Assert.Equal("Test, 2", secondMailAddress.DisplayName);
         }
 
-        [TestMethod]
+        [Fact]
         public void GetAddresses_WithThreeAddresses_ParsesCorrectAddressesAndDisplayName()
         {
             var headerDictionary = new HeaderDictionary
@@ -226,19 +225,19 @@ namespace Tests
 
             var mailAddresses = headerDictionary.GetMailAddresses("To");
 
-            Assert.AreEqual(3, mailAddresses.Length);
+            Assert.Equal(3, mailAddresses.Length);
 
             var firstMailAddress = mailAddresses.ElementAt(0);
-            Assert.AreEqual("test1@domain.net", firstMailAddress.Address);
-            Assert.AreEqual("", firstMailAddress.DisplayName);
+            Assert.Equal("test1@domain.net", firstMailAddress.Address);
+            Assert.Equal("", firstMailAddress.DisplayName);
 
             var secondMailAddress = mailAddresses.ElementAt(1);
-            Assert.AreEqual("test2@domain.net", secondMailAddress.Address);
-            Assert.AreEqual("", secondMailAddress.DisplayName);
+            Assert.Equal("test2@domain.net", secondMailAddress.Address);
+            Assert.Equal("", secondMailAddress.DisplayName);
 
             var thirdMailAddress = mailAddresses.ElementAt(2);
-            Assert.AreEqual("test3@domain.net", thirdMailAddress.Address);
-            Assert.AreEqual("", thirdMailAddress.DisplayName);
+            Assert.Equal("test3@domain.net", thirdMailAddress.Address);
+            Assert.Equal("", thirdMailAddress.DisplayName);
         }
     }
 }
