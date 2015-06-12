@@ -3,7 +3,7 @@ namespace AE.Net.Mail.Imap {
 	public class Mailbox {
 		public Mailbox() : this(string.Empty) { }
 		public Mailbox(string name) {
-			Name = ModifiedUtf7Encoding.Decode(name);
+            Name = name;
 			Flags = new string[0];
 		}
 		public virtual string Name { get; internal set; }
