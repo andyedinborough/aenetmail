@@ -133,7 +133,6 @@ namespace AE.Net.Mail
                 ImapClientExceptionEventArgs args = new ImapClientExceptionEventArgs(e);
                 Task.Factory.StartNew(() => ImapException.Fire(this, args));
             }
-            _IdleTask.Dispose();
             _IdleTask = null;
         }
 
@@ -184,7 +183,6 @@ namespace AE.Net.Mail
                 if (_ResponseTask.Wait(IdleTimeout))
                 {
                     response = resp;
-                    _ResponseTask.Dispose();
                     _ResponseTask = null;
                     return true;
                 }
@@ -217,7 +215,6 @@ namespace AE.Net.Mail
                             Disconnect();
                             throw new ImapClientException("Lost communication to IMAP server, connection closed.");
                         }
-                        _ResponseTask.Dispose();
                         _ResponseTask = null;
 
                         IdleResumeCommand();
@@ -634,7 +631,7 @@ namespace AE.Net.Mail
                     result = SendCommandGetResponse(command);
                     // retrieve server key
                     key = result.Replace("+ ", "");
-                    key = System.Text.Encoding.Default.GetString(Convert.FromBase64String(key));
+                    key = Utilities._defaultEncoding.GetString(Convert.FromBase64String(key));
                     // calcul hash
                     using (var kMd5 = new HMACMD5(System.Text.Encoding.ASCII.GetBytes(password)))
                     {
@@ -796,7 +793,7 @@ namespace AE.Net.Mail
             string command = tag + isuid + "SEARCH " + criteria;
             string response = SendCommandGetResponse(command);
 
-            if (!response.StartsWith("* SEARCH", StringComparison.InvariantCultureIgnoreCase) && !IsResultOK(response))
+            if (!response.StartsWith("* SEARCH", StringComparison.CurrentCultureIgnoreCase) && !IsResultOK(response))
             {
                 throw new Exception(response);
             }
