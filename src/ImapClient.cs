@@ -21,12 +21,14 @@ namespace AE.Net.Mail
     public class ImapClient : TextClient, IMailClient
     {
         private string _SelectedMailbox;
+        private Mailbox _Mailbox;
         private int _tag = 0;
         private string[] _Capability;
 
         private bool _Idling;
         private Task _IdleTask;
         private Task _ResponseTask;
+        private ModifiedUtf7Encoding _utf7 = new ModifiedUtf7Encoding();
 
         private string _FetchHeaders = null;
 
@@ -45,6 +47,15 @@ namespace AE.Net.Mail
         public int IdleTimeout { get; set; }
 
         public virtual AuthMethods AuthMethod { get; set; }
+
+        public Mailbox Mailbox
+        {
+            get
+            {
+                CheckMailboxSelected();
+                return _Mailbox;
+            }
+        }
 
         private string GetTag()
         {
@@ -69,7 +80,9 @@ namespace AE.Net.Mail
             {
                 _NewMessage -= value;
                 if (!HasEvents)
+                {
                     IdleStop();
+                }
             }
         }
 
@@ -85,7 +98,9 @@ namespace AE.Net.Mail
             {
                 _MessageDeleted -= value;
                 if (!HasEvents)
+                {
                     IdleStop();
+                }
             }
         }
 
@@ -118,6 +133,7 @@ namespace AE.Net.Mail
                 ImapClientExceptionEventArgs args = new ImapClientExceptionEventArgs(e);
                 Task.Factory.StartNew(() => ImapException.Fire(this, args));
             }
+            _IdleTask.Dispose();
             _IdleTask = null;
         }
 
@@ -158,7 +174,8 @@ namespace AE.Net.Mail
         {
             string resp = response = null;
 
-            _ResponseTask = Task.Factory.StartNew(() => {
+            _ResponseTask = Task.Factory.StartNew(() =>
+            {
                 resp = GetResponse(IdleTimeout + ServerTimeout * 3);
             });
 
@@ -167,6 +184,7 @@ namespace AE.Net.Mail
                 if (_ResponseTask.Wait(IdleTimeout))
                 {
                     response = resp;
+                    _ResponseTask.Dispose();
                     _ResponseTask = null;
                     return true;
                 }
@@ -199,6 +217,7 @@ namespace AE.Net.Mail
                             Disconnect();
                             throw new ImapClientException("Lost communication to IMAP server, connection closed.");
                         }
+                        _ResponseTask.Dispose();
                         _ResponseTask = null;
 
                         IdleResumeCommand();
@@ -244,7 +263,7 @@ namespace AE.Net.Mail
         {
             IdlePause();
 
-            mailbox = ModifiedUtf7Encoding.Encode(mailbox);
+            mailbox = _utf7.Encode(mailbox);
             string flags = String.Empty;
 
             string size = rawMessage.Length.ToString();
@@ -263,8 +282,6 @@ namespace AE.Net.Mail
             if (response.StartsWith("+"))
             {
                 response = SendCommandGetResponse(body.ToString());
-                while (response.StartsWith("*"))
-                    response = GetResponse();
             }
             IdleResume();
         }
@@ -314,7 +331,7 @@ namespace AE.Net.Mail
         public virtual void CreateMailbox(string mailbox)
         {
             IdlePause();
-            string command = GetTag() + "CREATE " + ModifiedUtf7Encoding.Encode(mailbox).QuoteString();
+            string command = GetTag() + "CREATE " + _utf7.Encode(mailbox).QuoteString();
             SendCommandCheckOK(command);
             IdleResume();
         }
@@ -322,52 +339,22 @@ namespace AE.Net.Mail
         public virtual void DeleteMailbox(string mailbox)
         {
             IdlePause();
-            string command = GetTag() + "DELETE " + ModifiedUtf7Encoding.Encode(mailbox).QuoteString();
+            string command = GetTag() + "DELETE " + _utf7.Encode(mailbox).QuoteString();
             SendCommandCheckOK(command);
             IdleResume();
         }
 
-        public virtual Mailbox Examine(string mailbox)
+        public virtual Mailbox Examine(string mailboxName)
         {
             IdlePause();
 
-            Mailbox x = null;
+            Mailbox mailbox = mailboxName.Equals(_SelectedMailbox) ? _Mailbox : new Mailbox(mailboxName);
             string tag = GetTag();
-            string command = tag + "EXAMINE " + ModifiedUtf7Encoding.Encode(mailbox).QuoteString();
-            string response = SendCommandGetResponse(command);
-            if (response.StartsWith("*"))
-            {
-                x = new Mailbox(mailbox);
-                while (response.StartsWith("*"))
-                {
-                    Match m;
+            string command = tag + "EXAMINE " + _utf7.Encode(mailboxName).QuoteString();
+            string response = SendCommandGetResponse(command, mailbox);
 
-                    m = Regex.Match(response, @"(\d+) EXISTS");
-                    if (m.Groups.Count > 1)
-                        x.NumMsg = m.Groups[1].ToString().ToInt();
-
-                    m = Regex.Match(response, @"(\d+) RECENT");
-                    if (m.Groups.Count > 1)
-                        x.NumNewMsg = m.Groups[1].Value.ToInt();
-
-                    m = Regex.Match(response, @"UNSEEN (\d+)");
-                    if (m.Groups.Count > 1)
-                        x.NumUnSeen = m.Groups[1].Value.ToInt();
-
-                    m = Regex.Match(response, @"UIDVALIDITY (\d+)");
-                    if (m.Groups.Count > 1)
-                        x.UIDValidity = m.Groups[1].Value.ToInt();
-
-                    m = Regex.Match(response, @" FLAGS \((.*?)\)");
-                    if (m.Groups.Count > 1)
-                        x.SetFlags(m.Groups[1].ToString());
-
-                    response = GetResponse();
-                }
-                _SelectedMailbox = mailbox;
-            }
             IdleResume();
-            return x;
+            return mailbox;
         }
 
         public virtual void Expunge()
@@ -378,10 +365,7 @@ namespace AE.Net.Mail
             string tag = GetTag();
             string command = tag + "EXPUNGE";
             string response = SendCommandGetResponse(command);
-            while (response.StartsWith("*"))
-            {
-                response = GetResponse();
-            }
+
             IdleResume();
         }
 
@@ -406,7 +390,9 @@ namespace AE.Net.Mail
         protected virtual void CheckMailboxSelected()
         {
             if (string.IsNullOrEmpty(_SelectedMailbox))
+            {
                 SelectMailbox("INBOX");
+            }
         }
 
         public virtual MailMessage GetMessage(string uid, bool headersonly = false)
@@ -441,7 +427,8 @@ namespace AE.Net.Mail
 
         public virtual void DownloadMessage(System.IO.Stream stream, int index, bool setseen)
         {
-            GetMessages((index + 1).ToString(), (index + 1).ToString(), false, false, false, setseen, (message, size, headers) => {
+            GetMessages((index + 1).ToString(), (index + 1).ToString(), false, false, false, setseen, (message, size, headers) =>
+            {
                 Utilities.CopyStream(message, stream, size);
                 return null;
             });
@@ -449,7 +436,8 @@ namespace AE.Net.Mail
 
         public virtual void DownloadMessage(System.IO.Stream stream, string uid, bool setseen)
         {
-            GetMessages(uid, uid, true, false, false, setseen, (message, size, headers) => {
+            GetMessages(uid, uid, true, false, false, setseen, (message, size, headers) =>
+            {
                 Utilities.CopyStream(message, stream, size);
                 return null;
             });
@@ -459,7 +447,8 @@ namespace AE.Net.Mail
         {
             var x = new List<MailMessage>();
 
-            GetMessages(start, end, uid, false, headersonly, setseen, (stream, size, imapHeaders) => {
+            GetMessages(start, end, uid, false, headersonly, setseen, (stream, size, imapHeaders) =>
+            {
                 var mail = new MailMessage { Encoding = Encoding };
                 mail.Size = size;
 
@@ -485,7 +474,8 @@ namespace AE.Net.Mail
         public virtual void GetMessages(string start, string end, bool uid, bool uidsonly, bool headersonly, bool setseen, Action<MailMessage> processCallback)
         {
 
-            GetMessages(start, end, uid, uidsonly, headersonly, setseen, (stream, size, imapHeaders) => {
+            GetMessages(start, end, uid, uidsonly, headersonly, setseen, (stream, size, imapHeaders) =>
+            {
                 var mail = new MailMessage { Encoding = Encoding };
                 mail.Size = size;
 
@@ -506,7 +496,7 @@ namespace AE.Net.Mail
             });
         }
 
-        public virtual void GetMessages(string start, string end, bool uid, bool uidsonly, bool headersonly, bool setseen, Func<System.IO.Stream, int, SafeDictionary<string,string>, MailMessage> action)
+        public virtual void GetMessages(string start, string end, bool uid, bool uidsonly, bool headersonly, bool setseen, Func<System.IO.Stream, int, SafeDictionary<string, string>, MailMessage> action)
         {
             CheckMailboxSelected();
             IdlePause();
@@ -567,7 +557,7 @@ namespace AE.Net.Mail
             IdlePause();
 
             Quota quota = null;
-            string command = GetTag() + "GETQUOTAROOT " + ModifiedUtf7Encoding.Encode(mailbox).QuoteString();
+            string command = GetTag() + "GETQUOTAROOT " + _utf7.Encode(mailbox).QuoteString();
             string response = SendCommandGetResponse(command);
             string reg = "\\* QUOTA (.*?) \\((.*?) (.*?) (.*?)\\)";
             while (response.StartsWith("*"))
@@ -600,8 +590,8 @@ namespace AE.Net.Mail
             Match m = Regex.Match(response, reg);
             while (m.Groups.Count > 1)
             {
-                Mailbox mailbox = new Mailbox(m.Groups[3].ToString());
-                mailbox.SetFlags(m.Groups[1].ToString());
+                Mailbox mailbox = new Mailbox(_utf7.Decode(m.Groups[3].Value));
+                mailbox.SetFlags(m.Groups[1].Value);
                 x.Add(mailbox);
                 response = GetResponse();
                 m = Regex.Match(response, reg);
@@ -621,7 +611,7 @@ namespace AE.Net.Mail
             Match m = Regex.Match(response, reg);
             while (m.Groups.Count > 1)
             {
-                Mailbox mailbox = new Mailbox(m.Groups[3].ToString());
+                Mailbox mailbox = new Mailbox(_utf7.Decode(m.Groups[3].Value));
                 x.Add(mailbox);
                 response = GetResponse();
                 m = Regex.Match(response, reg);
@@ -644,7 +634,7 @@ namespace AE.Net.Mail
                     result = SendCommandGetResponse(command);
                     // retrieve server key
                     key = result.Replace("+ ", "");
-                    key = Utilities._defaultEncoding.GetString(Convert.FromBase64String(key));
+                    key = System.Text.Encoding.Default.GetString(Convert.FromBase64String(key));
                     // calcul hash
                     using (var kMd5 = new HMACMD5(System.Text.Encoding.ASCII.GetBytes(password)))
                     {
@@ -767,7 +757,7 @@ namespace AE.Net.Mail
         {
             IdlePause();
 
-            string command = GetTag() + "STATUS " + Utilities.QuoteString(ModifiedUtf7Encoding.Encode(mailbox) ?? _SelectedMailbox) + " (MESSAGES)";
+            string command = GetTag() + "STATUS " + Utilities.QuoteString(_utf7.Encode(mailbox) ?? _SelectedMailbox) + " (MESSAGES)";
             string response = SendCommandGetResponse(command);
             string reg = @"\* STATUS.*MESSAGES (\d+)";
             int result = 0;
@@ -806,7 +796,7 @@ namespace AE.Net.Mail
             string command = tag + isuid + "SEARCH " + criteria;
             string response = SendCommandGetResponse(command);
 
-            if (!response.StartsWith("* SEARCH", StringComparison.CurrentCultureIgnoreCase) && !IsResultOK(response))
+            if (!response.StartsWith("* SEARCH", StringComparison.InvariantCultureIgnoreCase) && !IsResultOK(response))
             {
                 throw new Exception(response);
             }
@@ -832,38 +822,57 @@ namespace AE.Net.Mail
         {
             IdlePause();
 
-            mailboxName = ModifiedUtf7Encoding.Encode(mailboxName);
             var tag = GetTag();
-            var command = tag + "SELECT " + mailboxName.QuoteString();
+            var command = tag + "SELECT " + _utf7.Encode(mailboxName).QuoteString();
+            _Mailbox = new Mailbox(mailboxName);
+            _SelectedMailbox = mailboxName;
             var response = SendCommandGetResponse(command);
-            if (IsResultOK(response))
-                response = GetResponse();
-            var mailbox = new Mailbox(mailboxName);
-            Match match;
 
+            CheckResultOK(response);
+            _Mailbox.IsWritable = Regex.IsMatch(response, "READ.WRITE", RegexOptions.IgnoreCase);
+
+            IdleResume();
+            return _Mailbox;
+        }
+
+        protected override string SendCommandGetResponse(string command)
+        {
+            return SendCommandGetResponse(command, _Mailbox);
+        }
+
+        protected virtual string SendCommandGetResponse(string command, Mailbox mailbox)
+        {
+            var response = base.SendCommandGetResponse(command);
+            response = HandleUntaggedResponse(response, Mailbox);
+            return response;
+        }
+
+        protected virtual string HandleUntaggedResponse(string response, Mailbox mailbox)
+        {
+            Match match;
             while (response.StartsWith("*"))
             {
-                if ((match = Regex.Match(response, @"\d+(?=\s+EXISTS)")).Success)
-                    mailbox.NumMsg = match.Value.ToInt();
+                if (mailbox != null)
+                {
+                    if ((match = Regex.Match(response, @"\d+(?=\s+EXISTS)")).Success)
+                        mailbox.NumMsg = match.Value.ToInt();
 
-                else if ((match = Regex.Match(response, @"\d+(?=\s+RECENT)")).Success)
-                    mailbox.NumNewMsg = match.Value.ToInt();
+                    else if ((match = Regex.Match(response, @"\d+(?=\s+RECENT)")).Success)
+                        mailbox.NumNewMsg = match.Value.ToInt();
 
-                else if ((match = Regex.Match(response, @"(?<=UNSEEN\s+)\d+")).Success)
-                    mailbox.NumUnSeen = match.Value.ToInt();
+                    else if ((match = Regex.Match(response, @"(?<=UNSEEN\s+)\d+")).Success)
+                        mailbox.NumUnSeen = match.Value.ToInt();
 
-                else if ((match = Regex.Match(response, @"(?<=\sFLAGS\s+\().*?(?=\))")).Success)
-                    mailbox.SetFlags(match.Value);
+                    else if ((match = Regex.Match(response, @"(?<=\sFLAGS\s+\().*?(?=\))")).Success)
+                        mailbox.SetFlags(match.Value);
 
+                    else if ((match = Regex.Match(response, @"UIDVALIDITY (\d+)")).Success)
+                        mailbox.UIDValidity = match.Groups[1].Value.ToInt();
+                }
                 response = GetResponse();
             }
 
-            CheckResultOK(response);
-            mailbox.IsWritable = Regex.IsMatch(response, "READ.WRITE", RegexOptions.IgnoreCase);
-            _SelectedMailbox = mailboxName;
-
-            IdleResume();
-            return mailbox;
+            return response;
         }
 
         public virtual void SetFlags(Flags flags, params MailMessage[] msgs)
@@ -913,10 +922,6 @@ namespace AE.Net.Mail
 
             string command = string.Concat(GetTag(), prefix, "STORE ", messageset, " ", replace ? "" : "+", "FLAGS.SILENT (" + flags + ")");
             string response = SendCommandGetResponse(command);
-            while (response.StartsWith("*"))
-            {
-                response = GetResponse();
-            }
             CheckResultOK(response);
             IdleResume();
         }
@@ -925,7 +930,7 @@ namespace AE.Net.Mail
         {
             IdlePause();
 
-            string command = GetTag() + "SUBSCRIBE " + ModifiedUtf7Encoding.Encode(mailbox).QuoteString();
+            string command = GetTag() + "SUBSCRIBE " + _utf7.Encode(mailbox).QuoteString();
             SendCommandCheckOK(command);
             IdleResume();
         }
@@ -934,7 +939,7 @@ namespace AE.Net.Mail
         {
             IdlePause();
 
-            string command = GetTag() + "UNSUBSCRIBE " + ModifiedUtf7Encoding.Encode(mailbox).QuoteString();
+            string command = GetTag() + "UNSUBSCRIBE " + _utf7.Encode(mailbox).QuoteString();
             SendCommandCheckOK(command);
             IdleResume();
         }
