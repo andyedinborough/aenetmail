@@ -302,10 +302,6 @@ namespace AE.Net.Mail
             IdlePause();
             string command = GetTag() + "CAPABILITY";
             string response = SendCommandGetResponse(command);
-            if (response.StartsWith("* CAPABILITY "))
-                response = response.Substring(13);
-            _Capability = response.Trim().Split(' ');
-            GetResponse();
             IdleResume();
             return _Capability;
         }
@@ -658,12 +654,6 @@ namespace AE.Net.Mail
                     throw new NotSupportedException();
             }
 
-            if (result.StartsWith("* CAPABILITY "))
-            {
-                _Capability = result.Substring(13).Trim().Split(' ');
-                result = GetResponse();
-            }
-
             if (!result.StartsWith(tag + "OK"))
             {
                 if (result.StartsWith("+ ") && result.EndsWith("=="))
@@ -865,6 +855,20 @@ namespace AE.Net.Mail
 
                     else if ((match = Regex.Match(response, @"UIDVALIDITY (\d+)")).Success)
                         mailbox.UIDValidity = match.Groups[1].Value.ToInt();
+
+
+                    else if (response.StartsWith("* CAPABILITY "))
+                    {
+                        response = response.Substring(13);
+                        _Capability = response.Trim().Split(' ');
+                    }
+
+                    else if (response.StartsWith("* OK"))
+                    {
+                        
+                    }
+
+                    else return response;
                 }
                 response = GetResponse();
             }
