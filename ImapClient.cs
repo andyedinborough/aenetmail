@@ -657,7 +657,7 @@ namespace AE.Net.Mail
                     throw new NotSupportedException();
             }
 
-            if (!result.StartsWith(tag + "OK"))
+            if (!IsResultOK(result))
             {
                 if (result.StartsWith("+ ") && result.EndsWith("=="))
                 {
