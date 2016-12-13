@@ -42,6 +42,22 @@ namespace AE.Net.Mail {
 			}
 		}
 
+        public virtual AttachmentType AttachmentType
+        {
+            get
+            {
+                switch (ContentDisposition)
+                {
+                    case "attachment":
+                        return AttachmentType.Attachment;
+                    case "inline":
+                        return AttachmentType.Inline;
+                    default:
+                        return AttachmentType.Unknown;
+                }
+            }
+        }
+
 		public virtual void Save(string filename) {
 			using (var file = new System.IO.FileStream(filename, System.IO.FileMode.Create))
 				Save(file);
@@ -66,6 +82,12 @@ namespace AE.Net.Mail {
 			}
 			return data;
 		}
-
 	}
+
+    public enum AttachmentType
+    {
+        Unknown,
+        Attachment,
+        Inline
+    }
 }
