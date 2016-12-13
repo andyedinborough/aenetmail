@@ -29,7 +29,7 @@ to simplify the creation of the Pop3 client.
 
 ###POP
      using(var pop = new AE.Net.Mail.Pop3Client(host, username, password, port, isSSL)) {
-       for(var i = pop.GetMessageCount() - 1; i >= 0; i--){
+       for(var i = pop.GetMessageCount(); i > 0; i--){
           var msg = pop.GetMessage(i, false);
           Assert.AreEqual(msg.Subject, "Standard API between different protocols?  Yes, please!");
           pop.DeleteMessage(i); //WE DON'T NEED NO STINKIN' EMAIL!
