@@ -797,7 +797,7 @@ namespace AE.Net.Mail
                 response += Environment.NewLine + temp;
             }
 
-            var m = Regex.Match(response, @"^\* SEARCH (.*)");
+            var m = Regex.Match(response, @"^\* SEARCH (.*)", RegexOptions.Multiline);
             return m.Groups[1].Value.Trim().Split(' ').Where(x => !string.IsNullOrEmpty(x)).ToArray();
         }
 
