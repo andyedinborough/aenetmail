@@ -1,17 +1,19 @@
-#AE.Net.Mail
+# AE.Net.Mail
 A C# POP/IMAP client library
 
-##Background
+## Background
+
 These are text-based services... it's not that hard, and yet all the projects I
 found out there were nasty, bloated, and severely error prone. So, I rebuilt 
 one. This is based heavily on xemail-net. I simplified it quite a bit, and 
 created standard methods for repeated code blocks and implemented a base class
 to simplify the creation of the Pop3 client.
 
-##Sample Usage
+## Sample Usage
 
-###IMAP
-     using(var imap = new AE.Net.Mail.ImapClient(host, username, password, AE.Net.Mail.ImapClient.AuthMethods.Login, port, isSSL)) {
+### IMAP
+
+    using(var imap = new AE.Net.Mail.ImapClient(host, username, password, AE.Net.Mail.ImapClient.AuthMethods.Login, port, isSSL))            {
         var msgs = imap.SearchMessages(
           SearchCondition.Undeleted().And(
             SearchCondition.From("david"), 
@@ -27,7 +29,9 @@ to simplify the creation of the Pop3 client.
         };
     }
 
-###POP
+
+### POP
+
      using(var pop = new AE.Net.Mail.Pop3Client(host, username, password, port, isSSL)) {
        for(var i = pop.GetMessageCount() - 1; i >= 0; i--){
           var msg = pop.GetMessage(i, false);
@@ -36,9 +40,10 @@ to simplify the creation of the Pop3 client.
        }
     }
 
-###Installation
+### Installation
 
     Install-Package AE.Net.Mail
 
-###License
+### License
+
 http://andyedinborough.mit-license.org/
