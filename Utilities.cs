@@ -299,6 +299,8 @@ namespace AE.Net.Mail {
 			// This is the regex that should fit the BNF
 			// RFC Says that NO WHITESPACE is allowed in this encoding, but there are examples
 			// where whitespace is there, and therefore this regex allows for such.
+
+
 			const string strRegEx = @"\=\?(?<Charset>\S+?)\?(?<Encoding>\w)\?(?<Content>.+?)\?\=";
 			// \w	Matches any word character including underscore. Equivalent to "[A-Za-z0-9_]".
 			// \S	Matches any nonwhite space character. Equivalent to "[^ \f\n\r\t\v]".
@@ -381,7 +383,9 @@ namespace AE.Net.Mail {
 
 			// It seems there is no codepage value in the characterSet. It must be a named encoding
 			return Encoding.GetEncodings().Where(x => x.Name.Is(characterSet))
-				.Select(x => x.GetEncoding()).FirstOrDefault() ?? @default ?? System.Text.Encoding.Default;
+				.Select(x => x.GetEncoding()).FirstOrDefault() ??
+				Encoding.GetEncoding(characterSet)		//will this throw exception?
+				?? @default ?? System.Text.Encoding.Default;
 		}
 		#endregion
 
