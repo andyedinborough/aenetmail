@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Net;
 using System.Net.Sockets;
 
 namespace AE.Net.Mail {
@@ -64,6 +65,8 @@ namespace AE.Net.Mail {
 				Host = hostname;
 				Port = port;
 				Ssl = ssl;
+
+				ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12 | SecurityProtocolType.Tls11 | SecurityProtocolType.Tls | SecurityProtocolType.Ssl3;
 
 				_Connection = new TcpClient(hostname, port);
 				_Stream = _Connection.GetStream();
