@@ -1,7 +1,9 @@
 ﻿
-Microsoft Visual Studio Solution File, Format Version 11.00
-# Visual Studio 2010
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AE.Net.Mail", "AE.Net.Mail.csproj", "{68E9CF8C-AB54-4CC7-A34F-C7F469E4EFE0}"
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.32510.428
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "nilnul._email_.client_.aeNetMail", "nilnul._email_.client_.aeNetMail.csproj", "{68E9CF8C-AB54-4CC7-A34F-C7F469E4EFE0}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tests", "Tests\Tests.csproj", "{85F13B66-47EF-4588-ABD1-39CDBE1C3DA1}"
 EndProject
@@ -13,13 +15,13 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 	EndProjectSection
 EndProject
 Global
-	GlobalSection(TestCaseManagementSettings) = postSolution
-		CategoryFile = AE.Net.Mail.vsmdi
-	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Debug|Mixed Platforms = Debug|Mixed Platforms
 		Debug|x86 = Debug|x86
+		Dev2nuget|Any CPU = Dev2nuget|Any CPU
+		Dev2nuget|Mixed Platforms = Dev2nuget|Mixed Platforms
+		Dev2nuget|x86 = Dev2nuget|x86
 		Release|Any CPU = Release|Any CPU
 		Release|Mixed Platforms = Release|Mixed Platforms
 		Release|x86 = Release|x86
@@ -30,6 +32,12 @@ Global
 		{68E9CF8C-AB54-4CC7-A34F-C7F469E4EFE0}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
 		{68E9CF8C-AB54-4CC7-A34F-C7F469E4EFE0}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
 		{68E9CF8C-AB54-4CC7-A34F-C7F469E4EFE0}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{68E9CF8C-AB54-4CC7-A34F-C7F469E4EFE0}.Dev2nuget|Any CPU.ActiveCfg = Dev2nuget|Any CPU
+		{68E9CF8C-AB54-4CC7-A34F-C7F469E4EFE0}.Dev2nuget|Any CPU.Build.0 = Dev2nuget|Any CPU
+		{68E9CF8C-AB54-4CC7-A34F-C7F469E4EFE0}.Dev2nuget|Mixed Platforms.ActiveCfg = Dev2nuget|Any CPU
+		{68E9CF8C-AB54-4CC7-A34F-C7F469E4EFE0}.Dev2nuget|Mixed Platforms.Build.0 = Dev2nuget|Any CPU
+		{68E9CF8C-AB54-4CC7-A34F-C7F469E4EFE0}.Dev2nuget|x86.ActiveCfg = Dev2nuget|Any CPU
+		{68E9CF8C-AB54-4CC7-A34F-C7F469E4EFE0}.Dev2nuget|x86.Build.0 = Dev2nuget|Any CPU
 		{68E9CF8C-AB54-4CC7-A34F-C7F469E4EFE0}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{68E9CF8C-AB54-4CC7-A34F-C7F469E4EFE0}.Release|Any CPU.Build.0 = Release|Any CPU
 		{68E9CF8C-AB54-4CC7-A34F-C7F469E4EFE0}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
@@ -40,6 +48,12 @@ Global
 		{85F13B66-47EF-4588-ABD1-39CDBE1C3DA1}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
 		{85F13B66-47EF-4588-ABD1-39CDBE1C3DA1}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
 		{85F13B66-47EF-4588-ABD1-39CDBE1C3DA1}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{85F13B66-47EF-4588-ABD1-39CDBE1C3DA1}.Dev2nuget|Any CPU.ActiveCfg = Dev2nuget|Any CPU
+		{85F13B66-47EF-4588-ABD1-39CDBE1C3DA1}.Dev2nuget|Any CPU.Build.0 = Dev2nuget|Any CPU
+		{85F13B66-47EF-4588-ABD1-39CDBE1C3DA1}.Dev2nuget|Mixed Platforms.ActiveCfg = Dev2nuget|Any CPU
+		{85F13B66-47EF-4588-ABD1-39CDBE1C3DA1}.Dev2nuget|Mixed Platforms.Build.0 = Dev2nuget|Any CPU
+		{85F13B66-47EF-4588-ABD1-39CDBE1C3DA1}.Dev2nuget|x86.ActiveCfg = Dev2nuget|Any CPU
+		{85F13B66-47EF-4588-ABD1-39CDBE1C3DA1}.Dev2nuget|x86.Build.0 = Dev2nuget|Any CPU
 		{85F13B66-47EF-4588-ABD1-39CDBE1C3DA1}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{85F13B66-47EF-4588-ABD1-39CDBE1C3DA1}.Release|Any CPU.Build.0 = Release|Any CPU
 		{85F13B66-47EF-4588-ABD1-39CDBE1C3DA1}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
@@ -48,5 +62,11 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {CC887B61-E255-4A5C-A5AA-D26324913320}
+	EndGlobalSection
+	GlobalSection(TestCaseManagementSettings) = postSolution
+		CategoryFile = AE.Net.Mail.vsmdi
 	EndGlobalSection
 EndGlobal

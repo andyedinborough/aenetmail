@@ -34,6 +34,15 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Dev2nuget|AnyCPU'">
+    <OutputPath>bin\Dev2nuget\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <Optimize>true</Optimize>
+    <DebugType>pdbonly</DebugType>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <LangVersion>7.3</LangVersion>
+    <ErrorReport>prompt</ErrorReport>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="Microsoft.VisualStudio.QualityTools.UnitTestFramework, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
     <Reference Include="Shouldly">
@@ -59,9 +68,9 @@
     <Compile Include="HeaderDictionary.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\AE.Net.Mail.csproj">
+    <ProjectReference Include="..\nilnul._email_.client_.aeNetMail.csproj">
       <Project>{68E9CF8C-AB54-4CC7-A34F-C7F469E4EFE0}</Project>
-      <Name>AE.Net.Mail</Name>
+      <Name>nilnul._email_.client_.aeNetMail</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
